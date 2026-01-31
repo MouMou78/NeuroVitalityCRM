@@ -173,8 +173,9 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
+                  <img src="/1twenty-logo.png" alt="1twenty CRM" className="h-8 w-auto object-contain" />
                   <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                    1twenty CRM
                   </span>
                 </div>
               ) : null}

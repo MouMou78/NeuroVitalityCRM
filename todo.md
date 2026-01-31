@@ -90,3 +90,10 @@
 - [x] Create default guest tenant and user
 - [x] Update frontend to bypass authentication
 - [x] Allow direct access to all CRM features
+
+## Rebranding to 1twenty CRM
+- [x] Fetch logo and color scheme from 1twentyconsultancy.com
+- [x] Update application name to "1twenty CRM"
+- [x] Apply color scheme to CSS variables
+- [x] Add logo to dashboard and branding
+- [x] Update page titles and metadata

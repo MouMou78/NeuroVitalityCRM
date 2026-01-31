@@ -20,7 +20,7 @@ export default function Home() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-2">
-          Welcome to KompassCRM. Here's your overview for today.
+          Welcome to 1twenty CRM. Here's your overview for today.
         </p>
       </div>
 
