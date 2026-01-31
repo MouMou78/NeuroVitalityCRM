@@ -1,9 +1,10 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Calendar, QrCode } from "lucide-react";
+import { Loader2, Calendar, QrCode } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+import { CreateEventDialog } from "@/components/CreateEventDialog";
 
 export default function Events() {
   const { data: events, isLoading } = trpc.events.list.useQuery();
@@ -17,10 +18,7 @@ export default function Events() {
             Manage events and lead capture forms
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Event
-        </Button>
+        <CreateEventDialog />
       </div>
 
       <Card>

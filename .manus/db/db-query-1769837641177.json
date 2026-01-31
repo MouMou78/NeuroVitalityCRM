@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE nextActions\nADD COLUMN assignedUserId INT NULL,\nADD COLUMN dueAt TIMESTAMP NULL;\n\nCREATE INDEX idx_actions_assigned ON nextActions(tenantId, assignedUserId, status);\nCREATE INDEX idx_actions_due ON nextActions(tenantId, dueAt);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute ALTER TABLE nextActions\nADD COLUMN assignedUserId INT NULL,\nADD COLUMN dueAt TIMESTAMP NULL;\n\nCREATE INDEX idx_actions_assigned ON nextActions(tenantId, assignedUserId, status);\nCREATE INDEX idx_actions_due ON nextActions(tenantId, dueAt);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1888
+}

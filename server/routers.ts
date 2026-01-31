@@ -7,6 +7,7 @@ import * as db from "./db";
 import { hashPassword, verifyPassword, parseTriggerDate } from "./utils";
 import { TRPCError } from "@trpc/server";
 import { processMoment } from "./rules-engine";
+import { computeFunnelStage, groupThreadsByStage, computeVelocity } from "./funnel";
 
 export const appRouter = router({
   system: systemRouter,
@@ -144,6 +145,34 @@ export const appRouter = router({
           tenantId: ctx.user.tenantId,
           ...input,
         });
+      }),
+    
+    assign: protectedProcedure
+      .input(z.object({
+        threadId: z.string(),
+        ownerUserId: z.number().optional(),
+        collaboratorUserIds: z.array(z.number()).optional(),
+        visibility: z.enum(["private", "shared", "restricted"]).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.updateThread(ctx.user.tenantId, input.threadId, {
+          ownerUserId: input.ownerUserId,
+          collaboratorUserIds: input.collaboratorUserIds,
+          visibility: input.visibility,
+        });
+        return { success: true };
+      }),
+    
+    updateStatus: protectedProcedure
+      .input(z.object({
+        threadId: z.string(),
+        status: z.enum(["active", "waiting", "dormant", "closed"]),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.updateThread(ctx.user.tenantId, input.threadId, {
+          status: input.status,
+        });
+        return { success: true };
       }),
   }),
   
@@ -303,6 +332,153 @@ export const appRouter = router({
         });
         
         return { success: true };
+      }),
+  }),
+  
+  funnel: router({
+    get: protectedProcedure.query(async ({ ctx }) => {
+      const threads = await db.getThreadsByTenant(ctx.user.tenantId);
+      const threadsWithData = await Promise.all(
+        threads.map(async (thread) => {
+          const moments = await db.getMomentsByThread(ctx.user.tenantId, thread.id);
+          const nextActions = await db.getNextActionsByThread(ctx.user.tenantId, thread.id);
+          return { thread, moments, nextActions };
+        })
+      );
+      
+      const grouped = groupThreadsByStage(threadsWithData);
+      
+      // Enrich with person data
+      const stages = await Promise.all(
+        Object.entries(grouped).map(async ([stageKey, threads]) => {
+          const enrichedThreads = await Promise.all(
+            threads.map(async (t) => {
+              const person = await db.getPersonById(t.personId);
+              const openAction = t.nextActions.find(a => a.status === 'open');
+              return {
+                thread_id: t.id,
+                person: person ? {
+                  full_name: person.fullName,
+                  primary_email: person.primaryEmail,
+                  company_name: person.companyName,
+                } : null,
+                owner_user_id: t.ownerUserId,
+                visibility: t.visibility,
+                last_activity_at: t.lastActivityAt,
+                next_action: openAction ? {
+                  action_id: openAction.id,
+                  action_type: openAction.actionType,
+                  status: openAction.status,
+                  assigned_user_id: openAction.assignedUserId,
+                  due_at: openAction.dueAt,
+                } : null,
+                funnel_stage: t.funnelStage,
+              };
+            })
+          );
+          return { stage_key: stageKey, threads: enrichedThreads };
+        })
+      );
+      
+      return { stages };
+    }),
+  }),
+  
+  analytics: router({
+    get: protectedProcedure
+      .input(z.object({
+        timeRange: z.enum(["last_4_weeks", "last_8_weeks", "last_12_weeks"]).default("last_8_weeks"),
+      }))
+      .query(async ({ input, ctx }) => {
+        const weeksAgo = input.timeRange === "last_4_weeks" ? 4 : input.timeRange === "last_8_weeks" ? 8 : 12;
+        const startDate = new Date(Date.now() - weeksAgo * 7 * 24 * 60 * 60 * 1000);
+        
+        const moments = await db.getMomentsByTenant(ctx.user.tenantId);
+        const recentMoments = moments.filter(m => new Date(m.timestamp) >= startDate);
+        
+        // Activity by week
+        const activityByWeek: Array<{
+          week_start: string;
+          email_sent: number;
+          reply_received: number;
+          meeting_held: number;
+          lead_captured: number;
+        }> = [];
+        
+        for (let i = 0; i < weeksAgo; i++) {
+          const weekStart = new Date(Date.now() - (weeksAgo - i) * 7 * 24 * 60 * 60 * 1000);
+          const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+          
+          const weekMoments = recentMoments.filter(
+            m => new Date(m.timestamp) >= weekStart && new Date(m.timestamp) < weekEnd
+          );
+          
+          activityByWeek.push({
+            week_start: weekStart.toISOString().split('T')[0]!,
+            email_sent: weekMoments.filter(m => m.type === 'email_sent').length,
+            reply_received: weekMoments.filter(m => m.type === 'reply_received').length,
+            meeting_held: weekMoments.filter(m => m.type === 'meeting_held').length,
+            lead_captured: weekMoments.filter(m => m.type === 'lead_captured').length,
+          });
+        }
+        
+        // Engagement rates
+        const emailsSent = recentMoments.filter(m => m.type === 'email_sent').length;
+        const repliesReceived = recentMoments.filter(m => m.type === 'reply_received').length;
+        const meetingsHeld = recentMoments.filter(m => m.type === 'meeting_held').length;
+        
+        const engagement = {
+          replies_per_email_sent: emailsSent > 0 ? repliesReceived / emailsSent : 0,
+          meetings_per_reply: repliesReceived > 0 ? meetingsHeld / repliesReceived : 0,
+        };
+        
+        // Funnel health
+        const threads = await db.getThreadsByTenant(ctx.user.tenantId);
+        const threadsWithData = await Promise.all(
+          threads.map(async (thread) => {
+            const threadMoments = await db.getMomentsByThread(ctx.user.tenantId, thread.id);
+            const nextActions = await db.getNextActionsByThread(ctx.user.tenantId, thread.id);
+            return { thread, moments: threadMoments, nextActions };
+          })
+        );
+        
+        const grouped = groupThreadsByStage(threadsWithData);
+        const funnelHealth = {
+          counts_by_stage: Object.entries(grouped).map(([key, threads]) => ({
+            stage_key: key,
+            count: threads.length,
+          })),
+        };
+        
+        // Follow-up discipline
+        const allActions = await db.getNextActionsByTenant(ctx.user.tenantId);
+        const overdueActions = allActions.filter(
+          a => a.status === 'open' && a.dueAt && new Date(a.dueAt) < new Date()
+        );
+        
+        const completedActions = allActions.filter(a => a.status === 'completed' && a.completedAt);
+        const avgHours = completedActions.length > 0
+          ? completedActions.reduce((sum, a) => {
+              const hours = (new Date(a.completedAt!).getTime() - new Date(a.createdAt).getTime()) / (1000 * 60 * 60);
+              return sum + hours;
+            }, 0) / completedActions.length
+          : 0;
+        
+        const followUpDiscipline = {
+          overdue_open_actions: overdueActions.length,
+          avg_hours_to_complete_action: avgHours,
+        };
+        
+        // Velocity
+        const velocity = computeVelocity(moments);
+        
+        return {
+          activity: { by_week: activityByWeek },
+          engagement,
+          funnel_health: funnelHealth,
+          follow_up_discipline: followUpDiscipline,
+          velocity,
+        };
       }),
   }),
   

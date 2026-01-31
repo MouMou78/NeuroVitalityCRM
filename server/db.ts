@@ -331,3 +331,43 @@ export async function getIntegrationsByTenant(tenantId: string): Promise<Integra
 
   return db.select().from(integrations).where(eq(integrations.tenantId, tenantId));
 }
+
+
+export async function getThreadsByTenant(tenantId: string): Promise<Thread[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(threads).where(eq(threads.tenantId, tenantId));
+}
+
+export async function updateThread(tenantId: string, threadId: string, data: Partial<Omit<Thread, "id" | "tenantId">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(threads).set(data).where(and(eq(threads.tenantId, tenantId), eq(threads.id, threadId)));
+}
+
+export async function getMomentsByTenant(tenantId: string): Promise<Moment[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(moments).where(eq(moments.tenantId, tenantId)).orderBy(desc(moments.timestamp));
+}
+
+export async function getNextActionsByTenant(tenantId: string): Promise<NextAction[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(nextActions).where(eq(nextActions.tenantId, tenantId));
+}
+
+export async function getNextActionsByThread(tenantId: string, threadId: string): Promise<NextAction[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(nextActions)
+    .where(and(eq(nextActions.tenantId, tenantId), eq(nextActions.threadId, threadId)))
+    .orderBy(desc(nextActions.createdAt));
+}

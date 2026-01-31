@@ -97,3 +97,38 @@
 - [x] Apply color scheme to CSS variables
 - [x] Add logo to dashboard and branding
 - [x] Update page titles and metadata
+
+## Bug Fixes
+- [x] Fix "Add Person" button on People page
+- [x] Fix "Create Event" button on Events page
+
+## Google Workspace Integration
+- [ ] Implement Google OAuth flow
+- [ ] Create Google integration connection endpoint
+- [ ] Add Gmail sync functionality
+- [ ] Add Calendar sync functionality
+- [ ] Store integration credentials securely
+- [ ] Test complete Google Workspace connection
+
+## Multi-User Funnel Analytics Patch
+- [x] Add owner_user_id, collaborator_user_ids, visibility, deal_signal columns to threads table
+- [x] Add assigned_user_id, due_at columns to next_actions table
+- [x] Create indexes for multi-user queries
+- [x] Extend enum values for threads.intent and moments.type
+- [x] Implement funnel stage computation logic (7 stages)
+- [x] Build GET /api/funnel endpoint with thread grouping
+- [x] Build POST /api/threads/:id/assign endpoint
+- [x] Build POST /api/threads/:id/status endpoint
+- [x] Build GET /api/analytics endpoint with all metrics
+- [x] Implement activity throughput analytics
+- [x] Implement engagement rate analytics
+- [x] Implement funnel health analytics
+- [x] Implement follow-up discipline analytics
+- [x] Implement velocity analytics
+- [ ] Update rules engine with owner assignment on thread creation
+- [ ] Update rules engine with due_at auto-set for date triggers
+- [ ] Update rules engine to assign actions to thread owner
+- [ ] Create Funnel page with Kanban view
+- [ ] Create Analytics page with charts and metrics
+- [ ] Add user scope toggle to Home page (me/team)
+- [ ] Implement thread access control based on visibility

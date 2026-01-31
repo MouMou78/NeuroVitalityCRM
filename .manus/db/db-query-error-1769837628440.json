@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE threads\nADD COLUMN ownerUserId INT NULL,\nADD COLUMN collaboratorUserIds JSON DEFAULT '[]',\nADD COLUMN visibility VARCHAR(20) DEFAULT 'private',\nADD COLUMN dealSignal JSON DEFAULT '{}';\n\nCREATE INDEX idx_threads_owner ON threads(tenantId, ownerUserId);\nCREATE INDEX idx_threads_visibility ON threads(tenantId, visibility);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute ALTER TABLE threads\nADD COLUMN ownerUserId INT NULL,\nADD COLUMN collaboratorUserIds JSON DEFAULT '[]',\nADD COLUMN visibility VARCHAR(20) DEFAULT 'private',\nADD COLUMN dealSignal JSON DEFAULT '{}';\n\nCREATE INDEX idx_threads_owner ON threads(tenantId, ownerUserId);\nCREATE INDEX idx_threads_visibility ON threads(tenantId, visibility);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'collaboratorUserIds' can't have a default value"
+  ]
+}

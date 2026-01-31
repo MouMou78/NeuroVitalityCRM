@@ -61,13 +61,19 @@ export const threads = mysqlTable("threads", {
   personId: varchar("personId", { length: 36 }).notNull(),
   source: text("source").notNull(),
   intent: text("intent").notNull(),
-  status: mysqlEnum("status", ["active", "dormant", "closed"]).default("active").notNull(),
+  status: mysqlEnum("status", ["active", "waiting", "dormant", "closed"]).default("active").notNull(),
   title: text("title"),
   lastActivityAt: timestamp("lastActivityAt"),
+  ownerUserId: int("ownerUserId"),
+  collaboratorUserIds: json("collaboratorUserIds").$type<number[]>(),
+  visibility: varchar("visibility", { length: 20 }).default("private"),
+  dealSignal: json("dealSignal").$type<{value_estimate?: number; confidence?: 'low'|'medium'|'high'; outcome?: 'won'|'lost'}>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   tenantPersonIdx: index("tenant_person_idx").on(table.tenantId, table.personId),
   tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
+  tenantOwnerIdx: index("tenant_owner_idx").on(table.tenantId, table.ownerUserId),
+  tenantVisibilityIdx: index("tenant_visibility_idx").on(table.tenantId, table.visibility),
 }));
 
 export type Thread = typeof threads.$inferSelect;
@@ -87,7 +93,9 @@ export const moments = mysqlTable("moments", {
     "meeting_held",
     "note_added",
     "signal_detected",
-    "lead_captured"
+    "lead_captured",
+    "deal_won",
+    "deal_lost"
   ]).notNull(),
   timestamp: timestamp("timestamp").notNull(),
   metadata: json("metadata").$type<Record<string, any>>().default({}),
@@ -108,10 +116,14 @@ export const nextActions = mysqlTable("nextActions", {
   triggerType: text("triggerType").notNull(),
   triggerValue: text("triggerValue").notNull(),
   status: mysqlEnum("status", ["open", "completed", "cancelled"]).default("open").notNull(),
+  assignedUserId: int("assignedUserId"),
+  dueAt: timestamp("dueAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
 }, (table) => ({
   tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
+  tenantAssignedIdx: index("tenant_assigned_idx").on(table.tenantId, table.assignedUserId, table.status),
+  tenantDueIdx: index("tenant_due_idx").on(table.tenantId, table.dueAt),
   tenantThreadStatusIdx: index("tenant_thread_status_idx").on(table.tenantId, table.threadId, table.status),
 }));
 

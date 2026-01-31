@@ -1,10 +1,10 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
+import { AddPersonDialog } from "@/components/AddPersonDialog";
 
 export default function People() {
   const { data: people, isLoading } = trpc.people.list.useQuery();
@@ -25,10 +25,7 @@ export default function People() {
             Manage your contacts and relationships
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Person
-        </Button>
+        <AddPersonDialog />
       </div>
 
       <Card>
