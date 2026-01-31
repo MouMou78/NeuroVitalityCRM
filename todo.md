@@ -137,3 +137,24 @@
 - [x] Replace logo with new 1twenty Consultancy logo
 - [x] Remove app name text from sidebar
 - [x] Update DashboardLayout to show only logo image
+
+## WhatsApp Business Integration
+- [ ] Research WhatsApp Business API requirements
+- [ ] Add WhatsApp integration to integrations table
+- [ ] Create WhatsApp connection endpoint with webhook
+- [ ] Implement message sync (incoming/outgoing)
+- [ ] Store WhatsApp messages as moments in threads
+- [ ] Add send message functionality from CRM
+- [ ] Create WhatsApp settings page
+- [ ] Test message sync and webhook handling
+
+## AI Assistant Feature
+- [x] Design AI Assistant backend architecture
+- [x] Create assistant API endpoint with LLM integration
+- [x] Implement context retrieval (threads, people, actions, funnel data)
+- [x] Build intelligent query parsing for deal health questions
+- [x] Generate responses with clickable links to CRM entities
+- [x] Create AI Assistant UI component with chat interface
+- [x] Add AI Assistant to navigation menu
+- [ ] Implement chat history and session management
+- [ ] Test AI queries for accuracy and link generation

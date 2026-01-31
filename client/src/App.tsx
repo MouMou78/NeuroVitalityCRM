@@ -14,6 +14,7 @@ import PublicLeadCapture from "./pages/PublicLeadCapture";
 import Integrations from "./pages/Integrations";
 import Funnel from "./pages/Funnel";
 import Analytics from "./pages/Analytics";
+import Assistant from "./pages/Assistant";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -80,6 +81,12 @@ function Router() {
       <Route path="/analytics">
         <DashboardLayout>
           <Analytics />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/assistant">
+        <DashboardLayout>
+          <Assistant />
         </DashboardLayout>
       </Route>
       

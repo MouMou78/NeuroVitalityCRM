@@ -482,6 +482,18 @@ export const appRouter = router({
       }),
   }),
   
+  assistant: router({
+    query: protectedProcedure
+      .input(z.object({ query: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const { processAssistantQuery } = await import("./ai-assistant");
+        return processAssistantQuery(input.query, {
+          tenantId: ctx.user.tenantId,
+          userId: ctx.user.id,
+        });
+      }),
+  }),
+  
   integrations: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return db.getIntegrationsByTenant(ctx.user.tenantId);

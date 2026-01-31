@@ -158,7 +158,7 @@ export type InsertEvent = typeof events.$inferInsert;
 export const integrations = mysqlTable("integrations", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
-  provider: mysqlEnum("provider", ["google", "amplemarket"]).notNull(),
+  provider: mysqlEnum("provider", ["google", "amplemarket", "whatsapp"]).notNull(),
   status: mysqlEnum("status", ["connected", "disconnected", "error"]).default("disconnected").notNull(),
   config: json("config").$type<Record<string, any>>().default({}),
   oauthTokens: json("oauthTokens").$type<Record<string, any>>(),
