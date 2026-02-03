@@ -1,0 +1,1 @@
+ALTER TABLE `people` ADD `engagementScore` int DEFAULT 0;

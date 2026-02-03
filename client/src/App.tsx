@@ -25,6 +25,8 @@ import Automation from "./pages/Automation";
 import Sequences from "./pages/Sequences";
 import SequenceBuilder from "./pages/SequenceBuilder";
 import CustomFields from "./pages/CustomFields";
+import ActivityFeed from "./pages/ActivityFeed";
+import EmailGenerator from "./pages/EmailGenerator";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -149,6 +151,18 @@ function Router() {
       <Route path="/custom-fields">
         <DashboardLayout>
           <CustomFields />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/activity">
+        <DashboardLayout>
+          <ActivityFeed />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/email-generator">
+        <DashboardLayout>
+          <EmailGenerator />
         </DashboardLayout>
       </Route>
       

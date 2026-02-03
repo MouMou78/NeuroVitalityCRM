@@ -98,6 +98,7 @@ export const people = mysqlTable("people", {
   mailbox: varchar("mailbox", { length: 320 }),
   contactUrl: varchar("contactUrl", { length: 500 }),
   replied: boolean("replied").default(false),
+  engagementScore: int("engagementScore").default(0),
   lastStageExecuted: int("lastStageExecuted"),
   lastStageExecutedAt: timestamp("lastStageExecutedAt"),
   notes: text("notes"),

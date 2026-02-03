@@ -363,3 +363,36 @@
 - [x] Write and run tests for sequences feature
 - [x] Write and run tests for custom fields feature
 - [x] Verify all features work in browser
+
+## New Features - Phase 3
+
+### Contact Scoring System
+- [x] Design scoring algorithm based on engagement signals
+- [x] Create score calculation logic (opens, replies, meetings, etc.)
+- [x] Add score field to contact records
+- [x] Display score badges in People list
+- [ ] Show score breakdown in contact detail view
+- [ ] Add score-based filtering and sorting
+
+### Activity Feed
+- [x] Design unified activity timeline schema
+- [x] Create activity feed component
+- [x] Aggregate activities from contacts, deals, sequences, moments
+- [ ] Add real-time activity updates
+- [x] Implement activity filtering by type (search)
+- [x] Add activity search functionality
+
+### AI Email Generator
+- [x] Design training interface for email examples
+- [x] Create email generation endpoint using LLM
+- [x] Build training data storage system (basic)
+- [x] Add style preference configuration (basic)
+- [x] Create email generation UI
+- [x] Implement example management (add/delete)
+- [x] Add context variables (contact info, company, role)
+
+### Testing
+- [x] Write and run tests for contact scoring
+- [x] Write and run tests for activity feed
+- [x] Write and run tests for email generator
+- [x] Verify all features work in browser

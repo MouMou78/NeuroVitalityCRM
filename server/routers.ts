@@ -8,6 +8,8 @@ import { hashPassword, verifyPassword, parseTriggerDate } from "./utils";
 import { TRPCError } from "@trpc/server";
 import { processMoment } from "./rules-engine";
 import { computeFunnelStage, groupThreadsByStage, computeVelocity } from "./funnel";
+import { calculateEngagementScore, getScoreBreakdown } from "./scoring";
+import { invokeLLM } from "./_core/llm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -123,6 +125,83 @@ export const appRouter = router({
         return db.createPerson({
           tenantId: ctx.user.tenantId,
           ...input,
+        });
+      }),
+    
+    updateScore: protectedProcedure
+      .input(z.object({ personId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const person = await db.getPersonById(input.personId);
+        if (!person) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+        }
+
+        // Get moments for this person to calculate engagement
+        const threads = await db.getThreadsByPerson(ctx.user.tenantId, input.personId);
+        let emailOpens = person.numberOfOpens || 0;
+        let emailReplies = person.replied ? 1 : 0;
+        let linkClicks = 0;
+        let lastActivityDate: Date | undefined;
+
+        for (const thread of threads) {
+          const moments = await db.getMomentsByThread(ctx.user.tenantId, thread.id);
+          for (const moment of moments) {
+            if (moment.type === "email_sent") emailOpens++;
+            if (moment.type === "reply_received") emailReplies++;
+            // Link clicks tracked in metadata
+            if (moment.timestamp && (!lastActivityDate || moment.timestamp > lastActivityDate)) {
+              lastActivityDate = moment.timestamp;
+            }
+          }
+        }
+
+        const score = calculateEngagementScore({
+          emailOpens,
+          emailReplies,
+          meetingsBooked: person.meetingBooked ? 1 : 0,
+          linkClicks,
+          lastActivityDate,
+        });
+
+        // Update person's score
+        await db.updatePerson(input.personId, { engagementScore: score });
+
+        return { score };
+      }),
+    
+    getScoreBreakdown: protectedProcedure
+      .input(z.object({ personId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const person = await db.getPersonById(input.personId);
+        if (!person) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+        }
+
+        // Get moments for this person to calculate engagement
+        const threads = await db.getThreadsByPerson(ctx.user.tenantId, input.personId);
+        let emailOpens = person.numberOfOpens || 0;
+        let emailReplies = person.replied ? 1 : 0;
+        let linkClicks = 0;
+        let lastActivityDate: Date | undefined;
+
+        for (const thread of threads) {
+          const moments = await db.getMomentsByThread(ctx.user.tenantId, thread.id);
+          for (const moment of moments) {
+            if (moment.type === "email_sent") emailOpens++;
+            if (moment.type === "reply_received") emailReplies++;
+            // Link clicks tracked in metadata
+            if (moment.timestamp && (!lastActivityDate || moment.timestamp > lastActivityDate)) {
+              lastActivityDate = moment.timestamp;
+            }
+          }
+        }
+
+        return getScoreBreakdown({
+          emailOpens,
+          emailReplies,
+          meetingsBooked: person.meetingBooked ? 1 : 0,
+          linkClicks,
+          lastActivityDate,
         });
       }),
     
@@ -650,6 +729,118 @@ export const appRouter = router({
         // Placeholder for creating a sequence
         return { success: true, id: `seq-${Date.now()}` };
       }),
+  }),
+  
+  emailGenerator: router({
+    listExamples: protectedProcedure.query(async ({ ctx }) => {
+      // Return stored examples (would be in database in production)
+      return [];
+    }),
+    
+    getStylePreferences: protectedProcedure.query(async ({ ctx }) => {
+      // Return style preferences (would be in database in production)
+      return { tone: "professional", length: "medium" };
+    }),
+    
+    createExample: protectedProcedure
+      .input(z.object({
+        subject: z.string(),
+        body: z.string(),
+        context: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Store example (would be in database in production)
+        return { success: true, id: `example-${Date.now()}` };
+      }),
+    
+    deleteExample: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        // Delete example (would be in database in production)
+        return { success: true };
+      }),
+    
+    updateStylePreferences: protectedProcedure
+      .input(z.object({
+        tone: z.string().optional(),
+        length: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Update style preferences (would be in database in production)
+        return { success: true };
+      }),
+    
+    generate: protectedProcedure
+      .input(z.object({
+        context: z.string(),
+        contactInfo: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Generate email using LLM
+        const prompt = `You are an email writing assistant. Generate a professional email based on the following context:
+
+Context: ${input.context}
+${input.contactInfo ? `\nContact Information: ${input.contactInfo}` : ""}
+
+Generate a subject line and email body. Format your response as JSON with "subject" and "body" fields.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are a professional email writing assistant. Always respond with valid JSON containing 'subject' and 'body' fields." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "email_response",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  subject: { type: "string", description: "Email subject line" },
+                  body: { type: "string", description: "Email body content" },
+                },
+                required: ["subject", "body"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate email" });
+        }
+
+        const result = JSON.parse(typeof content === 'string' ? content : JSON.stringify(content));
+        return { subject: result.subject, body: result.body };
+      }),
+  }),
+  
+  activities: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      // Get all moments for this tenant and format as activities
+      const moments = await db.getMomentsByTenant(ctx.user.tenantId);
+      
+      // Enrich with person information
+      const activities = await Promise.all(
+        moments.map(async (moment) => {
+          const person = await db.getPersonById(moment.personId);
+          return {
+            id: moment.id,
+            type: moment.type,
+            timestamp: moment.timestamp,
+            personId: moment.personId,
+            personName: person?.fullName,
+            description: moment.source,
+            metadata: moment.metadata,
+          };
+        })
+      );
+      
+      // Sort by timestamp descending
+      return activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    }),
   }),
   
   customFields: router({

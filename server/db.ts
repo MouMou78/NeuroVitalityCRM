@@ -133,6 +133,13 @@ export async function getPersonById(id: string): Promise<Person | undefined> {
   return result[0];
 }
 
+export async function updatePerson(id: string, data: Partial<Omit<InsertPerson, "id" | "tenantId">>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(people).set(data).where(eq(people.id, id));
+}
+
 // ============ THREADS ============
 
 export async function createThread(data: Omit<InsertThread, "id">): Promise<Thread> {

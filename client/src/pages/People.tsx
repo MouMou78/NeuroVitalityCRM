@@ -173,7 +173,17 @@ export default function People() {
                             </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium truncate">{person.fullName}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium truncate">{person.fullName}</p>
+                              {person.engagementScore != null && person.engagementScore > 0 && (
+                                <Badge
+                                  variant={person.engagementScore >= 200 ? "destructive" : person.engagementScore >= 100 ? "default" : "secondary"}
+                                  className="text-xs"
+                                >
+                                  {person.engagementScore >= 200 ? "Hot" : person.engagementScore >= 100 ? "Warm" : "Active"}
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-xs md:text-sm text-muted-foreground truncate">{person.primaryEmail}</p>
                           </div>
                         </div>
