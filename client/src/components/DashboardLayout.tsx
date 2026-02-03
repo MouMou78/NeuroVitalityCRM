@@ -178,7 +178,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center justify-center min-w-0 flex-1">
-                  <img src="/1twenty-logo.png" alt="1twenty Consultancy" className="h-10 w-auto object-contain" />
+                  <img src="/1twenty-logo.png" alt="1twenty Consultancy" className="h-14 w-auto object-contain" />
                 </div>
               ) : null}
             </div>

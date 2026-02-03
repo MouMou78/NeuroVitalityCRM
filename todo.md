@@ -222,3 +222,6 @@
 - [x] Add "Amplemarket Accounts" link to sidebar
 - [x] Add "Amplemarket People" link to sidebar
 - [x] Test sidebar navigation to Amplemarket pages
+
+## UI Improvements
+- [x] Increase 1twenty logo size in sidebar for better visibility
