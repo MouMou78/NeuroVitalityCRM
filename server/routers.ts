@@ -1208,6 +1208,25 @@ Generate a subject line and email body. Format your response as JSON with "subje
           fileSize: input.fileSize,
         });
         
+        // Parse and notify mentioned users
+        const mentions = db.parseMentions(input.content);
+        if (mentions.length > 0 && mentions.some(m => m !== "ai" && m !== "assistant")) {
+          const regularMentions = mentions.filter(m => m !== "ai" && m !== "assistant");
+          const mentionedUserIds = await db.getUserIdsByUsernames(regularMentions, ctx.user.tenantId);
+          
+          for (const userId of mentionedUserIds) {
+            await db.createNotification({
+              id: randomUUID(),
+              tenantId: ctx.user.tenantId,
+              userId,
+              type: "mention",
+              messageId: message!.id,
+              channelId: input.channelId,
+              content: `${ctx.user.name || ctx.user.email} mentioned you: ${input.content.substring(0, 100)}`,
+            });
+          }
+        }
+        
         // Check if AI assistant was mentioned
         if (input.content.includes("@ai") || input.content.includes("@assistant")) {
           // Get recent messages for context
@@ -1344,6 +1363,105 @@ Generate a subject line and email body. Format your response as JSON with "subje
       .query(async ({ input }) => {
         const count = await db.getThreadReplyCount(input.messageId);
         return { count };
+      }),
+    
+    // Unread Tracking
+    markChannelAsRead: protectedProcedure
+      .input(z.object({
+        channelId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const success = await db.updateLastReadAt(input.channelId, ctx.user.id);
+        return { success };
+      }),
+    
+    getUnreadCount: protectedProcedure
+      .input(z.object({
+        channelId: z.string(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const count = await db.getUnreadCountForChannel(input.channelId, ctx.user.id);
+        return { count };
+      }),
+    
+    getUnreadCounts: protectedProcedure
+      .query(async ({ ctx }) => {
+        const counts = await db.getUnreadCountsForUser(ctx.user.id, ctx.user.tenantId);
+        return counts;
+      }),
+    
+    // Typing Indicators
+    updateTyping: protectedProcedure
+      .input(z.object({
+        channelId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const success = await db.updateTypingIndicator(input.channelId, ctx.user.id);
+        return { success };
+      }),
+    
+    getTypingUsers: protectedProcedure
+      .input(z.object({
+        channelId: z.string(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const users = await db.getTypingUsers(input.channelId, ctx.user.id);
+        return users;
+      }),
+    
+    clearTyping: protectedProcedure
+      .input(z.object({
+        channelId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const success = await db.clearTypingIndicator(input.channelId, ctx.user.id);
+        return { success };
+      }),
+    
+    // Notifications
+    getNotifications: protectedProcedure
+      .query(async ({ ctx }) => {
+        const notifications = await db.getUserNotifications(ctx.user.id);
+        return notifications;
+      }),
+    
+    getUnreadNotificationCount: protectedProcedure
+      .query(async ({ ctx }) => {
+        const count = await db.getUnreadNotificationCount(ctx.user.id);
+        return { count };
+      }),
+    
+    markNotificationAsRead: protectedProcedure
+      .input(z.object({
+        notificationId: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const success = await db.markNotificationAsRead(input.notificationId);
+        return { success };
+      }),
+    
+    markAllNotificationsAsRead: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const success = await db.markAllNotificationsAsRead(ctx.user.id);
+        return { success };
+      }),
+    
+    // Message Search
+    searchMessages: protectedProcedure
+      .input(z.object({
+        query: z.string().optional(),
+        channelId: z.string().optional(),
+        userId: z.string().optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const results = await db.searchMessages({
+          tenantId: ctx.user.tenantId,
+          ...input,
+        });
+        return results;
       }),
   }),
 });

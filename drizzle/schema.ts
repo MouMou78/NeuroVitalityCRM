@@ -501,3 +501,35 @@ export const messageReactions = mysqlTable("messageReactions", {
 
 export type MessageReaction = typeof messageReactions.$inferSelect;
 export type InsertMessageReaction = typeof messageReactions.$inferInsert;
+
+export const typingIndicators = mysqlTable("typingIndicators", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  channelId: varchar("channelId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  lastTypingAt: timestamp("lastTypingAt").defaultNow().notNull(),
+}, (table) => ({
+  channelUserIdx: unique("channel_user_typing_unique").on(table.channelId, table.userId),
+  channelIdx: index("channel_typing_idx").on(table.channelId),
+  lastTypingIdx: index("last_typing_idx").on(table.lastTypingAt),
+}));
+
+export type TypingIndicator = typeof typingIndicators.$inferSelect;
+export type InsertTypingIndicator = typeof typingIndicators.$inferInsert;
+
+export const notifications = mysqlTable("notifications", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  type: mysqlEnum("type", ["mention", "reply", "reaction"]).notNull(),
+  messageId: varchar("messageId", { length: 36 }),
+  channelId: varchar("channelId", { length: 36 }),
+  content: text("content"),
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userReadIdx: index("user_read_idx").on(table.userId, table.isRead),
+  createdIdx: index("created_idx").on(table.createdAt),
+}));
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

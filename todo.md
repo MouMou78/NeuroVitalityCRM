@@ -687,3 +687,45 @@
 - [ ] Write tests for DM functionality
 - [ ] Write tests for thread replies
 - [ ] Write tests for reactions and file uploads
+
+
+## Chat Enhancements - Phase 2
+
+### Unread Indicators
+- [x] Add unread count to channel list items
+- [ ] Add unread count to DM list items (deferred)
+- [x] Track last read timestamp per user per channel
+- [x] Update unread count when messages are viewed
+- [x] Add visual indicator (badge) for unread messages
+
+### Typing Indicators
+- [x] Add typing state tracking to backend
+- [x] Broadcast typing events to channel members
+- [x] Display "User is typing..." indicator in channel
+- [x] Auto-clear typing indicator after timeout
+- [x] Show multiple users typing when applicable
+
+### @Mentions and Notifications
+- [x] Parse @username mentions in message content
+- [x] Add mentions array to message schema
+- [x] Create notifications table for user alerts
+- [x] Send notification when user is mentioned
+- [ ] Add notification badge to user menu (UI pending)
+- [ ] Create notifications panel to view all mentions (UI pending)
+- [x] Mark notifications as read
+
+### Message Search and Filtering
+- [x] Add search input to chat interface
+- [x] Implement full-text search in messages
+- [x] Filter messages by user
+- [x] Filter messages by date range
+- [x] Filter messages by channel
+- [ ] Highlight search terms in results (deferred)
+- [ ] Add "jump to message" functionality (deferred)
+
+### Testing
+- [ ] Write tests for unread tracking
+- [ ] Write tests for typing indicators
+- [ ] Write tests for @mentions
+- [ ] Write tests for notifications
+- [ ] Write tests for message search

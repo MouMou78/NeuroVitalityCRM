@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `notifications` (\n\t`id` varchar(36) NOT NULL,\n\t`tenantId` varchar(36) NOT NULL,\n\t`userId` varchar(36) NOT NULL,\n\t`type` enum('mention','reply','reaction') NOT NULL,\n\t`messageId` varchar(36),\n\t`channelId` varchar(36),\n\t`content` text,\n\t`isRead` boolean NOT NULL DEFAULT false,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `notifications_id` PRIMARY KEY(`id`)\n);\n\nCREATE INDEX `user_read_idx` ON `notifications` (`userId`,`isRead`);\nCREATE INDEX `created_idx` ON `notifications` (`createdAt`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute CREATE TABLE `notifications` (\n\t`id` varchar(36) NOT NULL,\n\t`tenantId` varchar(36) NOT NULL,\n\t`userId` varchar(36) NOT NULL,\n\t`type` enum('mention','reply','reaction') NOT NULL,\n\t`messageId` varchar(36),\n\t`channelId` varchar(36),\n\t`content` text,\n\t`isRead` boolean NOT NULL DEFAULT false,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `notifications_id` PRIMARY KEY(`id`)\n);\n\nCREATE INDEX `user_read_idx` ON `notifications` (`userId`,`isRead`);\nCREATE INDEX `created_idx` ON `notifications` (`createdAt`);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2090
+}

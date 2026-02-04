@@ -882,3 +882,401 @@ export async function getThreadReplyCount(messageId: string) {
   
   return results[0]?.count || 0;
 }
+
+// Unread Message Tracking
+export async function updateLastReadAt(channelId: string, userId: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { channelMembers } = await import("../drizzle/schema");
+  const { and, eq } = await import("drizzle-orm");
+  
+  await db
+    .update(channelMembers)
+    .set({ lastReadAt: new Date() })
+    .where(
+      and(
+        eq(channelMembers.channelId, channelId),
+        eq(channelMembers.userId, userId)
+      )
+    );
+  
+  return true;
+}
+
+export async function getUnreadCountForChannel(channelId: string, userId: string) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const { channelMembers, messages } = await import("../drizzle/schema");
+  const { and, eq, gt, sql } = await import("drizzle-orm");
+  
+  // Get user's lastReadAt for this channel
+  const memberResults = await db
+    .select({ lastReadAt: channelMembers.lastReadAt })
+    .from(channelMembers)
+    .where(
+      and(
+        eq(channelMembers.channelId, channelId),
+        eq(channelMembers.userId, userId)
+      )
+    )
+    .limit(1);
+  
+  const lastReadAt = memberResults[0]?.lastReadAt;
+  if (!lastReadAt) {
+    // If never read, count all messages
+    const countResults = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(eq(messages.channelId, channelId));
+    return countResults[0]?.count || 0;
+  }
+  
+  // Count messages after lastReadAt
+  const countResults = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.channelId, channelId),
+        gt(messages.createdAt, lastReadAt)
+      )
+    );
+  
+  return countResults[0]?.count || 0;
+}
+
+export async function getUnreadCountsForUser(userId: string, tenantId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { channelMembers, messages, channels } = await import("../drizzle/schema");
+  const { and, eq, gt, sql } = await import("drizzle-orm");
+  
+  // Get all channels user is member of
+  const userChannels = await db
+    .select({
+      channelId: channelMembers.channelId,
+      lastReadAt: channelMembers.lastReadAt,
+    })
+    .from(channelMembers)
+    .where(eq(channelMembers.userId, userId));
+  
+  const unreadCounts = [];
+  
+  for (const { channelId, lastReadAt } of userChannels) {
+    let count = 0;
+    
+    if (!lastReadAt) {
+      // Never read - count all messages
+      const countResults = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(messages)
+        .where(eq(messages.channelId, channelId));
+      count = countResults[0]?.count || 0;
+    } else {
+      // Count messages after lastReadAt
+      const countResults = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(messages)
+        .where(
+          and(
+            eq(messages.channelId, channelId),
+            gt(messages.createdAt, lastReadAt)
+          )
+        );
+      count = countResults[0]?.count || 0;
+    }
+    
+    if (count > 0) {
+      unreadCounts.push({ channelId, unreadCount: count });
+    }
+  }
+  
+  return unreadCounts;
+}
+
+// Typing Indicators
+export async function updateTypingIndicator(channelId: string, userId: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { typingIndicators } = await import("../drizzle/schema");
+  const { randomUUID } = await import("crypto");
+  const { and, eq } = await import("drizzle-orm");
+  
+  try {
+    // Try to update existing indicator
+    const existing = await db
+      .select()
+      .from(typingIndicators)
+      .where(
+        and(
+          eq(typingIndicators.channelId, channelId),
+          eq(typingIndicators.userId, userId)
+        )
+      )
+      .limit(1);
+    
+    if (existing.length > 0) {
+      await db
+        .update(typingIndicators)
+        .set({ lastTypingAt: new Date() })
+        .where(
+          and(
+            eq(typingIndicators.channelId, channelId),
+            eq(typingIndicators.userId, userId)
+          )
+        );
+    } else {
+      // Insert new indicator
+      await db.insert(typingIndicators).values({
+        id: randomUUID(),
+        channelId,
+        userId,
+        lastTypingAt: new Date(),
+      });
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating typing indicator:", error);
+    return false;
+  }
+}
+
+export async function getTypingUsers(channelId: string, excludeUserId?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { typingIndicators, users } = await import("../drizzle/schema");
+  const { and, eq, gt, sql } = await import("drizzle-orm");
+  
+  // Get typing indicators from last 5 seconds
+  const fiveSecondsAgo = new Date(Date.now() - 5000);
+  
+  const conditions = [
+    eq(typingIndicators.channelId, channelId),
+    gt(typingIndicators.lastTypingAt, fiveSecondsAgo),
+  ];
+  
+  if (excludeUserId) {
+    const { ne } = await import("drizzle-orm");
+    conditions.push(ne(typingIndicators.userId, excludeUserId));
+  }
+  
+  const typingUsers = await db
+    .select({
+      userId: typingIndicators.userId,
+      userName: users.name,
+    })
+    .from(typingIndicators)
+    .leftJoin(users, eq(typingIndicators.userId, users.id))
+    .where(and(...conditions));
+  
+  return typingUsers;
+}
+
+export async function clearTypingIndicator(channelId: string, userId: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { typingIndicators } = await import("../drizzle/schema");
+  const { and, eq } = await import("drizzle-orm");
+  
+  await db
+    .delete(typingIndicators)
+    .where(
+      and(
+        eq(typingIndicators.channelId, channelId),
+        eq(typingIndicators.userId, userId)
+      )
+    );
+  
+  return true;
+}
+
+// Notifications
+export async function createNotification(data: {
+  id: string;
+  tenantId: string;
+  userId: string;
+  type: "mention" | "reply" | "reaction";
+  messageId?: string;
+  channelId?: string;
+  content?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { notifications } = await import("../drizzle/schema");
+  await db.insert(notifications).values(data);
+  return data;
+}
+
+export async function getUserNotifications(userId: string, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { notifications } = await import("../drizzle/schema");
+  const { eq, desc } = await import("drizzle-orm");
+  
+  return db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+}
+
+export async function getUnreadNotificationCount(userId: string) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const { notifications } = await import("../drizzle/schema");
+  const { and, eq, sql } = await import("drizzle-orm");
+  
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      )
+    );
+  
+  return result[0]?.count || 0;
+}
+
+export async function markNotificationAsRead(notificationId: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { notifications } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+  
+  await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(eq(notifications.id, notificationId));
+  
+  return true;
+}
+
+export async function markAllNotificationsAsRead(userId: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { notifications } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+  
+  await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(eq(notifications.userId, userId));
+  
+  return true;
+}
+
+// Parse @mentions from message content
+export function parseMentions(content: string): string[] {
+  const mentionRegex = /@(\w+)/g;
+  const mentions: string[] = [];
+  let match;
+  
+  while ((match = mentionRegex.exec(content)) !== null) {
+    mentions.push(match[1]);
+  }
+  
+  return mentions;
+}
+
+// Get user IDs from usernames
+export async function getUserIdsByUsernames(usernames: string[], tenantId: string): Promise<string[]> {
+  const db = await getDb();
+  if (!db || usernames.length === 0) return [];
+
+  const { users } = await import("../drizzle/schema");
+  const { and, eq, inArray, sql } = await import("drizzle-orm");
+  
+  // Extract name from email (before @)
+  const results = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(
+      and(
+        eq(users.tenantId, tenantId),
+        sql`SUBSTRING_INDEX(${users.email}, '@', 1) IN (${sql.join(usernames.map(u => sql`${u}`), sql`, `)})`
+      )
+    );
+  
+  return results.map(r => r.id);
+}
+
+// Message Search
+export async function searchMessages(params: {
+  tenantId: string;
+  query?: string;
+  channelId?: string;
+  userId?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { messages, users } = await import("../drizzle/schema");
+  const { and, eq, like, gte, lte, desc } = await import("drizzle-orm");
+  
+  const conditions = [eq(messages.tenantId, params.tenantId)];
+  
+  if (params.query) {
+    conditions.push(like(messages.content, `%${params.query}%`));
+  }
+  
+  if (params.channelId) {
+    conditions.push(eq(messages.channelId, params.channelId));
+  }
+  
+  if (params.userId) {
+    conditions.push(eq(messages.userId, params.userId));
+  }
+  
+  if (params.startDate) {
+    conditions.push(gte(messages.createdAt, params.startDate));
+  }
+  
+  if (params.endDate) {
+    conditions.push(lte(messages.createdAt, params.endDate));
+  }
+  
+  return db
+    .select({
+      id: messages.id,
+      tenantId: messages.tenantId,
+      channelId: messages.channelId,
+      userId: messages.userId,
+      content: messages.content,
+      threadId: messages.threadId,
+      fileUrl: messages.fileUrl,
+      fileName: messages.fileName,
+      fileType: messages.fileType,
+      fileSize: messages.fileSize,
+      createdAt: messages.createdAt,
+      updatedAt: messages.updatedAt,
+      deletedAt: messages.deletedAt,
+      user: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      },
+    })
+    .from(messages)
+    .leftJoin(users, eq(messages.userId, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(messages.createdAt))
+    .limit(params.limit || 50);
+}

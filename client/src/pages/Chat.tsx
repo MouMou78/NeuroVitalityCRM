@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Send, Hash, Lock, Plus, Users, Search, Smile, Bot, Circle, MessageSquare, CornerDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +39,16 @@ export default function Chat() {
   const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   // Fetch channels
   const { data: channels = [], refetch: refetchChannels } = trpc.chat.getChannels.useQuery();
+  
+  // Fetch unread counts
+  const { data: unreadCounts = [] } = trpc.chat.getUnreadCounts.useQuery(undefined, {
+    refetchInterval: 5000, // Poll every 5 seconds
+  });
   
   // Fetch DM conversations
   const { data: dmConversations = [] } = trpc.chat.getDirectMessageConversations.useQuery();
@@ -86,6 +93,29 @@ export default function Chat() {
   
   const addReactionMutation = trpc.chat.addReaction.useMutation();
   const removeReactionMutation = trpc.chat.removeReaction.useMutation();
+  const markAsReadMutation = trpc.chat.markChannelAsRead.useMutation();
+  const updateTypingMutation = trpc.chat.updateTyping.useMutation();
+  const clearTypingMutation = trpc.chat.clearTyping.useMutation();
+  
+  // Fetch typing users for selected channel
+  const { data: typingUsers = [] } = trpc.chat.getTypingUsers.useQuery(
+    { channelId: selectedChannelId! },
+    { 
+      enabled: !!selectedChannelId,
+      refetchInterval: 2000, // Poll every 2 seconds
+    }
+  );
+  
+  // Search messages
+  const { data: searchResults = [] } = trpc.chat.searchMessages.useQuery(
+    { 
+      query: searchQuery,
+      channelId: selectedChannelId || undefined,
+    },
+    { 
+      enabled: isSearching && searchQuery.trim().length > 0,
+    }
+  );
 
   const handleCreateChannel = () => {
     if (!newChannelName.trim()) return;
@@ -178,6 +208,13 @@ export default function Chat() {
   };
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
+  
+  // Mark channel as read when viewing it
+  useEffect(() => {
+    if (selectedChannelId) {
+      markAsReadMutation.mutate({ channelId: selectedChannelId });
+    }
+  }, [selectedChannelId, messages.length]); // Re-mark when new messages arrive
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-background">
@@ -255,14 +292,26 @@ export default function Chat() {
           </div>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search channels" className="pl-8" />
+            <Input 
+              placeholder="Search messages" 
+              className="pl-8" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  setIsSearching(true);
+                }
+              }}
+            />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
           {viewMode === "channels" ? (
             <div className="p-2 space-y-1">
-              {channels.map((channel) => (
+              {channels.map((channel) => {
+                const unreadCount = unreadCounts.find(uc => uc.channelId === channel.id)?.unreadCount || 0;
+                return (
                 <button
                   key={channel.id}
                   onClick={() => {
@@ -281,11 +330,17 @@ export default function Chat() {
                     <Lock className="h-4 w-4" />
                   )}
                   <span className="truncate flex-1 text-left">{channel.name}</span>
+                  {unreadCount > 0 && (
+                    <span className="flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                   <div title="AI Assistant is present">
                     <Bot className="h-3 w-3 text-primary" />
                   </div>
                 </button>
-              ))}
+                );
+              })}
               {channels.length === 0 && (
                 <div className="text-center text-sm text-muted-foreground py-8">
                   No channels yet. Create one to get started!
@@ -447,8 +502,25 @@ export default function Chat() {
 
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
+              {isSearching && searchQuery && (
+                <div className="mb-4 flex items-center justify-between bg-accent/50 p-2 rounded-md">
+                  <span className="text-sm">
+                    {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for "{searchQuery}"
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsSearching(false);
+                      setSearchQuery("");
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
               <div className="space-y-4">
-                {(selectedChannel ? messages : dmMessages).map((message: any) => {
+                {(isSearching ? searchResults : (selectedChannel ? messages : dmMessages)).map((message: any) => {
                   const isAI = message.userId === "ai-assistant-bot";
                   return (
                     <div key={message.id} className={`flex gap-3 ${isAI ? "bg-accent/30 -mx-4 px-4 py-3 rounded-lg" : ""}`}>
@@ -538,6 +610,17 @@ export default function Chat() {
                 )}
               </div>
             </ScrollArea>
+            
+            {/* Typing Indicator */}
+            {typingUsers.length > 0 && (
+              <div className="px-4 py-2 text-sm text-muted-foreground italic">
+                {typingUsers.length === 1
+                  ? `${typingUsers[0].userName || "Someone"} is typing...`
+                  : typingUsers.length === 2
+                  ? `${typingUsers[0].userName || "Someone"} and ${typingUsers[1].userName || "someone else"} are typing...`
+                  : `${typingUsers.length} people are typing...`}
+              </div>
+            )}
 
             {/* Message Input */}
             <div className="p-4 border-t">
@@ -592,10 +675,18 @@ export default function Chat() {
                   <Input
                     placeholder={selectedChannel ? `Message #${selectedChannel.name} (type @ai or @assistant to invoke AI)` : `Message ${selectedDmUserId}`}
                     value={messageContent}
-                    onChange={(e) => setMessageContent(e.target.value)}
+                    onChange={(e) => {
+                      setMessageContent(e.target.value);
+                      if (selectedChannelId && e.target.value.trim()) {
+                        updateTypingMutation.mutate({ channelId: selectedChannelId });
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
+                        if (selectedChannelId) {
+                          clearTypingMutation.mutate({ channelId: selectedChannelId });
+                        }
                         handleSendMessage();
                       }
                     }}

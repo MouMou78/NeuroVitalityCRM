@@ -85,6 +85,20 @@
       "when": 1770208677548,
       "tag": "0011_shocking_doorman",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1770209556625,
+      "tag": "0012_eminent_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1770209736931,
+      "tag": "0013_aspiring_starbolt",
+      "breakpoints": true
     }
   ]
 }

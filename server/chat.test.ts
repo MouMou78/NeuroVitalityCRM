@@ -336,4 +336,137 @@ describe("Chat Feature", () => {
       expect(messageWithFile?.fileName).toBe("image.png");
     });
   });
+
+  describe("Unread Tracking", () => {
+    let channelId: string;
+
+    beforeEach(async () => {
+      const channel = await caller.chat.createChannel({
+        name: "unread-test",
+        type: "public",
+      });
+      channelId = channel!.id;
+    });
+
+    it("should track unread messages", async () => {
+      // Send a message
+      await caller.chat.sendMessage({
+        channelId,
+        content: "Test message",
+      });
+
+      // Get unread count
+      const result = await caller.chat.getUnreadCount({ channelId });
+      expect(result.count).toBeGreaterThan(0);
+    });
+
+    it("should mark channel as read", async () => {
+      // Send a message
+      await caller.chat.sendMessage({
+        channelId,
+        content: "Test message",
+      });
+
+      // Mark as read
+      const result = await caller.chat.markChannelAsRead({ channelId });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("Typing Indicators", () => {
+    let channelId: string;
+
+    beforeEach(async () => {
+      const channel = await caller.chat.createChannel({
+        name: "typing-test",
+        type: "public",
+      });
+      channelId = channel!.id;
+    });
+
+    it("should update typing indicator", async () => {
+      const result = await caller.chat.updateTyping({ channelId });
+      expect(result.success).toBe(true);
+    });
+
+    it("should get typing users", async () => {
+      await caller.chat.updateTyping({ channelId });
+      const users = await caller.chat.getTypingUsers({ channelId });
+      expect(Array.isArray(users)).toBe(true);
+    });
+
+    it("should clear typing indicator", async () => {
+      await caller.chat.updateTyping({ channelId });
+      const result = await caller.chat.clearTyping({ channelId });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("Notifications", () => {
+    it("should get user notifications", async () => {
+      const notifications = await caller.chat.getNotifications();
+      expect(Array.isArray(notifications)).toBe(true);
+    });
+
+    it("should get unread notification count", async () => {
+      const result = await caller.chat.getUnreadNotificationCount();
+      expect(typeof result.count).toBe("number");
+    });
+
+    it("should mark all notifications as read", async () => {
+      const result = await caller.chat.markAllNotificationsAsRead();
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("Message Search", () => {
+    let channelId: string;
+
+    beforeEach(async () => {
+      const channel = await caller.chat.createChannel({
+        name: "search-test",
+        type: "public",
+      });
+      channelId = channel!.id;
+
+      // Send some test messages
+      await caller.chat.sendMessage({
+        channelId,
+        content: "Hello world",
+      });
+
+      await caller.chat.sendMessage({
+        channelId,
+        content: "Testing search functionality",
+      });
+    });
+
+    it("should search messages by query", async () => {
+      const results = await caller.chat.searchMessages({
+        query: "search",
+      });
+
+      expect(Array.isArray(results)).toBe(true);
+      const foundMessage = results.find(m => m.content.includes("search"));
+      expect(foundMessage).toBeDefined();
+    });
+
+    it("should filter messages by channel", async () => {
+      const results = await caller.chat.searchMessages({
+        channelId,
+      });
+
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.every(m => m.channelId === channelId)).toBe(true);
+    });
+
+    it("should limit search results", async () => {
+      const results = await caller.chat.searchMessages({
+        channelId,
+        limit: 1,
+      });
+
+      expect(results.length).toBeLessThanOrEqual(1);
+    });
+  });
 });

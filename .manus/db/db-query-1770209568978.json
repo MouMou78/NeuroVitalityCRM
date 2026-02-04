@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `typingIndicators` (\n\t`id` varchar(36) NOT NULL,\n\t`channelId` varchar(36) NOT NULL,\n\t`userId` varchar(36) NOT NULL,\n\t`lastTypingAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `typingIndicators_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `channel_user_typing_unique` UNIQUE(`channelId`,`userId`)\n);\n\nCREATE INDEX `channel_typing_idx` ON `typingIndicators` (`channelId`);\nCREATE INDEX `last_typing_idx` ON `typingIndicators` (`lastTypingAt`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute CREATE TABLE `typingIndicators` (\n\t`id` varchar(36) NOT NULL,\n\t`channelId` varchar(36) NOT NULL,\n\t`userId` varchar(36) NOT NULL,\n\t`lastTypingAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `typingIndicators_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `channel_user_typing_unique` UNIQUE(`channelId`,`userId`)\n);\n\nCREATE INDEX `channel_typing_idx` ON `typingIndicators` (`channelId`);\nCREATE INDEX `last_typing_idx` ON `typingIndicators` (`lastTypingAt`);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1318
+}
