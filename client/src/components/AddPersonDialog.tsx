@@ -30,7 +30,9 @@ export function AddPersonDialog() {
   });
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
 
-  const { data: accounts } = trpc.accounts.list.useQuery();
+  const { data: accounts, error: accountsError } = trpc.accounts.list.useQuery(undefined, {
+    retry: false,
+  });
 
   // Auto-link account when company name matches
   useEffect(() => {

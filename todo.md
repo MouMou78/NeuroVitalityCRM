@@ -960,3 +960,8 @@
 - [x] Set default theme based on system preference
 - [ ] Ensure all UI elements work in both themes (pending testing)
 - [ ] Test readability across both themes (pending testing)
+
+
+## Bug Fixes
+
+- [x] Fix AddPersonDialog account query error when no accounts exist
