@@ -64,6 +64,13 @@
       "when": 1770166778902,
       "tag": "0008_lyrical_darwin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1770200132239,
+      "tag": "0009_slim_exiles",
+      "breakpoints": true
     }
   ]
 }

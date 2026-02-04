@@ -23,7 +23,7 @@ import AccountDetail from "./pages/AccountDetail";
 import BulkImport from "./pages/BulkImport";
 import Automation from "./pages/Automation";
 import Sequences from "./pages/Sequences";
-import SequenceBuilder from "./pages/SequenceBuilder";
+import SequenceNew from "./pages/SequenceNew";
 import CustomFields from "./pages/CustomFields";
 import ActivityFeed from "./pages/ActivityFeed";
 import EmailGenerator from "./pages/EmailGenerator";
@@ -132,14 +132,14 @@ function Router() {
       
       <Route path="/sequences/new">
         <DashboardLayout>
-          <SequenceBuilder />
+          <SequenceNew />
         </DashboardLayout>
       </Route>
       
       <Route path="/sequences/:id">
         {(params) => (
           <DashboardLayout>
-            <SequenceBuilder />
+            <SequenceNew />
           </DashboardLayout>
         )}
       </Route>

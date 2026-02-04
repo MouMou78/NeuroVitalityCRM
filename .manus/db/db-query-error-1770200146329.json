@@ -1,0 +1,11 @@
+{
+  "query": "CREATE TABLE `trackingEvents` (\n\t`id` varchar(36) NOT NULL,\n\t`tenantId` varchar(36) NOT NULL,\n\t`personId` varchar(36),\n\t`accountId` varchar(36),\n\t`eventType` enum('email_sent','email_opened','email_clicked','email_replied','page_view','demo_request','pricing_view','content_download','webinar_registration','trial_started') NOT NULL,\n\t`eventData` json DEFAULT ('{}'),\n\t`timestamp` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `trackingEvents_id` PRIMARY KEY(`id`)\n);\nCREATE INDEX `tenant_person_idx` ON `trackingEvents` (`tenantId`,`personId`);\nCREATE INDEX `tenant_account_idx` ON `trackingEvents` (`tenantId`,`accountId`);\nCREATE INDEX `tenant_timestamp_idx` ON `trackingEvents` (`tenantId`,`timestamp`);\nCREATE INDEX `tenant_type_idx` ON `trackingEvents` (`tenantId`,`eventType`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute CREATE TABLE `trackingEvents` (\n\t`id` varchar(36) NOT NULL,\n\t`tenantId` varchar(36) NOT NULL,\n\t`personId` varchar(36),\n\t`accountId` varchar(36),\n\t`eventType` enum('email_sent','email_opened','email_clicked','email_replied','page_view','demo_request','pricing_view','content_download','webinar_registration','trial_started') NOT NULL,\n\t`eventData` json DEFAULT ('{}'),\n\t`timestamp` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `trackingEvents_id` PRIMARY KEY(`id`)\n);\nCREATE INDEX `tenant_person_idx` ON `trackingEvents` (`tenantId`,`personId`);\nCREATE INDEX `tenant_account_idx` ON `trackingEvents` (`tenantId`,`accountId`);\nCREATE INDEX `tenant_timestamp_idx` ON `trackingEvents` (`tenantId`,`timestamp`);\nCREATE INDEX `tenant_type_idx` ON `trackingEvents` (`tenantId`,`eventType`);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 7 column 32 near \"'{}'),",
+    "\t`timestamp` timestamp NOT NULL DEFAULT (now()),",
+    "\tCONSTRAINT `trackingEvents_id` PRIMARY KEY(`id`)",
+    ")\""
+  ]
+}

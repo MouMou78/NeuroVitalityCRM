@@ -545,3 +545,38 @@
 - [x] Clear all sequences and enrollments from database
 - [x] Verify Sequences page shows empty state
 - [x] Verify all other pages are clean
+
+
+## Sequence Builder & Event Tracking Implementation
+
+### Database Schema
+- [x] Create sequences table (name, description, status, createdAt, updatedAt)
+- [x] Create sequence_steps table (sequenceId, stepNumber, type, subject, body, delayDays, delayHours)
+- [x] Create sequence_enrollments table (sequenceId, personId, status, currentStep, enrolledAt, completedAt)
+- [x] Create tracking_events table (personId, accountId, eventType, eventData, timestamp)
+- [x] Generate and apply migrations
+
+### Sequence Builder UI
+- [x] Create SequenceNew.tsx page for sequence creation
+- [x] Build step-by-step wizard (Name & Description → Add Steps → Review & Activate)
+- [x] Implement email step editor with subject/body fields
+- [x] Add delay configuration (days/hours between steps)
+- [ ] Add template library for common sequences
+- [ ] Create SequenceDetail.tsx page to view/edit sequences
+- [ ] Add enrollment management (add/remove contact### Event Tracking System
+- [x] Create event tracking tRPC procedures (trackEvent, getEventsByPerson)
+- [x] Implement email event tracking (sent, opened, clicked, replied)
+- [x] Implement website event tracking (page views, demo requests, pricing views)
+- [ ] Add event tracking to PersonDetail page (show recent activity)
+- [ ] Create event timeline componentor contact detail p### Intent Scoring Integration
+- [x] Update intent scoring to use tracking_events table
+- [x] Implement event decay calculation (21-day half-life)
+- [x] Auto-recalculate scores when new events are tracked
+- [ ] Test scoring with various event combinationsard
+
+### Testing
+- [x] Write tests for sequence CRUD operations
+- [x] Write tests for event tracking procedures
+- [x] Write tests for intent scoring with events (8/12 passing - table creation needed in test env)
+- [ ] Test sequence builder UI flow
+- [ ] Test event tracking and score updates

@@ -382,3 +382,33 @@ export const automationExecutions = mysqlTable("automationExecutions", {
 
 export type AutomationExecution = typeof automationExecutions.$inferSelect;
 export type InsertAutomationExecution = typeof automationExecutions.$inferInsert;
+
+// Tracking Events for Intent Scoring
+export const trackingEvents = mysqlTable("trackingEvents", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  personId: varchar("personId", { length: 36 }),
+  accountId: varchar("accountId", { length: 36 }),
+  eventType: mysqlEnum("eventType", [
+    "email_sent",
+    "email_opened",
+    "email_clicked",
+    "email_replied",
+    "page_view",
+    "demo_request",
+    "pricing_view",
+    "content_download",
+    "webinar_registration",
+    "trial_started"
+  ]).notNull(),
+  eventData: json("eventData").$type<Record<string, any>>().default({}),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  tenantPersonIdx: index("tenant_person_idx").on(table.tenantId, table.personId),
+  tenantAccountIdx: index("tenant_account_idx").on(table.tenantId, table.accountId),
+  tenantTimestampIdx: index("tenant_timestamp_idx").on(table.tenantId, table.timestamp),
+  tenantTypeIdx: index("tenant_type_idx").on(table.tenantId, table.eventType),
+}));
+
+export type TrackingEvent = typeof trackingEvents.$inferSelect;
+export type InsertTrackingEvent = typeof trackingEvents.$inferInsert;

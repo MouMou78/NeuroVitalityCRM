@@ -60,6 +60,21 @@ const INTENT_TIER_RULES = [
 
 // Event scoring from blueprint
 const EVENT_POINTS: Record<string, number> = {
+  // Email events
+  "email_sent": 0,
+  "email_opened": 1,
+  "email_clicked": 5,
+  "email_replied": 15,
+  
+  // Website events
+  "page_view": 1,
+  "pricing_view": 8,
+  "demo_request": 20,
+  "content_download": 6,
+  "webinar_registration": 15,
+  "trial_started": 25,
+  
+  // Legacy dotted format for backwards compatibility
   "website.page_view": 1,
   "website.pricing_view": 8,
   "website.demo_view": 6,

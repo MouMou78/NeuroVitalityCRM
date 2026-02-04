@@ -382,6 +382,14 @@ export async function getNextActionsByThread(tenantId: string, threadId: string)
 
 // ============ ACCOUNTS ============
 
+export async function getAccountById(id: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1);
+  return result[0] || null;
+}
+
 export async function getAccountsBySource(tenantId: string, source: string): Promise<any[]> {
   const db = await getDb();
   if (!db) return [];
@@ -414,4 +422,150 @@ export async function getAccountsByTenant(tenantId: string) {
   const database = await getDb();
   if (!database) return [];
   return database.select().from(accounts).where(eq(accounts.tenantId, tenantId));
+}
+
+
+// ============ EMAIL SEQUENCES ============
+
+export async function createEmailSequence(tenantId: string, data: { name: string; description?: string; status?: "active" | "paused" | "archived" }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { emailSequences } = await import("../drizzle/schema");
+  const id = nanoid();
+  await db.insert(emailSequences).values({
+    id,
+    tenantId,
+    name: data.name,
+    description: data.description,
+    status: data.status || "active",
+  });
+
+  const result = await db.select().from(emailSequences).where(eq(emailSequences.id, id)).limit(1);
+  return result[0]!;
+}
+
+export async function createEmailSequenceStep(sequenceId: string, step: { stepNumber: number; subject: string; body: string; delayDays: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { emailSequenceSteps } = await import("../drizzle/schema");
+  const id = nanoid();
+  await db.insert(emailSequenceSteps).values({
+    id,
+    sequenceId,
+    stepNumber: step.stepNumber,
+    subject: step.subject,
+    body: step.body,
+    delayDays: step.delayDays,
+  });
+
+  const result = await db.select().from(emailSequenceSteps).where(eq(emailSequenceSteps.id, id)).limit(1);
+  return result[0]!;
+}
+
+export async function getEmailSequencesByTenant(tenantId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { emailSequences } = await import("../drizzle/schema");
+  return db
+    .select()
+    .from(emailSequences)
+    .where(eq(emailSequences.tenantId, tenantId))
+    .orderBy(desc(emailSequences.createdAt));
+}
+
+export async function getEmailSequenceById(id: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { emailSequences } = await import("../drizzle/schema");
+  const result = await db.select().from(emailSequences).where(eq(emailSequences.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function getEmailSequenceSteps(sequenceId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { emailSequenceSteps } = await import("../drizzle/schema");
+  return db
+    .select()
+    .from(emailSequenceSteps)
+    .where(eq(emailSequenceSteps.sequenceId, sequenceId))
+    .orderBy(emailSequenceSteps.stepNumber);
+}
+
+export async function getEmailSequenceEnrollments(tenantId: string, sequenceId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { emailSequenceEnrollments } = await import("../drizzle/schema");
+  return db
+    .select()
+    .from(emailSequenceEnrollments)
+    .where(and(
+      eq(emailSequenceEnrollments.tenantId, tenantId),
+      eq(emailSequenceEnrollments.sequenceId, sequenceId)
+    ))
+    .orderBy(desc(emailSequenceEnrollments.enrolledAt));
+}
+
+// ============ TRACKING EVENTS ============
+
+export async function createTrackingEvent(tenantId: string, data: {
+  personId?: string;
+  accountId?: string;
+  eventType: string;
+  eventData?: Record<string, any>;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { trackingEvents } = await import("../drizzle/schema");
+  const id = nanoid();
+  await db.insert(trackingEvents).values({
+    id,
+    tenantId,
+    personId: data.personId,
+    accountId: data.accountId,
+    eventType: data.eventType as any,
+    eventData: data.eventData || {},
+  });
+
+  const result = await db.select().from(trackingEvents).where(eq(trackingEvents.id, id)).limit(1);
+  return result[0]!;
+}
+
+export async function getTrackingEventsByPerson(tenantId: string, personId: string, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { trackingEvents } = await import("../drizzle/schema");
+  return db
+    .select()
+    .from(trackingEvents)
+    .where(and(
+      eq(trackingEvents.tenantId, tenantId),
+      eq(trackingEvents.personId, personId)
+    ))
+    .orderBy(desc(trackingEvents.timestamp))
+    .limit(limit);
+}
+
+export async function getTrackingEventsByAccount(tenantId: string, accountId: string, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { trackingEvents } = await import("../drizzle/schema");
+  return db
+    .select()
+    .from(trackingEvents)
+    .where(and(
+      eq(trackingEvents.tenantId, tenantId),
+      eq(trackingEvents.accountId, accountId)
+    ))
+    .orderBy(desc(trackingEvents.timestamp))
+    .limit(limit);
 }

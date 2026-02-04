@@ -754,15 +754,41 @@ export const appRouter = router({
   
   sequences: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      // Return empty array for now - sequences are hardcoded in UI
-      return [];
+      const sequences = await db.getEmailSequencesByTenant(ctx.user.tenantId);
+      
+      // Get step counts and enrollment counts for each sequence
+      const sequencesWithStats = await Promise.all(
+        sequences.map(async (seq) => {
+          const steps = await db.getEmailSequenceSteps(seq.id);
+          const enrollments = await db.getEmailSequenceEnrollments(ctx.user.tenantId, seq.id);
+          
+          return {
+            id: seq.id,
+            name: seq.name,
+            description: seq.description,
+            status: seq.status,
+            stepCount: steps.length,
+            enrolledCount: enrollments.filter(e => e.status === "active").length,
+            openRate: 0, // TODO: Calculate from email events
+            replyRate: 0, // TODO: Calculate from email events
+            createdAt: seq.createdAt,
+          };
+        })
+      );
+      
+      return sequencesWithStats;
     }),
     
     get: protectedProcedure
       .input(z.object({ id: z.string() }))
       .query(async ({ input, ctx }) => {
-        // Placeholder for getting a single sequence
-        return null;
+        const sequence = await db.getEmailSequenceById(input.id);
+        if (!sequence || sequence.tenantId !== ctx.user.tenantId) {
+          return null;
+        }
+        
+        const steps = await db.getEmailSequenceSteps(sequence.id);
+        return { ...sequence, steps };
       }),
     
     create: protectedProcedure
@@ -780,8 +806,26 @@ export const appRouter = router({
         })),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Placeholder for creating a sequence
-        return { success: true, id: `seq-${Date.now()}` };
+        // Create the sequence
+        const sequence = await db.createEmailSequence(ctx.user.tenantId, {
+          name: input.name,
+          description: input.description,
+          status: "active",
+        });
+        
+        // Create the steps (only email steps for now)
+        const emailSteps = input.steps.filter(s => s.type === "email" && s.subject && s.body);
+        for (let i = 0; i < emailSteps.length; i++) {
+          const step = emailSteps[i];
+          await db.createEmailSequenceStep(sequence.id, {
+            stepNumber: i + 1,
+            subject: step.subject!,
+            body: step.body!,
+            delayDays: step.waitDays || 0,
+          });
+        }
+        
+        return { success: true, id: sequence.id };
       }),
   }),
   
@@ -994,6 +1038,91 @@ Generate a subject line and email body. Format your response as JSON with "subje
       .mutation(async ({ ctx }) => {
         const { syncApolloEngagements } = await import("./apollo");
         return syncApolloEngagements(ctx.user.tenantId, ctx.user.id);
+      }),
+  }),
+  
+  tracking: router({
+    trackEvent: protectedProcedure
+      .input(z.object({
+        personId: z.string().optional(),
+        accountId: z.string().optional(),
+        eventType: z.enum([
+          "email_sent",
+          "email_opened",
+          "email_clicked",
+          "email_replied",
+          "page_view",
+          "demo_request",
+          "pricing_view",
+          "content_download",
+          "webinar_registration",
+          "trial_started"
+        ]),
+        eventData: z.record(z.string(), z.any()).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const event = await db.createTrackingEvent(ctx.user.tenantId, {
+          personId: input.personId,
+          accountId: input.accountId,
+          eventType: input.eventType,
+          eventData: input.eventData,
+        });
+        
+        // If this is a person event, recalculate their intent score
+        if (input.personId) {
+          const person = await db.getPersonById(input.personId);
+          if (person && person.tenantId === ctx.user.tenantId) {
+            const events = await db.getTrackingEventsByPerson(ctx.user.tenantId, input.personId);
+            const account = person.accountId ? await db.getAccountById(person.accountId) : null;
+            const { scoreContact } = await import("./lead-scoring");
+            
+            // Convert tracking events to scoring format
+            const scoringEvents = events.map(e => ({
+              type: e.eventType,
+              timestamp: new Date(e.timestamp),
+            }));
+            
+            const scores = await scoreContact(person, account, scoringEvents);
+            
+            // Update person with new scores
+            await db.upsertPerson(ctx.user.tenantId, person.primaryEmail, {
+              intentScore: scores.intentScore,
+              intentTier: scores.intentTier,
+              combinedScore: scores.combinedScore,
+              scoreReasons: scores.scoreReasons,
+            });
+          }
+        }
+        
+        return { success: true, eventId: event.id };
+      }),
+    
+    getEventsByPerson: protectedProcedure
+      .input(z.object({
+        personId: z.string(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const events = await db.getTrackingEventsByPerson(
+          ctx.user.tenantId,
+          input.personId,
+          input.limit
+        );
+        return events;
+      }),
+    
+    getEventsByAccount: protectedProcedure
+      .input(z.object({
+        accountId: z.string(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const events = await db.getTrackingEventsByAccount(
+          ctx.user.tenantId,
+          input.accountId,
+          input.limit
+        );
+        return events;
       }),
   }),
 });
