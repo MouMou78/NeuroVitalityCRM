@@ -1489,3 +1489,77 @@ export async function clearPasswordResetToken(userId: string): Promise<void> {
     })
     .where(eq(users.id, userId));
 }
+
+
+// ============ EMAIL ACCOUNTS ============
+
+export async function createEmailAccount(data: {
+  tenantId: string;
+  userId: string;
+  email: string;
+  provider: string;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  imapHost: string;
+  imapPort: number;
+}): Promise<any> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { emailAccounts } = await import("../drizzle/schema");
+  const id = nanoid();
+  
+  // If this is the first email account, make it default
+  const existing = await db.select().from(emailAccounts)
+    .where(eq(emailAccounts.userId, data.userId))
+    .limit(1);
+  const isDefault = existing.length === 0;
+
+  await db.insert(emailAccounts).values({
+    id,
+    ...data,
+    isDefault,
+  });
+
+  const result = await db.select().from(emailAccounts)
+    .where(eq(emailAccounts.id, id))
+    .limit(1);
+  return result[0]!;
+}
+
+export async function getEmailAccountsByUser(userId: string): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { emailAccounts } = await import("../drizzle/schema");
+  return db.select().from(emailAccounts)
+    .where(eq(emailAccounts.userId, userId))
+    .orderBy(desc(emailAccounts.createdAt));
+}
+
+export async function deleteEmailAccount(accountId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { emailAccounts } = await import("../drizzle/schema");
+  await db.delete(emailAccounts).where(eq(emailAccounts.id, accountId));
+}
+
+export async function setDefaultEmailAccount(userId: string, accountId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { emailAccounts } = await import("../drizzle/schema");
+  
+  // Unset all defaults for this user
+  await db.update(emailAccounts)
+    .set({ isDefault: false })
+    .where(eq(emailAccounts.userId, userId));
+
+  // Set the new default
+  await db.update(emailAccounts)
+    .set({ isDefault: true })
+    .where(eq(emailAccounts.id, accountId));
+}

@@ -855,3 +855,39 @@
 - [ ] Add email tracking (opens, clicks) (deferred)
 - [ ] Create campaign analytics dashboard (deferred)
 - [ ] Add unsubscribe link handling (deferred)
+
+
+## Email Integration & Marketing Campaigns
+
+### Personal Email Integration
+- [ ] Create email accounts connection page in Settings
+- [ ] Add Gmail OAuth flow for easy connection
+- [ ] Add manual SMTP/IMAP configuration option
+- [ ] Display connected email accounts list
+- [ ] Add set default email account option
+- [ ] Add disconnect email account option
+- [ ] Test email sending from personal accounts
+
+### Marketing Campaigns
+- [ ] Create campaigns list page
+- [ ] Add create new campaign button and form
+- [ ] Build email template editor with rich text
+- [ ] Add recipient selection (all contacts, filtered, manual)
+- [ ] Implement campaign scheduling
+- [ ] Add campaign preview before sending
+- [ ] Implement campaign sending logic
+- [ ] Create campaign analytics view (opens, clicks, bounces)
+- [ ] Add campaign status tracking (draft, scheduled, sending, sent)
+
+## User Management Dashboard
+
+### Admin Dashboard
+- [ ] Create user management page (admin only)
+- [ ] Display all users list with roles
+- [ ] Add user search and filtering
+- [ ] Add edit user role functionality
+- [ ] Add disable/enable user account
+- [ ] Add reset user 2FA option
+- [ ] Display user activity logs
+- [ ] Add invite new user functionality
+- [ ] Show authentication statistics

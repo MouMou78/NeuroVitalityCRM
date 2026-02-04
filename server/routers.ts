@@ -1827,6 +1827,52 @@ Generate a subject line and email body. Format your response as JSON with "subje
         return results;
       }),
   }),
+
+  email: router({
+    listAccounts: protectedProcedure
+      .query(async ({ ctx }) => {
+        const accounts = await db.getEmailAccountsByUser(ctx.user.id);
+        return accounts;
+      }),
+    
+    addAccount: protectedProcedure
+      .input(z.object({
+        email: z.string().email(),
+        provider: z.string(),
+        smtpHost: z.string(),
+        smtpPort: z.number(),
+        smtpUser: z.string(),
+        smtpPass: z.string(),
+        imapHost: z.string(),
+        imapPort: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const account = await db.createEmailAccount({
+          tenantId: ctx.user.tenantId,
+          userId: ctx.user.id,
+          ...input,
+        });
+        return account;
+      }),
+    
+    removeAccount: protectedProcedure
+      .input(z.object({
+        accountId: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.deleteEmailAccount(input.accountId);
+        return { success: true };
+      }),
+    
+    setDefaultAccount: protectedProcedure
+      .input(z.object({
+        accountId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.setDefaultEmailAccount(ctx.user.id, input.accountId);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

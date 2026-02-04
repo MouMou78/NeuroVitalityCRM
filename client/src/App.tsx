@@ -35,6 +35,7 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import EmailAccounts from "./pages/EmailAccounts";
 
 function Router() {
   return (
@@ -47,6 +48,13 @@ function Router() {
       
       {/* Public routes */}
       <Route path="/public/e/:slug" component={PublicLeadCapture} />
+      
+      {/* Settings routes */}
+      <Route path="/settings/email-accounts">
+        <DashboardLayout>
+          <EmailAccounts />
+        </DashboardLayout>
+      </Route>
       
       {/* Protected dashboard routes */}
       <Route path="/">
