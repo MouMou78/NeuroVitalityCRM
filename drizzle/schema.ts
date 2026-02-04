@@ -412,3 +412,88 @@ export const trackingEvents = mysqlTable("trackingEvents", {
 
 export type TrackingEvent = typeof trackingEvents.$inferSelect;
 export type InsertTrackingEvent = typeof trackingEvents.$inferInsert;
+
+
+// Team Chat System
+export const channels = mysqlTable("channels", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["public", "private"]).default("public").notNull(),
+  createdBy: varchar("createdBy", { length: 36 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  archivedAt: timestamp("archivedAt"),
+}, (table) => ({
+  tenantIdx: index("tenant_idx").on(table.tenantId),
+  tenantNameIdx: index("tenant_name_idx").on(table.tenantId, table.name),
+}));
+
+export type Channel = typeof channels.$inferSelect;
+export type InsertChannel = typeof channels.$inferInsert;
+
+export const channelMembers = mysqlTable("channelMembers", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  channelId: varchar("channelId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  role: mysqlEnum("role", ["admin", "member"]).default("member").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  lastReadAt: timestamp("lastReadAt"),
+}, (table) => ({
+  channelUserIdx: unique("channel_user_unique").on(table.channelId, table.userId),
+  userIdx: index("user_idx").on(table.userId),
+}));
+
+export type ChannelMember = typeof channelMembers.$inferSelect;
+export type InsertChannelMember = typeof channelMembers.$inferInsert;
+
+export const messages = mysqlTable("messages", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  channelId: varchar("channelId", { length: 36 }),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  content: text("content").notNull(),
+  threadId: varchar("threadId", { length: 36 }), // null for top-level, references another message for replies
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt"),
+  deletedAt: timestamp("deletedAt"),
+}, (table) => ({
+  tenantChannelIdx: index("tenant_channel_idx").on(table.tenantId, table.channelId),
+  channelCreatedIdx: index("channel_created_idx").on(table.channelId, table.createdAt),
+  threadIdx: index("thread_idx").on(table.threadId),
+}));
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
+
+export const directMessages = mysqlTable("directMessages", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  senderId: varchar("senderId", { length: 36 }).notNull(),
+  recipientId: varchar("recipientId", { length: 36 }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  readAt: timestamp("readAt"),
+  deletedAt: timestamp("deletedAt"),
+}, (table) => ({
+  tenantSenderRecipientIdx: index("tenant_sender_recipient_idx").on(table.tenantId, table.senderId, table.recipientId),
+  tenantRecipientIdx: index("tenant_recipient_idx").on(table.tenantId, table.recipientId),
+  createdIdx: index("created_idx").on(table.createdAt),
+}));
+
+export type DirectMessage = typeof directMessages.$inferSelect;
+export type InsertDirectMessage = typeof directMessages.$inferInsert;
+
+export const messageReactions = mysqlTable("messageReactions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  messageId: varchar("messageId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  emoji: varchar("emoji", { length: 10 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  messageUserEmojiIdx: unique("message_user_emoji_unique").on(table.messageId, table.userId, table.emoji),
+  messageIdx: index("message_idx").on(table.messageId),
+}));
+
+export type MessageReaction = typeof messageReactions.$inferSelect;
+export type InsertMessageReaction = typeof messageReactions.$inferInsert;

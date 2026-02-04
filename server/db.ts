@@ -569,3 +569,101 @@ export async function getTrackingEventsByAccount(tenantId: string, accountId: st
     .orderBy(desc(trackingEvents.timestamp))
     .limit(limit);
 }
+
+
+// ============================================================================
+// Chat Functions
+// ============================================================================
+
+export async function getChannelsByTenant(tenantId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { channels } = await import("../drizzle/schema");
+  return db
+    .select()
+    .from(channels)
+    .where(eq(channels.tenantId, tenantId))
+    .orderBy(channels.name);
+}
+
+export async function getChannelById(channelId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { channels } = await import("../drizzle/schema");
+  const results = await db
+    .select()
+    .from(channels)
+    .where(eq(channels.id, channelId))
+    .limit(1);
+  return results[0] || null;
+}
+
+export async function createChannel(data: { id: string; tenantId: string; name: string; description?: string; type: "public" | "private"; createdBy: string }) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { channels } = await import("../drizzle/schema");
+  await db.insert(channels).values(data);
+  return getChannelById(data.id);
+}
+
+export async function getMessagesByChannel(channelId: string, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { messages, users } = await import("../drizzle/schema");
+  return db
+    .select({
+      id: messages.id,
+      tenantId: messages.tenantId,
+      channelId: messages.channelId,
+      userId: messages.userId,
+      content: messages.content,
+      threadId: messages.threadId,
+      createdAt: messages.createdAt,
+      updatedAt: messages.updatedAt,
+      deletedAt: messages.deletedAt,
+      user: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      },
+    })
+    .from(messages)
+    .leftJoin(users, eq(messages.userId, users.id))
+    .where(eq(messages.channelId, channelId))
+    .orderBy(messages.createdAt)
+    .limit(limit);
+}
+
+export async function createMessage(data: { id: string; tenantId: string; channelId: string; userId: string; content: string; threadId?: string }) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { messages } = await import("../drizzle/schema");
+  await db.insert(messages).values(data);
+  
+  const results = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.id, data.id))
+    .limit(1);
+  return results[0] || null;
+}
+
+export async function addChannelMember(data: { id: string; channelId: string; userId: string; role: "admin" | "member" }) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { channelMembers } = await import("../drizzle/schema");
+  await db.insert(channelMembers).values(data);
+  
+  const results = await db
+    .select()
+    .from(channelMembers)
+    .where(eq(channelMembers.id, data.id))
+    .limit(1);
+  return results[0] || null;
+}

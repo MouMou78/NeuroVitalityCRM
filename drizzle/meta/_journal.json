@@ -71,6 +71,13 @@
       "when": 1770200132239,
       "tag": "0009_slim_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1770205898883,
+      "tag": "0010_chief_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

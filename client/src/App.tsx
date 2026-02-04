@@ -28,6 +28,7 @@ import CustomFields from "./pages/CustomFields";
 import ActivityFeed from "./pages/ActivityFeed";
 import EmailGenerator from "./pages/EmailGenerator";
 import ScoringSettings from "./pages/ScoringSettings";
+import Chat from "./pages/Chat";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -46,6 +47,12 @@ function Router() {
       <Route path="/people">
         <DashboardLayout>
           <People />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/chat">
+        <DashboardLayout>
+          <Chat />
         </DashboardLayout>
       </Route>
       

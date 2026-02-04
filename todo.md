@@ -596,3 +596,56 @@
 - [x] Group Analytics, Funnel, Activity Feed into "Insights" submenu
 - [x] Keep People, Events, AI Assistant as top-level items
 - [x] Test all navigation links work correctly
+
+
+## Branding Updates
+- [ ] Change project name from KompassCRM to 1twentyCRM
+- [ ] Update guest user email from guest@kompasscrm.demo to guest@1twenty.com
+- [ ] Update VITE_APP_TITLE environment variable
+- [ ] Test branding changes appear correctly
+
+
+## Internal Team Chat Feature (Slack-like)
+
+### Database Schema
+- [x] Create channels table (name, description, type: public/private, createdBy, createdAt)
+- [x] Create channel_members table (channelId, userId, role: admin/member, joinedAt)
+- [x] Create messages table (channelId, userId, content, threadId, createdAt, updatedAt, deletedAt)
+- [x] Create direct_messages table (senderId, recipientId, content, createdAt, readAt)
+- [x] Create message_reactions table (messageId, userId, emoji, createdAt)
+- [x] Generate and apply migrations
+
+### Chat UI Components
+- [x] Create Chat page with sidebar and message view layout
+- [x] Build channel list sidebar with public/private channels and DMs
+- [x] Implement message composer with formatting options
+- [x] Add message display with user avatars and timestamps
+- [x] Create channel creation dialog
+- [x] Add AI assistant as automatic member in all channels
+- [x] Implement @mention functionality to invoke AI assistant
+- [x] Add AI assistant responses with special stylingersations
+- [ ] Create channel creation modal
+- [ ] Add user mention autocomplete (@username)
+- [ ] Add emoji picker for reactions
+
+### Real-time Features
+- [ ] Implement tRPC subscription for new messages
+- [ ] Add typing indicators
+- [ ] Add online/offline user status
+- [ ] Implement message read receipts
+- [ ] Add notification badges for unread messages
+
+### Features
+- [ ] Channel creation and management (create, edit, archive)
+- [ ] Direct messaging between users
+- [ ] Threaded replies to messages
+- [ ] Message reactions (emoji)
+- [ ] File/image sharing in messages
+- [ ] Search messages across channels
+- [ ] Pin important messages
+- [ ] Edit and delete own messages
+
+### Testing
+- [ ] Write tests for chat tRPC procedures
+- [ ] Test real-time message delivery
+- [ ] Test thread functionality

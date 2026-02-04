@@ -1125,6 +1125,121 @@ Generate a subject line and email body. Format your response as JSON with "subje
         return events;
       }),
   }),
+
+  // Chat router
+  chat: router({
+    getChannels: protectedProcedure
+      .query(async ({ ctx }) => {
+        const channels = await db.getChannelsByTenant(ctx.user.tenantId);
+        return channels;
+      }),
+    
+    createChannel: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        type: z.enum(["public", "private"]),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { randomUUID } = await import("crypto");
+        const channelId = randomUUID();
+        
+        const channel = await db.createChannel({
+          id: channelId,
+          tenantId: ctx.user.tenantId,
+          name: input.name,
+          description: input.description,
+          type: input.type,
+          createdBy: ctx.user.id,
+        });
+        
+        // Add creator as admin member
+        await db.addChannelMember({
+          id: randomUUID(),
+          channelId,
+          userId: ctx.user.id,
+          role: "admin",
+        });
+        
+        // Add AI assistant as a member to learn from conversations
+        const aiAssistantId = "ai-assistant-bot";
+        await db.addChannelMember({
+          id: randomUUID(),
+          channelId,
+          userId: aiAssistantId,
+          role: "member",
+        });
+        
+        return channel;
+      }),
+    
+    getMessages: protectedProcedure
+      .input(z.object({
+        channelId: z.string(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        const messages = await db.getMessagesByChannel(input.channelId, input.limit);
+        return messages;
+      }),
+    
+    sendMessage: protectedProcedure
+      .input(z.object({
+        channelId: z.string(),
+        content: z.string().min(1),
+        threadId: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { randomUUID } = await import("crypto");
+        const message = await db.createMessage({
+          id: randomUUID(),
+          tenantId: ctx.user.tenantId,
+          channelId: input.channelId,
+          userId: ctx.user.id,
+          content: input.content,
+          threadId: input.threadId,
+        });
+        
+        // Check if AI assistant was mentioned
+        if (input.content.includes("@ai") || input.content.includes("@assistant")) {
+          // Get recent messages for context
+          const recentMessages = await db.getMessagesByChannel(input.channelId, 10);
+          const context = recentMessages
+            .map(m => `${m.user?.name || "User"}: ${m.content}`)
+            .join("\n");
+          
+          // Invoke LLM
+          const { invokeLLM } = await import("./_core/llm");
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: "You are an AI assistant integrated into a team chat. You help team members with questions about their CRM data, provide insights, and assist with tasks. Be concise and helpful. Recent conversation context:\n\n" + context,
+              },
+              {
+                role: "user",
+                content: input.content,
+              },
+            ],
+          });
+          
+          const aiContent = response.choices[0]?.message?.content;
+          const aiResponse = typeof aiContent === "string" ? aiContent : "I'm here to help! How can I assist you?";
+          
+          // Post AI assistant response
+          await db.createMessage({
+            id: randomUUID(),
+            tenantId: ctx.user.tenantId,
+            channelId: input.channelId,
+            userId: "ai-assistant-bot",
+            content: aiResponse,
+            threadId: input.threadId,
+          });
+        }
+        
+        return message;
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
