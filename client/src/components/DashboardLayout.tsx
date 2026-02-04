@@ -15,13 +15,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Home, LogOut, PanelLeft, Users, Calendar, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Database, Zap, Mail, Sliders, Activity, Wand2 } from "lucide-react";
+import { Home, LogOut, PanelLeft, Users, Calendar, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Database, Zap, Mail, Sliders, Activity, Wand2, ChevronDown } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -38,11 +41,14 @@ const menuItems = [
   { icon: Wand2, label: "Email Generator", path: "/email-generator" },
   { icon: Sparkles, label: "AI Assistant", path: "/ai-assistant" },
   { icon: Calendar, label: "Events", path: "/events" },
-  { icon: Settings, label: "Integrations", path: "/integrations" },
-  { icon: Sliders, label: "Custom Fields", path: "/custom-fields" },
   { icon: Building2, label: "Amplemarket Accounts", path: "/amplemarket/accounts" },
   { icon: UserCircle, label: "Amplemarket People", path: "/amplemarket/people" },
   { icon: Database, label: "Demo Environment", path: "/demo" },
+];
+
+const settingsItems = [
+  { icon: Settings, label: "Integrations", path: "/integrations" },
+  { icon: Sliders, label: "Custom Fields", path: "/custom-fields" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -210,6 +216,34 @@ function DashboardLayoutContent({
                   </SidebarMenuItem>
                 );
               })}
+              
+              {/* Settings Submenu */}
+              <SidebarMenuItem>
+                <details className="group/settings" open>
+                  <summary className="flex items-center gap-2 h-10 px-2 rounded-md hover:bg-accent transition-colors cursor-pointer list-none">
+                    <Settings className="h-4 w-4" />
+                    <span className="flex-1 font-normal">Settings</span>
+                    <ChevronDown className="h-4 w-4 transition-transform group-open/settings:rotate-180" />
+                  </summary>
+                  <SidebarMenuSub className="ml-4 mt-1">
+                    {settingsItems.map(item => {
+                      const isActive = location === item.path;
+                      return (
+                        <SidebarMenuSubItem key={item.path}>
+                          <SidebarMenuSubButton
+                            isActive={isActive}
+                            onClick={() => setLocation(item.path)}
+                            className="h-9"
+                          >
+                            <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                            <span>{item.label}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </details>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
 

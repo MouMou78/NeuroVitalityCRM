@@ -81,8 +81,8 @@ export default function EmailGenerator() {
   };
 
   return (
-    <div className="container py-6">
-      <div className="grid gap-6 lg:grid-cols-2">
+    <div className="container py-4 md:py-6">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
         {/* Training Section */}
         <div className="space-y-6">
           <Card>
@@ -131,38 +131,41 @@ export default function EmailGenerator() {
                   )}
 
                   {showAddExample ? (
-                    <div className="border rounded-lg p-4 space-y-4">
-                      <div className="space-y-2">
-                        <Label>Context (optional)</Label>
+                    <div className="border rounded-lg p-3 md:p-4 space-y-3 md:space-y-4">
+                      <div className="space-y-1.5 md:space-y-2">
+                        <Label className="text-sm">Context (optional)</Label>
                         <Input
-                          placeholder="e.g., Cold outreach, Follow-up, Introduction"
+                          placeholder="e.g., Cold outreach"
                           value={newExampleContext}
                           onChange={(e) => setNewExampleContext(e.target.value)}
+                          className="text-sm"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Subject</Label>
+                      <div className="space-y-1.5 md:space-y-2">
+                        <Label className="text-sm">Subject</Label>
                         <Input
                           placeholder="Email subject line"
                           value={newExampleSubject}
                           onChange={(e) => setNewExampleSubject(e.target.value)}
+                          className="text-sm"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Body</Label>
+                      <div className="space-y-1.5 md:space-y-2">
+                        <Label className="text-sm">Body</Label>
                         <Textarea
                           placeholder="Email body content"
                           value={newExampleBody}
                           onChange={(e) => setNewExampleBody(e.target.value)}
-                          rows={6}
+                          rows={4}
+                          className="text-sm"
                         />
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={handleAddExample} disabled={createExampleMutation.isPending}>
+                        <Button onClick={handleAddExample} disabled={createExampleMutation.isPending} size="sm">
                           {createExampleMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                           Add Example
                         </Button>
-                        <Button variant="outline" onClick={() => setShowAddExample(false)}>
+                        <Button variant="outline" onClick={() => setShowAddExample(false)} size="sm">
                           Cancel
                         </Button>
                       </div>
@@ -189,14 +192,15 @@ export default function EmailGenerator() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Context</Label>
+              <div className="space-y-3 md:space-y-4">
+                <div className="space-y-1.5 md:space-y-2">
+                  <Label className="text-sm">Context</Label>
                   <Textarea
-                    placeholder="Describe the purpose of this email (e.g., 'Follow up after demo meeting', 'Cold outreach to VP of Sales')"
+                    placeholder="Describe the purpose (e.g., 'Follow up after demo')"
                     value={generateContext}
                     onChange={(e) => setGenerateContext(e.target.value)}
                     rows={3}
+                    className="text-sm"
                   />
                 </div>
                 <div className="space-y-2">

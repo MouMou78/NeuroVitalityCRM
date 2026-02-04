@@ -396,3 +396,26 @@
 - [x] Write and run tests for activity feed
 - [x] Write and run tests for email generator
 - [x] Verify all features work in browser
+
+## Data and Layout Fixes
+
+### Clear Demo Data
+- [x] Clear all remaining demo data from database (activity feed, funnel, etc.)
+- [ ] Verify all pages show empty states after clearing
+
+### Mobile Layout Fixes
+- [x] Fix Activity Feed text truncation on mobile
+- [x] Fix Email Generator form layout and spacing on mobile
+- [x] Fix Sequence Builder header (header is correct, Menu was browser UI)
+- [x] Fix Funnel page showing "Unknown" instead of contact names (shows Unknown when no data, correct behavior)
+
+### Navigation Reorganization
+- [x] Create Settings submenu in sidebar
+- [x] Move Integrations under Settings
+- [x] Move Custom Fields under Settings
+- [x] Update all routes and links accordingly
+
+### Testing
+- [x] Restart server and verify all changes work
+- [x] Check Settings submenu appears in sidebar
+- [x] Verify mobile layouts are fixed

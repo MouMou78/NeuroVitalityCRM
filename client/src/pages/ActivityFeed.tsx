@@ -114,39 +114,39 @@ export default function ActivityFeed() {
               {filteredActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent transition-colors"
+                  className="flex items-start gap-3 p-3 md:p-4 border rounded-lg hover:bg-accent transition-colors"
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
                     {getActivityIcon(activity.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 mb-1">
+                      <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">
                           {formatActivityType(activity.type)}
                         </p>
                         {activity.personName && (
                           <Link href={`/people/${activity.personId}`}>
-                            <p className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                            <p className="text-sm text-muted-foreground hover:text-primary transition-colors truncate">
                               {activity.personName}
                             </p>
                           </Link>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                         {formatTimestamp(activity.timestamp)}
                       </span>
                     </div>
                     {activity.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 break-words">
                         {activity.description}
                       </p>
                     )}
                     {activity.metadata && Object.keys(activity.metadata).length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {Object.entries(activity.metadata).slice(0, 3).map(([key, value]) => (
-                          <Badge key={key} variant="outline" className="text-xs">
-                            {key}: {String(value)}
+                      <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
+                        {Object.entries(activity.metadata).slice(0, 2).map(([key, value]) => (
+                          <Badge key={key} variant="outline" className="text-xs truncate max-w-full">
+                            {key}: {String(value).substring(0, 30)}{String(value).length > 30 ? '...' : ''}
                           </Badge>
                         ))}
                       </div>

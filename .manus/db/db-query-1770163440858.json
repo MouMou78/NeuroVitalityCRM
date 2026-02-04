@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM nextActions;\nDELETE FROM moments;\nDELETE FROM threads;\nDELETE FROM people;\nDELETE FROM accounts;\nDELETE FROM events;\nDELETE FROM integrations;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute DELETE FROM nextActions;\nDELETE FROM moments;\nDELETE FROM threads;\nDELETE FROM people;\nDELETE FROM accounts;\nDELETE FROM events;\nDELETE FROM integrations;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 137
+}
