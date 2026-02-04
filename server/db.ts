@@ -667,3 +667,103 @@ export async function addChannelMember(data: { id: string; channelId: string; us
     .limit(1);
   return results[0] || null;
 }
+
+// Direct Messages
+export async function getDirectMessagesBetweenUsers(userId1: string, userId2: string, limit?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { directMessages, users } = await import("../drizzle/schema");
+  const { or, and, eq, desc } = await import("drizzle-orm");
+  
+  let query = db
+    .select({
+      id: directMessages.id,
+      senderId: directMessages.senderId,
+      recipientId: directMessages.recipientId,
+      content: directMessages.content,
+      createdAt: directMessages.createdAt,
+      readAt: directMessages.readAt,
+      sender: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      },
+    })
+    .from(directMessages)
+    .leftJoin(users, eq(directMessages.senderId, users.id))
+    .where(
+      or(
+        and(eq(directMessages.senderId, userId1), eq(directMessages.recipientId, userId2)),
+        and(eq(directMessages.senderId, userId2), eq(directMessages.recipientId, userId1))
+      )
+    )
+    .orderBy(desc(directMessages.createdAt));
+
+  if (limit) {
+    query = query.limit(limit) as any;
+  }
+
+  const results = await query;
+  return results.reverse(); // Oldest first
+}
+
+export async function createDirectMessage(data: {
+  id: string;
+  tenantId: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { directMessages } = await import("../drizzle/schema");
+  await db.insert(directMessages).values(data);
+  
+  const results = await db
+    .select()
+    .from(directMessages)
+    .where(eq(directMessages.id, data.id))
+    .limit(1);
+  return results[0] || null;
+}
+
+export async function getDirectMessageConversations(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { directMessages, users } = await import("../drizzle/schema");
+  const { or, eq, desc, sql } = await import("drizzle-orm");
+  
+  // Get unique conversations with last message
+  const results = await db
+    .select({
+      otherUserId: sql<string>`CASE 
+        WHEN ${directMessages.senderId} = ${userId} THEN ${directMessages.recipientId}
+        ELSE ${directMessages.senderId}
+      END`,
+      lastMessage: directMessages.content,
+      lastMessageAt: directMessages.createdAt,
+      unreadCount: sql<number>`0`, // TODO: Implement unread tracking
+    })
+    .from(directMessages)
+    .where(
+      or(
+        eq(directMessages.senderId, userId),
+        eq(directMessages.recipientId, userId)
+      )
+    )
+    .orderBy(desc(directMessages.createdAt))
+    .limit(50);
+
+  // Get unique conversations
+  const uniqueConversations = new Map();
+  for (const result of results) {
+    if (!uniqueConversations.has(result.otherUserId)) {
+      uniqueConversations.set(result.otherUserId, result);
+    }
+  }
+
+  return Array.from(uniqueConversations.values());
+}

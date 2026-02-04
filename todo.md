@@ -649,3 +649,35 @@
 - [ ] Write tests for chat tRPC procedures
 - [ ] Test real-time message delivery
 - [ ] Test thread functionality
+
+
+## Enhanced Chat Features
+### AI Assistant Visibility
+- [x] Add channel members list showing AI Assistant
+- [x] Display AI assistant online status indicator
+- [x] Show AI assistant info in channel details panel
+- [x] Add AI assistant avatar with distinct styling
+
+### Direct Messages
+- [ ] Create DM section in sidebar
+- [ ] Implement 1-on-1 private conversations
+- [ ] Add unread message indicators
+- [ ] Show user online/offline status
+
+### Thread Replies
+- [ ] Add "Reply in thread" button to messages
+- [ ] Create thread view panel
+- [ ] Show thread reply count on parent messages
+- [ ] Navigate between main channel and threads
+
+### Reactions & File Sharing
+- [ ] Add emoji reaction picker to messages
+- [ ] Display reactions with counts below messages
+- [ ] Implement file upload functionality
+- [ ] Show file previews for images
+- [ ] Add download links for other file types
+
+### Testing
+- [ ] Write tests for DM functionality
+- [ ] Write tests for thread replies
+- [ ] Write tests for reactions and file uploads

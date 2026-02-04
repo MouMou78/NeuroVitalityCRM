@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, Hash, Lock, Plus, Users, Search, Smile } from "lucide-react";
+import { Send, Hash, Lock, Plus, Users, Search, Smile, Bot, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -27,9 +27,21 @@ export default function Chat() {
   const [newChannelDescription, setNewChannelDescription] = useState("");
   const [newChannelType, setNewChannelType] = useState<"public" | "private">("public");
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+  const [showMembersPanel, setShowMembersPanel] = useState(false);
+  const [viewMode, setViewMode] = useState<"channels" | "dms">("channels");
+  const [selectedDmUserId, setSelectedDmUserId] = useState<string | null>(null);
 
   // Fetch channels
   const { data: channels = [], refetch: refetchChannels } = trpc.chat.getChannels.useQuery();
+  
+  // Fetch DM conversations
+  const { data: dmConversations = [] } = trpc.chat.getDirectMessageConversations.useQuery();
+  
+  // Fetch DM messages for selected user
+  const { data: dmMessages = [] } = trpc.chat.getDirectMessages.useQuery(
+    { otherUserId: selectedDmUserId!, limit: 100 },
+    { enabled: !!selectedDmUserId, refetchInterval: 3000 }
+  );
   
   // Fetch messages for selected channel with auto-refresh
   const { data: messages = [] } = trpc.chat.getMessages.useQuery(
@@ -56,6 +68,12 @@ export default function Chat() {
       setMessageContent("");
     },
   });
+  
+  const sendDmMutation = trpc.chat.sendDirectMessage.useMutation({
+    onSuccess: () => {
+      setMessageContent("");
+    },
+  });
 
   const handleCreateChannel = () => {
     if (!newChannelName.trim()) return;
@@ -67,11 +85,19 @@ export default function Chat() {
   };
 
   const handleSendMessage = () => {
-    if (!messageContent.trim() || !selectedChannelId) return;
-    sendMessageMutation.mutate({
-      channelId: selectedChannelId,
-      content: messageContent,
-    });
+    if (!messageContent.trim()) return;
+    
+    if (selectedChannelId) {
+      sendMessageMutation.mutate({
+        channelId: selectedChannelId,
+        content: messageContent,
+      });
+    } else if (selectedDmUserId) {
+      sendDmMutation.mutate({
+        recipientId: selectedDmUserId,
+        content: messageContent,
+      });
+    }
   };
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId);
@@ -157,35 +183,88 @@ export default function Chat() {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
-            {channels.map((channel) => (
-              <button
-                key={channel.id}
-                onClick={() => setSelectedChannelId(channel.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                  selectedChannelId === channel.id
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-accent/50"
-                }`}
-              >
-                {channel.type === "public" ? (
-                  <Hash className="h-4 w-4" />
-                ) : (
-                  <Lock className="h-4 w-4" />
-                )}
-                <span className="truncate">{channel.name}</span>
-              </button>
-            ))}
-            {channels.length === 0 && (
-              <div className="text-center text-sm text-muted-foreground py-8">
-                No channels yet. Create one to get started!
-              </div>
-            )}
-          </div>
+          {viewMode === "channels" ? (
+            <div className="p-2 space-y-1">
+              {channels.map((channel) => (
+                <button
+                  key={channel.id}
+                  onClick={() => {
+                    setSelectedChannelId(channel.id);
+                    setSelectedDmUserId(null);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    selectedChannelId === channel.id
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  }`}
+                >
+                  {channel.type === "public" ? (
+                    <Hash className="h-4 w-4" />
+                  ) : (
+                    <Lock className="h-4 w-4" />
+                  )}
+                  <span className="truncate">{channel.name}</span>
+                </button>
+              ))}
+              {channels.length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                  No channels yet. Create one to get started!
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-2 space-y-1">
+              {dmConversations.map((conv: any) => (
+                <button
+                  key={conv.otherUserId}
+                  onClick={() => {
+                    setSelectedDmUserId(conv.otherUserId);
+                    setSelectedChannelId(null);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    selectedDmUserId === conv.otherUserId
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  }`}
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-xs">
+                      {conv.otherUserId.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium truncate">{conv.otherUserId}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {conv.lastMessage}
+                    </div>
+                  </div>
+                </button>
+              ))}
+              {dmConversations.length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                  No direct messages yet. Start a conversation!
+                </div>
+              )}
+            </div>
+          )}
         </ScrollArea>
 
-        <div className="p-4 border-t">
-          <Button variant="outline" className="w-full justify-start" size="sm">
+        <div className="p-4 border-t space-y-2">
+          <Button 
+            variant={viewMode === "channels" ? "default" : "outline"} 
+            className="w-full justify-start" 
+            size="sm"
+            onClick={() => setViewMode("channels")}
+          >
+            <Hash className="mr-2 h-4 w-4" />
+            Channels
+          </Button>
+          <Button 
+            variant={viewMode === "dms" ? "default" : "outline"} 
+            className="w-full justify-start" 
+            size="sm"
+            onClick={() => setViewMode("dms")}
+          >
             <Users className="mr-2 h-4 w-4" />
             Direct Messages
           </Button>
@@ -194,29 +273,55 @@ export default function Chat() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        {selectedChannel ? (
+        {selectedChannel || selectedDmUserId ? (
           <>
-            {/* Channel Header */}
+            {/* Header */}
             <div className="h-14 border-b px-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {selectedChannel.type === "public" ? (
-                  <Hash className="h-5 w-5" />
+                {selectedChannel ? (
+                  <>
+                    {selectedChannel.type === "public" ? (
+                      <Hash className="h-5 w-5" />
+                    ) : (
+                      <Lock className="h-5 w-5" />
+                    )}
+                    <div>
+                      <h3 className="font-semibold">{selectedChannel.name}</h3>
+                      {selectedChannel.description && (
+                        <p className="text-xs text-muted-foreground">{selectedChannel.description}</p>
+                      )}
+                    </div>
+                  </>
                 ) : (
-                  <Lock className="h-5 w-5" />
+                  <>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {selectedDmUserId?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold">{selectedDmUserId}</h3>
+                      <p className="text-xs text-muted-foreground">Direct Message</p>
+                    </div>
+                  </>
                 )}
-                <div>
-                  <h3 className="font-semibold">{selectedChannel.name}</h3>
-                  {selectedChannel.description && (
-                    <p className="text-xs text-muted-foreground">{selectedChannel.description}</p>
-                  )}
-                </div>
               </div>
+              {selectedChannel && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMembersPanel(!showMembersPanel)}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Members
+                </Button>
+              )}
             </div>
 
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {messages.map((message) => {
+                {(selectedChannel ? messages : dmMessages).map((message: any) => {
                   const isAI = message.userId === "ai-assistant-bot";
                   return (
                     <div key={message.id} className={`flex gap-3 ${isAI ? "bg-accent/30 -mx-4 px-4 py-3 rounded-lg" : ""}`}>
@@ -255,7 +360,7 @@ export default function Chat() {
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Input
-                    placeholder={`Message #${selectedChannel.name} (type @ai or @assistant to invoke AI)`}
+                    placeholder={selectedChannel ? `Message #${selectedChannel.name} (type @ai or @assistant to invoke AI)` : `Message ${selectedDmUserId}`}
                     value={messageContent}
                     onChange={(e) => setMessageContent(e.target.value)}
                     onKeyDown={(e) => {
@@ -285,6 +390,52 @@ export default function Chat() {
           </div>
         )}
       </div>
+
+      {/* Members Panel */}
+      {showMembersPanel && selectedChannel && (
+        <div className="w-64 border-l bg-muted/30">
+          <div className="p-4 border-b">
+            <h3 className="font-semibold text-sm">Channel Members</h3>
+          </div>
+          <ScrollArea className="h-[calc(100vh-8rem)]">
+            <div className="p-2 space-y-1">
+              {/* AI Assistant - Always shown first */}
+              <div className="flex items-center gap-2 p-2 rounded hover:bg-accent/50">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    <Bot className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">AI Assistant</span>
+                    <Circle className="h-2 w-2 fill-green-500 text-green-500" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Always online</p>
+                </div>
+              </div>
+
+              {/* Current User */}
+              {user && (
+                <div className="flex items-center gap-2 p-2 rounded hover:bg-accent/50">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {user.name?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{user.name}</span>
+                      <Circle className="h-2 w-2 fill-green-500 text-green-500" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Online</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
     </div>
   );
 }

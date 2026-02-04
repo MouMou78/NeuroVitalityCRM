@@ -1239,6 +1239,44 @@ Generate a subject line and email body. Format your response as JSON with "subje
         
         return message;
       }),
+    
+    // Direct Messages
+    getDirectMessages: protectedProcedure
+      .input(z.object({
+        otherUserId: z.string(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const dms = await db.getDirectMessagesBetweenUsers(
+          ctx.user.id,
+          input.otherUserId,
+          input.limit
+        );
+        return dms;
+      }),
+    
+    sendDirectMessage: protectedProcedure
+      .input(z.object({
+        recipientId: z.string(),
+        content: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { randomUUID } = await import("crypto");
+        const dm = await db.createDirectMessage({
+          id: randomUUID(),
+          tenantId: ctx.user.tenantId,
+          senderId: ctx.user.id,
+          recipientId: input.recipientId,
+          content: input.content,
+        });
+        return dm;
+      }),
+    
+    getDirectMessageConversations: protectedProcedure
+      .query(async ({ ctx }) => {
+        const conversations = await db.getDirectMessageConversations(ctx.user.id);
+        return conversations;
+      }),
   }),
 });
 
