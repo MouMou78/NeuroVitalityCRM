@@ -798,3 +798,60 @@
 - [x] Display insights in expandable card on contact page
 - [x] Cache insights to avoid repeated API calls
 - [x] Add refresh button to regenerate insights
+
+
+## Authentication System Overhaul
+
+### Email/Password Authentication
+- [x] Create signup page with email/password form
+- [x] Add password strength validation
+- [x] Implement email validation
+- [x] Create user registration backend procedure
+- [x] Hash passwords with bcrypt
+- [x] Add email uniqueness check
+
+### Two-Factor Authentication (2FA)
+- [x] Generate TOTP secrets for new users
+- [x] Display QR code for authenticator app setup
+- [x] Require 2FA setup during registration
+- [x] Implement 2FA verification on login
+- [x] Generate and store backup codes
+- [x] Add backup code verification option
+- [ ] Create 2FA management page in settings (deferred)
+
+### Login & Password Reset
+- [x] Create login page with email/password form
+- [x] Add 2FA code input after password verification
+- [x] Implement "Forgot Password" link
+- [x] Create password reset request page
+- [x] Send password reset email to admin@1twentyconsultancy.com
+- [x] Create password reset confirmation page
+- [x] Add password reset token generation and validation
+
+### Email System
+
+#### Google SMTP Configuration
+- [x] Add SMTP environment variables (host, port, user, password)
+- [x] Create email service module with nodemailer
+- [x] Configure Google SMTP (smtp.gmail.com:587)
+- [x] Test system email delivery
+
+#### Personal Email Integration
+- [x] Create email accounts table in database
+- [ ] Add email account connection page (foundation ready, full implementation deferred)
+- [ ] Implement Gmail OAuth flow for users (deferred)
+- [ ] Add SMTP/IMAP configuration for manual setup (deferred)
+- [ ] Create email sync service (deferred)
+- [ ] Display connected email accounts in settings (deferred)
+- [ ] Add send email from personal account functionality (deferred)
+
+#### Marketing Email Campaigns
+- [x] Create campaigns table in database
+- [ ] Create marketing campaigns page (foundation ready, full implementation deferred)
+- [ ] Add campaign creation form (subject, body, recipients) (deferred)
+- [ ] Implement email template editor (deferred)
+- [ ] Add recipient list management (import CSV, select contacts) (deferred)
+- [ ] Implement campaign scheduling (deferred)
+- [ ] Add email tracking (opens, clicks) (deferred)
+- [ ] Create campaign analytics dashboard (deferred)
+- [ ] Add unsubscribe link handling (deferred)

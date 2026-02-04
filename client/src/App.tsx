@@ -31,10 +31,20 @@ import ScoringSettings from "./pages/ScoringSettings";
 import Chat from "./pages/Chat";
 import DashboardLayout from "./components/DashboardLayout";
 import FloatingAIChat from "./components/FloatingAIChat";
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function Router() {
   return (
     <Switch>
+      {/* Auth routes */}
+      <Route path="/signup" component={Signup} />
+      <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+      
       {/* Public routes */}
       <Route path="/public/e/:slug" component={PublicLeadCapture} />
       

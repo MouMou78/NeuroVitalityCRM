@@ -24,6 +24,11 @@ export const users = mysqlTable("users", {
   passwordHash: text("passwordHash").notNull(),
   name: text("name"),
   role: mysqlEnum("role", ["owner", "collaborator", "restricted"]).default("owner").notNull(),
+  twoFactorSecret: text("twoFactorSecret"),
+  twoFactorEnabled: boolean("twoFactorEnabled").default(false).notNull(),
+  backupCodes: json("backupCodes").$type<string[]>(),
+  passwordResetToken: text("passwordResetToken"),
+  passwordResetExpires: timestamp("passwordResetExpires"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   tenantEmailIdx: unique("tenant_email_unique").on(table.tenantId, table.email),
@@ -550,3 +555,74 @@ export const aiConversations = mysqlTable("aiConversations", {
 
 export type AIConversation = typeof aiConversations.$inferSelect;
 export type InsertAIConversation = typeof aiConversations.$inferInsert;
+
+
+// ============ EMAIL ACCOUNTS ============
+
+export const emailAccounts = mysqlTable("emailAccounts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  provider: varchar("provider", { length: 50 }).notNull(), // gmail, outlook, custom
+  smtpHost: text("smtpHost"),
+  smtpPort: int("smtpPort"),
+  smtpUser: text("smtpUser"),
+  smtpPass: text("smtpPass"), // Encrypted
+  imapHost: text("imapHost"),
+  imapPort: int("imapPort"),
+  isDefault: boolean("isDefault").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("email_accounts_tenant_idx").on(table.tenantId),
+  userIdx: index("email_accounts_user_idx").on(table.userId),
+}));
+
+export type EmailAccount = typeof emailAccounts.$inferSelect;
+export type InsertEmailAccount = typeof emailAccounts.$inferInsert;
+
+// ============ MARKETING CAMPAIGNS ============
+
+export const marketingCampaigns = mysqlTable("marketingCampaigns", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  status: mysqlEnum("status", ["draft", "scheduled", "sending", "sent", "paused"]).default("draft").notNull(),
+  scheduledAt: timestamp("scheduledAt"),
+  sentAt: timestamp("sentAt"),
+  recipientCount: int("recipientCount").default(0).notNull(),
+  openCount: int("openCount").default(0).notNull(),
+  clickCount: int("clickCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("campaigns_tenant_idx").on(table.tenantId),
+  userIdx: index("campaigns_user_idx").on(table.userId),
+  statusIdx: index("campaigns_status_idx").on(table.status),
+}));
+
+export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
+export type InsertMarketingCampaign = typeof marketingCampaigns.$inferInsert;
+
+// ============ CAMPAIGN RECIPIENTS ============
+
+export const campaignRecipients = mysqlTable("campaignRecipients", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  campaignId: varchar("campaignId", { length: 36 }).notNull(),
+  personId: varchar("personId", { length: 36 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  status: mysqlEnum("status", ["pending", "sent", "failed", "bounced"]).default("pending").notNull(),
+  sentAt: timestamp("sentAt"),
+  openedAt: timestamp("openedAt"),
+  clickedAt: timestamp("clickedAt"),
+  error: text("error"),
+}, (table) => ({
+  campaignIdx: index("recipients_campaign_idx").on(table.campaignId),
+  personIdx: index("recipients_person_idx").on(table.personId),
+}));
+
+export type CampaignRecipient = typeof campaignRecipients.$inferSelect;
+export type InsertCampaignRecipient = typeof campaignRecipients.$inferInsert;

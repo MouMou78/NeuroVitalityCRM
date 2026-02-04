@@ -24,48 +24,216 @@ export const appRouter = router({
       return { success: true } as const;
     }),
     
+    // Step 1: Initial signup with email/password
     signup: publicProcedure
       .input(z.object({
-        tenantName: z.string(),
         email: z.string().email(),
         password: z.string().min(8),
         name: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        // Create tenant
-        const tenant = await db.createTenant({ name: input.tenantName });
+        const { hashPassword: hashPw, generateTwoFactorSecret, generateQRCode, generateBackupCodes, hashBackupCodes, validatePassword } = await import("./auth");
         
-        // Create owner user
-        const user = await db.createUser({
-          tenantId: tenant.id,
+        // Validate password strength
+        const passwordError = validatePassword(input.password);
+        if (passwordError) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: passwordError });
+        }
+        
+        // Check if email already exists
+        const existingUser = await db.getUserByEmail(input.email);
+        if (existingUser) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Email already registered" });
+        }
+        
+        // Generate 2FA secret and QR code
+        const twoFactorSecret = generateTwoFactorSecret();
+        const qrCodeUrl = await generateQRCode(input.email, twoFactorSecret);
+        
+        // Generate backup codes
+        const backupCodes = generateBackupCodes(10);
+        const hashedBackupCodes = await hashBackupCodes(backupCodes);
+        
+        // Hash password
+        const passwordHash = await hashPw(input.password);
+        
+        // Create user with 2FA not yet enabled
+        const user = await db.createUserWithAuth({
           email: input.email,
-          passwordHash: hashPassword(input.password),
+          passwordHash,
           name: input.name,
-          role: "owner",
+          twoFactorSecret,
+          twoFactorEnabled: false,
+          backupCodes: hashedBackupCodes,
         });
         
-        return { success: true, userId: user.id, tenantId: tenant.id };
+        return {
+          success: true,
+          userId: user.id,
+          qrCodeUrl,
+          backupCodes, // Return plain codes for user to save
+        };
       }),
     
+    // Step 2: Verify 2FA setup and complete registration
+    verifySignup: publicProcedure
+      .input(z.object({
+        userId: z.string(),
+        token: z.string().length(6),
+      }))
+      .mutation(async ({ input }) => {
+        const { verifyTwoFactorToken } = await import("./auth");
+        
+        const user = await db.getUserById(input.userId);
+        if (!user || !user.twoFactorSecret) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        
+        // Verify the token
+        const isValid = await verifyTwoFactorToken(input.token, user.twoFactorSecret);
+        if (!isValid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid 2FA code" });
+        }
+        
+        // Enable 2FA
+        await db.enableTwoFactor(user.id);
+        
+        // Send welcome email
+        const { sendWelcomeEmail } = await import("./email");
+        await sendWelcomeEmail(user.email, user.name || "User");
+        
+        return { success: true };
+      }),
+    
+    // Step 1: Login with email/password
     login: publicProcedure
       .input(z.object({
         email: z.string().email(),
         password: z.string(),
-        tenantId: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        // For now, we'll need tenant ID to be provided
-        // In a real app, you might look up by email across tenants or use domain
-        if (!input.tenantId) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Tenant ID required" });
-        }
+        const { verifyPassword: verifyPw } = await import("./auth");
         
-        const user = await db.getUserByEmail(input.tenantId, input.email);
-        if (!user || !verifyPassword(input.password, user.passwordHash)) {
+        const user = await db.getUserByEmail(input.email);
+        if (!user) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
         }
         
+        const isValidPassword = await verifyPw(input.password, user.passwordHash);
+        if (!isValidPassword) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        
+        if (!user.twoFactorEnabled) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "2FA not set up. Please complete registration." });
+        }
+        
+        return {
+          success: true,
+          userId: user.id,
+          requires2FA: true,
+        };
+      }),
+    
+    // Step 2: Verify 2FA and complete login
+    verifyLogin: publicProcedure
+      .input(z.object({
+        userId: z.string(),
+        token: z.string(),
+        isBackupCode: z.boolean().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { verifyTwoFactorToken, verifyBackupCode } = await import("./auth");
+        
+        const user = await db.getUserById(input.userId);
+        if (!user || !user.twoFactorSecret) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        
+        let isValid = false;
+        
+        if (input.isBackupCode) {
+          // Verify backup code
+          if (!user.backupCodes || user.backupCodes.length === 0) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "No backup codes available" });
+          }
+          isValid = await verifyBackupCode(input.token, user.backupCodes as string[]);
+          if (isValid) {
+            // Remove used backup code
+            await db.removeBackupCode(user.id, input.token);
+          }
+        } else {
+          // Verify TOTP token
+          isValid = await verifyTwoFactorToken(input.token, user.twoFactorSecret);
+        }
+        
+        if (!isValid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid 2FA code" });
+        }
+        
+        // Set session cookie
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, user.id, cookieOptions);
+        
         return { success: true, user };
+      }),
+    
+    // Request password reset
+    requestPasswordReset: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { generateResetToken } = await import("./auth");
+        const { sendPasswordResetEmail } = await import("./email");
+        
+        const user = await db.getUserByEmail(input.email);
+        if (!user) {
+          // Don't reveal if email exists
+          return { success: true };
+        }
+        
+        // Generate reset token
+        const resetToken = generateResetToken();
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        
+        await db.setPasswordResetToken(user.id, resetToken, expiresAt);
+        
+        // Send email
+        const baseUrl = `${ctx.req.protocol}://${ctx.req.get("host")}`;
+        await sendPasswordResetEmail(user.email, resetToken, baseUrl);
+        
+        return { success: true };
+      }),
+    
+    // Reset password with token
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        newPassword: z.string().min(8),
+      }))
+      .mutation(async ({ input }) => {
+        const { hashPassword: hashPw, validatePassword } = await import("./auth");
+        
+        // Validate password strength
+        const passwordError = validatePassword(input.newPassword);
+        if (passwordError) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: passwordError });
+        }
+        
+        const user = await db.getUserByResetToken(input.token);
+        if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid or expired reset token" });
+        }
+        
+        // Hash new password
+        const passwordHash = await hashPw(input.newPassword);
+        
+        // Update password and clear reset token
+        await db.updatePassword(user.id, passwordHash);
+        await db.clearPasswordResetToken(user.id);
+        
+        return { success: true };
       }),
   }),
   

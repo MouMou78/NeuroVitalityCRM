@@ -8,6 +8,11 @@ const GUEST_USER = {
   passwordHash: "not-used",
   name: "Guest User",
   role: "owner" as const,
+  twoFactorSecret: null,
+  twoFactorEnabled: false,
+  backupCodes: null,
+  passwordResetToken: null,
+  passwordResetExpires: null,
   createdAt: new Date(),
 };
 

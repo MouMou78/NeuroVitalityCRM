@@ -62,17 +62,28 @@ export async function createUser(data: Omit<InsertUser, "id">): Promise<User> {
   return result[0]!;
 }
 
-export async function getUserByEmail(tenantId: string, email: string): Promise<User | undefined> {
+export async function getUserByEmail(emailOrTenantId: string, emailParam?: string): Promise<User | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db
-    .select()
-    .from(users)
-    .where(and(eq(users.tenantId, tenantId), eq(users.email, email)))
-    .limit(1);
-  
-  return result[0];
+  // Support both signatures: (email) and (tenantId, email)
+  if (emailParam) {
+    // Called with (tenantId, email)
+    const result = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.tenantId, emailOrTenantId), eq(users.email, emailParam)))
+      .limit(1);
+    return result[0];
+  } else {
+    // Called with just (email)
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, emailOrTenantId))
+      .limit(1);
+    return result[0];
+  }
 }
 
 export async function getUserById(id: string): Promise<User | undefined> {
@@ -1348,4 +1359,133 @@ export async function deleteAIConversation(id: string) {
   await db
     .delete(aiConversations)
     .where(eq(aiConversations.id, id));
+}
+
+
+// ============ AUTHENTICATION ============
+
+export async function createUserWithAuth(data: {
+  email: string;
+  passwordHash: string;
+  name?: string;
+  twoFactorSecret: string;
+  twoFactorEnabled: boolean;
+  backupCodes: string[];
+}): Promise<User> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const id = nanoid();
+  const tenantId = nanoid(); // Create a new tenant for each user
+  
+  // Create tenant first
+  await db.insert(tenants).values({
+    id: tenantId,
+    name: data.name || data.email,
+  });
+  
+  // Create user
+  await db.insert(users).values({
+    id,
+    tenantId,
+    email: data.email,
+    passwordHash: data.passwordHash,
+    name: data.name,
+    role: "owner",
+    twoFactorSecret: data.twoFactorSecret,
+    twoFactorEnabled: data.twoFactorEnabled,
+    backupCodes: data.backupCodes,
+  });
+  
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0]!;
+}
+
+
+
+export async function enableTwoFactor(userId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({ twoFactorEnabled: true })
+    .where(eq(users.id, userId));
+}
+
+export async function removeBackupCode(userId: string, usedCode: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const user = await getUserById(userId);
+  if (!user || !user.backupCodes) return;
+
+  const { verifyPassword } = await import("./auth");
+  const codes = user.backupCodes as string[];
+  
+  // Remove the used code
+  const updatedCodes = [];
+  for (const hashedCode of codes) {
+    if (!(await verifyPassword(usedCode, hashedCode))) {
+      updatedCodes.push(hashedCode);
+    }
+  }
+  
+  await db
+    .update(users)
+    .set({ backupCodes: updatedCodes })
+    .where(eq(users.id, userId));
+}
+
+export async function setPasswordResetToken(
+  userId: string,
+  token: string,
+  expiresAt: Date
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      passwordResetToken: token,
+      passwordResetExpires: expiresAt,
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function getUserByResetToken(token: string): Promise<User | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.passwordResetToken, token))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function updatePassword(userId: string, passwordHash: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, userId));
+}
+
+export async function clearPasswordResetToken(userId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    })
+    .where(eq(users.id, userId));
 }
