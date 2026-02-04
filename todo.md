@@ -580,3 +580,11 @@
 - [x] Write tests for intent scoring with events (8/12 passing - table creation needed in test env)
 - [ ] Test sequence builder UI flow
 - [ ] Test event tracking and score updates
+
+
+## Logo Transparency Fix
+- [x] Download current logo from S3
+- [x] Remove white background to make logo transparent
+- [x] Upload transparent logo to S3
+- [x] Update logo reference in DashboardLayout
+- [x] Test logo appearance on sidebar
