@@ -1,0 +1,1 @@
+ALTER TABLE `people` ADD `buyingRole` varchar(50);

@@ -265,6 +265,14 @@ export const appRouter = router({
       }));
     }),
     
+    getActivitySummaries: protectedProcedure
+      .input(z.object({ personIds: z.array(z.string()) }))
+      .query(async ({ input, ctx }) => {
+        const { getContactActivitySummaries } = await import('./db-contact-activity');
+        const summaries = await getContactActivitySummaries(ctx.user.tenantId, input.personIds);
+        return Object.fromEntries(summaries);
+      }),
+    
     get: protectedProcedure
       .input(z.object({ id: z.string() }))
       .query(async ({ input, ctx }) => {

@@ -1184,3 +1184,27 @@
 - [x] Fix contact names not displaying on Account Detail page (links work but names are blank)
 - [x] Verify contact data is being fetched correctly
 - [ ] Test contact display on mobile and desktop
+
+## New Features - Contact Enhancements
+
+### Contact Role Badges
+- [x] Add role field to people schema (Decision Maker, Champion, Influencer, User, Blocker)
+- [x] Create badge component with flat, premium design
+- [x] Display role badges on Account Detail contact cards
+- [ ] Add role selection in contact creation/edit forms
+- [ ] Test badge display across different roles
+
+### Contact Activity Summary
+- [x] Calculate recent activity counts per contact (emails, meetings, calls)
+- [x] Add activity summary endpoint to backend
+- [x] Display activity counts next to contact names
+- [ ] Add hover tooltip with activity breakdown
+- [ ] Test activity count accuracy
+
+### Bulk Contact Actions
+- [x] Add checkbox selection to contact cards
+- [ ] Implement "Select All" functionality
+- [ ] Create bulk action menu (Add to Sequence, Add to Campaign, Update Stage, Delete)
+- [ ] Add bulk operation backend endpoints
+- [ ] Show selection count and clear selection button
+- [ ] Test bulk operations with multiple contacts

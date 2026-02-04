@@ -1,18 +1,50 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { RoleBadge, type BuyingRole } from "@/components/RoleBadge";
 import { trpc } from "@/lib/trpc";
-import { Building2, Globe, MapPin, Users, ArrowLeft, Mail, Phone, Briefcase } from "lucide-react";
+import { Building2, Globe, MapPin, Users, ArrowLeft, Mail, Phone, Briefcase, CheckSquare, Square } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams } from "wouter";
 
 export default function AccountDetailPage() {
   const params = useParams<{ id: string }>();
   const accountId = params.id!;
+  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
   const { data: account, isLoading } = trpc.accounts.get.useQuery({ id: accountId });
   const { data: contacts } = trpc.people.list.useQuery();
 
   // Filter contacts by accountId
   const linkedContacts = contacts?.filter((c: any) => c.accountId === accountId) || [];
+  
+  // Get activity summaries for all contacts
+  const contactIds = linkedContacts.map((c: any) => c.id);
+  const { data: activitySummaries = {} } = trpc.people.getActivitySummaries.useQuery(
+    { personIds: contactIds },
+    { enabled: contactIds.length > 0 }
+  );
+  
+  const toggleContactSelection = (contactId: string) => {
+    const newSelection = new Set(selectedContacts);
+    if (newSelection.has(contactId)) {
+      newSelection.delete(contactId);
+    } else {
+      newSelection.add(contactId);
+    }
+    setSelectedContacts(newSelection);
+    setShowBulkActions(newSelection.size > 0);
+  };
+  
+  const selectAll = () => {
+    setSelectedContacts(new Set(linkedContacts.map((c: any) => c.id)));
+    setShowBulkActions(true);
+  };
+  
+  const clearSelection = () => {
+    setSelectedContacts(new Set());
+    setShowBulkActions(false);
+  };
 
   if (isLoading) {
     return (
@@ -117,10 +149,39 @@ export default function AccountDetailPage() {
 
           {/* Linked Contacts */}
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Contacts ({linkedContacts.length})
-            </h2>
+               <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Contacts ({linkedContacts.length})
+              </h2>
+              {linkedContacts.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {showBulkActions && (
+                    <>
+                      <span className="text-sm text-muted-foreground">
+                        {selectedContacts.size} selected
+                      </span>
+                      <Button size="sm" variant="outline" onClick={clearSelection}>
+                        Clear
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        Add to Sequence
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        Add to Campaign
+                      </Button>
+                    </>
+                  )}
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={selectedContacts.size === linkedContacts.length ? clearSelection : selectAll}
+                  >
+                    {selectedContacts.size === linkedContacts.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+              )}
+            </div>
             {linkedContacts.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 No contacts linked to this account yet
@@ -128,11 +189,36 @@ export default function AccountDetailPage() {
             ) : (
               <div className="space-y-3">
                 {linkedContacts.map((contact: any) => (
-                  <Link key={contact.id} href={`/people/${contact.id}`}>
-                    <Card className="p-4 hover:bg-accent cursor-pointer transition-colors">
+                  <div key={contact.id} className="relative">
+                    <div 
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleContactSelection(contact.id);
+                      }}
+                    >
+                      {selectedContacts.has(contact.id) ? (
+                        <CheckSquare className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Square className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <Link href={`/people/${contact.id}`}>
+                      <Card className="p-4 pl-10 hover:bg-accent cursor-pointer transition-colors">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{contact.name}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium">{contact.name}</p>
+                            <RoleBadge role={contact.buyingRole as BuyingRole} />
+                            {activitySummaries[contact.id] && activitySummaries[contact.id].totalActivities > 0 && (
+                              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                {activitySummaries[contact.id].emailCount > 0 && `📧 ${activitySummaries[contact.id].emailCount}`}
+                                {activitySummaries[contact.id].meetingCount > 0 && ` 📅 ${activitySummaries[contact.id].meetingCount}`}
+                                {activitySummaries[contact.id].callCount > 0 && ` 📞 ${activitySummaries[contact.id].callCount}`}
+                              </span>
+                            )}
+                          </div>
                           {contact.title && (
                             <p className="text-sm text-muted-foreground">{contact.title}</p>
                           )}
@@ -152,8 +238,9 @@ export default function AccountDetailPage() {
                           )}
                         </div>
                       </div>
-                    </Card>
-                  </Link>
+                      </Card>
+                    </Link>
+                  </div>
                 ))}
               </div>
             )}

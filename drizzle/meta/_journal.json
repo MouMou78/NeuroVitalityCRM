@@ -183,6 +183,13 @@
       "when": 1770246892797,
       "tag": "0025_fuzzy_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1770248848760,
+      "tag": "0026_odd_red_ghost",
+      "breakpoints": true
     }
   ]
 }

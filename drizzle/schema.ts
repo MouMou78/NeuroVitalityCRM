@@ -90,6 +90,7 @@ export const people = mysqlTable("people", {
   companySize: varchar("companySize", { length: 50 }),
   roleTitle: text("roleTitle"),
   simplifiedTitle: text("simplifiedTitle"),
+  buyingRole: varchar("buyingRole", { length: 50 }), // Decision Maker, Champion, Influencer, User, Blocker
   phone: varchar("phone", { length: 50 }),
   manuallyAddedNumber: varchar("manuallyAddedNumber", { length: 50 }),
   manuallyAddedNumberDncStatus: varchar("manuallyAddedNumberDncStatus", { length: 20 }),
