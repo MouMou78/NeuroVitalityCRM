@@ -25,16 +25,17 @@ export default function AmplemarketPeople() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Amplemarket People</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Amplemarket People</h1>
+          <p className="text-muted-foreground mt-1 md:mt-2 text-sm md:text-base">
             View and manage contacts synced from Amplemarket
           </p>
         </div>
         <Button
           onClick={() => syncMutation.mutate()}
           disabled={syncMutation.isPending}
+          className="w-full md:w-auto shrink-0"
         >
           {syncMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           Sync from Amplemarket

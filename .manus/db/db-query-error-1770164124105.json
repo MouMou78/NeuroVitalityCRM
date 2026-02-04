@@ -1,0 +1,8 @@
+{
+  "query": "DELETE FROM emailSequenceEnrollments;\nDELETE FROM emailSequenceSteps;\nDELETE FROM emailSequences;\nDELETE FROM automationExecutions;\nDELETE FROM automationRules;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute DELETE FROM emailSequenceEnrollments;\nDELETE FROM emailSequenceSteps;\nDELETE FROM emailSequences;\nDELETE FROM automationExecutions;\nDELETE FROM automationRules;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 4: Table 'tqesx2hbytqrcaiubn2kww.automationExecutions' doesn't exist"
+  ]
+}

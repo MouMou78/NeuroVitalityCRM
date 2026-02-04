@@ -419,3 +419,24 @@
 - [x] Restart server and verify all changes work
 - [x] Check Settings submenu appears in sidebar
 - [x] Verify mobile layouts are fixed
+
+## Data and Layout Fixes - Round 2
+
+### Clear Remaining Demo Data
+- [x] Clear all sequence enrollment data
+- [x] Clear automation rules and related data
+- [ ] Verify all pages show zero counts after clearing
+
+### Mobile Portrait Layout Fixes
+- [x] Fix Amplemarket Accounts page - button cut off on right
+- [x] Fix Amplemarket People page - button cut off on right
+- [x] Fix Email Generator page - improve mobile spacing (done in previous round)
+- [x] Fix Sequences page - improve card layout on mobile (looks good)
+- [x] Fix Automation page - improve card layout on mobile (fixed in previous round)
+- [x] Fix Analytics page - improve header and dropdown spacing (looks good)
+
+### AI Assistant Redesign
+- [x] Remove long bullet list welcome message
+- [x] Add quick action suggestion pills (Analyze Pipeline, Find Hot Leads, Show Top Contacts, etc.)
+- [x] Make pills clickable to auto-fill questions
+- [x] Improve mobile layout with better spacing (rounded pill design)

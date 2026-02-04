@@ -26,23 +26,25 @@ export default function Assistant() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm your CRM assistant. Ask me about your pipeline, deals, or contacts.",
+      content: "Ask me anything about your CRM data.",
       timestamp: new Date(),
     },
   ]);
 
   const quickActions = [
-    "Show me deals at risk",
-    "What's my pipeline health?",
-    "Which contacts need follow-up?",
-    "How many deals are in each stage?",
+    "Analyze pipeline",
+    "Find hot leads",
+    "Show top contacts",
+    "Deals at risk",
+    "Recent activity",
+    "Engagement metrics",
   ];
   const [input, setInput] = useState("");
   const [, setLocation] = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const queryMutation = trpc.assistant.query.useMutation({
-    onSuccess: (data) => {
+  const queryMutation = trpc.assistant.chat.useMutation({
+    onSuccess: (data: any) => {
       setMessages((prev) => [
         ...prev,
         {
@@ -54,7 +56,7 @@ export default function Assistant() {
         },
       ]);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       setMessages((prev) => [
         ...prev,
         {
@@ -79,7 +81,7 @@ export default function Assistant() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    queryMutation.mutate({ query: input });
+    queryMutation.mutate({ messages: [{ role: "user", content: input }] });
     setInput("");
   };
 
@@ -104,29 +106,32 @@ export default function Assistant() {
       </div>
 
       {messages.length === 1 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {quickActions.map((action) => (
-            <Button
-              key={action}
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setInput(action);
-                const userMessage: Message = {
-                  id: Date.now().toString(),
-                  role: "user",
-                  content: action,
-                  timestamp: new Date(),
-                };
-                setMessages((prev) => [...prev, userMessage]);
-                queryMutation.mutate({ query: action });
-              }}
-              disabled={queryMutation.isPending}
-              className="text-xs"
-            >
-              {action}
-            </Button>
-          ))}
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground mb-3">Quick actions:</p>
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((action) => (
+              <Button
+                key={action}
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setInput(action);
+                  const userMessage: Message = {
+                    id: Date.now().toString(),
+                    role: "user",
+                    content: action,
+                    timestamp: new Date(),
+                  };
+                  setMessages((prev) => [...prev, userMessage]);
+                  queryMutation.mutate({ messages: [{ role: "user", content: action }] });
+                }}
+                disabled={queryMutation.isPending}
+                className="text-xs px-3 py-1 h-auto rounded-full"
+              >
+                {action}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
 
