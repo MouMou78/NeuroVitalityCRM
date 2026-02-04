@@ -385,6 +385,7 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset>
+        {/* Mobile header */}
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
@@ -397,6 +398,12 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <NotificationBell />
+          </div>
+        )}
+        {/* Desktop header */}
+        {!isMobile && (
+          <div className="flex border-b h-14 items-center justify-end bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <NotificationBell />
           </div>
         )}

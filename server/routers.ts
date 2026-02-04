@@ -1082,7 +1082,8 @@ export const appRouter = router({
       }),
   }),
   
-  amplemarket: router({ getAccountById: protectedProcedure
+  amplemarket: router({
+    getAccountById: protectedProcedure
       .input(z.object({ accountId: z.string() }))
       .query(async ({ input, ctx }) => {
         const accounts = await db.getAccountsByTenant(ctx.user.tenantId);
@@ -1094,6 +1095,23 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         const people = await db.getPeopleByTenant(ctx.user.tenantId);
         return people.filter((p: any) => p.accountId === input.accountId);
+      }),
+    
+    getAccountActivities: protectedProcedure
+      .input(z.object({ accountId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const { getMomentsByAccount } = await import("./db-account-activities");
+        const activities = await getMomentsByAccount(ctx.user.tenantId, input.accountId);
+        
+        // Enrich activities with person names
+        const people = await db.getPeopleByTenant(ctx.user.tenantId);
+        const peopleMap = new Map(people.map(p => [p.id, p]));
+        
+        return activities.map(activity => ({
+          ...activity,
+          personName: peopleMap.get(activity.personId)?.fullName || "Unknown",
+          personEmail: peopleMap.get(activity.personId)?.primaryEmail || "",
+        }));
       }),
   }),
   
@@ -1895,6 +1913,45 @@ Generate a subject line and email body. Format your response as JSON with "subje
           ...input,
         });
         return campaign;
+      }),
+    
+    addRecipients: protectedProcedure
+      .input(z.object({
+        campaignId: z.string(),
+        personIds: z.array(z.string()),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { addCampaignRecipients } = await import("./campaign-sender");
+        const result = await addCampaignRecipients(
+          input.campaignId,
+          ctx.user.tenantId,
+          input.personIds
+        );
+        return result;
+      }),
+    
+    send: protectedProcedure
+      .input(z.object({
+        campaignId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { sendCampaign } = await import("./campaign-sender");
+        const result = await sendCampaign(
+          input.campaignId,
+          ctx.user.tenantId,
+          ctx.user.id
+        );
+        return result;
+      }),
+    
+    getStats: protectedProcedure
+      .input(z.object({
+        campaignId: z.string(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const { getCampaignStats } = await import("./campaign-sender");
+        const stats = await getCampaignStats(input.campaignId, ctx.user.tenantId);
+        return stats;
       }),
   }),
 

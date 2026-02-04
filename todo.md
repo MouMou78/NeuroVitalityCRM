@@ -973,3 +973,29 @@
 - [x] Add empty state handling to account selector in AddPersonDialog
 - [x] Create seed data script for guest users with sample accounts and contacts
 - [x] Run seed script to populate guest tenant with demo data
+
+
+## New Features - Desktop Notifications, Activity Timeline, Campaign Sending
+
+### Desktop Notification Bell
+- [x] Add notification bell to desktop header (currently only on mobile)
+- [x] Ensure consistent behavior between mobile and desktop
+- [ ] Test notification dropdown on desktop
+
+### Account Activity Timeline
+- [x] Design activity timeline schema for accounts
+- [x] Create activity timeline component for Account Detail page
+- [x] Show emails sent to account contacts
+- [x] Show meetings scheduled with account contacts
+- [x] Show deals created for account
+- [ ] Add filtering by activity type
+- [ ] Test timeline display with sample data
+
+### Campaign Email Sending
+- [x] Connect campaigns UI to email accounts backend
+- [x] Implement campaign sending logic with SMTP
+- [x] Add recipient list management
+- [x] Create email tracking system (opens, clicks, replies)
+- [x] Add campaign analytics dashboard (stats endpoint)
+- [ ] Test email sending with configured SMTP accounts
+- [x] Add error handling for failed sends

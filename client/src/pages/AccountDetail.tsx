@@ -1,5 +1,5 @@
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Building2, Globe, MapPin, Calendar, Users, DollarSign, TrendingUp, ExternalLink } from "lucide-react";
+import { ArrowLeft, Building2, Globe, MapPin, Calendar, Users, DollarSign, TrendingUp, ExternalLink, Mail, Phone, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,11 @@ export default function AccountDetail() {
   );
 
   const { data: contacts } = trpc.amplemarket.getContactsByAccount.useQuery(
+    { accountId: accountId! },
+    { enabled: !!accountId }
+  );
+
+  const { data: activities, isLoading: activitiesLoading } = trpc.amplemarket.getAccountActivities.useQuery(
     { accountId: accountId! },
     { enabled: !!accountId }
   );
@@ -233,11 +238,62 @@ export default function AccountDetail() {
               <TabsContent value="activity" className="mt-6">
                 <Card className="p-6">
                   <h3 className="font-semibold mb-4">Activity Timeline</h3>
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No activity recorded yet</p>
-                    <p className="text-sm mt-2">Engagement activities will appear here</p>
-                  </div>
+                  {activitiesLoading ? (
+                    <div className="text-center py-12">
+                      <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                      <p className="text-muted-foreground">Loading activities...</p>
+                    </div>
+                  ) : activities && activities.length > 0 ? (
+                    <div className="space-y-4">
+                      {activities.map((activity: any) => (
+                        <div key={activity.id} className="flex gap-4 p-4 rounded-lg border">
+                          <div className="flex-shrink-0">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              {activity.type === 'email_sent' && <Mail className="h-5 w-5 text-primary" />}
+                              {activity.type === 'email_received' && <Mail className="h-5 w-5 text-green-600" />}
+                              {activity.type === 'call_completed' && <Phone className="h-5 w-5 text-blue-600" />}
+                              {activity.type === 'meeting_held' && <Calendar className="h-5 w-5 text-purple-600" />}
+                              {!['email_sent', 'email_received', 'call_completed', 'meeting_held'].includes(activity.type) && <Activity className="h-5 w-5 text-muted-foreground" />}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-medium">
+                                  {activity.type === 'email_sent' && 'Email Sent'}
+                                  {activity.type === 'email_received' && 'Email Received'}
+                                  {activity.type === 'reply_received' && 'Reply Received'}
+                                  {activity.type === 'call_completed' && 'Call Completed'}
+                                  {activity.type === 'meeting_held' && 'Meeting Held'}
+                                  {activity.type === 'note_added' && 'Note Added'}
+                                  {activity.type === 'lead_captured' && 'Lead Captured'}
+                                  {activity.type === 'deal_won' && 'Deal Won'}
+                                  {activity.type === 'deal_lost' && 'Deal Lost'}
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {activity.personName} ({activity.personEmail})
+                                </p>
+                                {activity.metadata?.subject && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {activity.metadata.subject}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {new Date(activity.timestamp).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No activity recorded yet</p>
+                      <p className="text-sm mt-2">Engagement activities will appear here</p>
+                    </div>
+                  )}
                 </Card>
               </TabsContent>
 
