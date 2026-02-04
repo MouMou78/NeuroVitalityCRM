@@ -88,12 +88,17 @@ export async function sendCampaign(campaignId: string, tenantId: string, userId:
 
   for (const recipient of recipients) {
     try {
-      // Send email
+      // Inject tracking pixels and links
+      const { injectTrackingIntoEmail } = await import("./email-tracking");
+      const baseUrl = process.env.VITE_APP_URL || "https://kompasscrm.manus.space";
+      const trackedBody = injectTrackingIntoEmail(campaignData.body, recipient.id, baseUrl);
+      
+      // Send email with tracking
       await transporter.sendMail({
         from: `"${account.email}" <${account.email}>`,
         to: recipient.email,
         subject: campaignData.subject,
-        html: campaignData.body,
+        html: trackedBody,
       });
 
       // Update recipient status

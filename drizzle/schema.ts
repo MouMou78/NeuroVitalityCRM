@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, index, unique, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, index, unique, boolean, decimal } from "drizzle-orm/mysql-core";
 
 /**
  * Multi-tenant CRM schema for KompassCRM
@@ -627,3 +627,47 @@ export const campaignRecipients = mysqlTable("campaignRecipients", {
 
 export type CampaignRecipient = typeof campaignRecipients.$inferSelect;
 export type InsertCampaignRecipient = typeof campaignRecipients.$inferInsert;
+
+// ============ DEAL STAGES ============
+
+export const dealStages = mysqlTable("dealStages", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  order: int("order").notNull(),
+  color: varchar("color", { length: 20 }).default("#3b82f6"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("deal_stages_tenant_idx").on(table.tenantId),
+  tenantOrderIdx: index("deal_stages_tenant_order_idx").on(table.tenantId, table.order),
+}));
+
+export type DealStage = typeof dealStages.$inferSelect;
+export type InsertDealStage = typeof dealStages.$inferInsert;
+
+// ============ DEALS ============
+
+export const deals = mysqlTable("deals", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  value: decimal("value", { precision: 15, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  stageId: varchar("stageId", { length: 36 }).notNull(),
+  accountId: varchar("accountId", { length: 36 }),
+  contactId: varchar("contactId", { length: 36 }),
+  ownerUserId: varchar("ownerUserId", { length: 36 }),
+  expectedCloseDate: timestamp("expectedCloseDate"),
+  probability: int("probability").default(50),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("deals_tenant_idx").on(table.tenantId),
+  stageIdx: index("deals_stage_idx").on(table.stageId),
+  accountIdx: index("deals_account_idx").on(table.accountId),
+  ownerIdx: index("deals_owner_idx").on(table.ownerUserId),
+}));
+
+export type Deal = typeof deals.$inferSelect;
+export type InsertDeal = typeof deals.$inferInsert;

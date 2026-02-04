@@ -1020,3 +1020,35 @@
 - [x] Allow users to reschedule or cancel scheduled campaigns
 - [ ] Test scheduling with different timezones
 - [x] Add validation to prevent scheduling in the past
+
+
+## New Features - Email Tracking, Deal Pipeline & Bulk Import
+
+### Email Open/Click Tracking Pixels
+- [x] Add tracking pixel generation for email opens
+- [x] Implement click tracking for links in campaign emails
+- [x] Create tracking endpoint to record opens and clicks
+- [x] Update campaign analytics to show open/click rates
+- [x] Add tracking pixel to campaign email body
+- [ ] Test tracking with real email clients
+- [ ] Add privacy-compliant tracking notice
+
+### Deal Pipeline Visualization
+- [x] Design Kanban board layout for deal stages
+- [x] Implement drag-and-drop functionality for deals
+- [x] Create deal stage management (add/edit/delete stages)
+- [x] Add deal cards with key information (value, contact, company)
+- [x] Implement stage transition tracking
+- [ ] Add filtering by deal owner, date range, or value
+- [ ] Create deal detail modal/page
+- [ ] Test drag-and-drop across different stages
+
+### Bulk Contact Import
+- [x] Create CSV upload UI component
+- [x] Implement CSV parsing and validation
+- [x] Add field mapping interface (CSV columns → CRM fields)
+- [x] Implement duplicate detection logic
+- [x] Create validation error reporting
+- [x] Add preview before final import
+- [x] Handle large file uploads (1000+ contacts)
+- [ ] Test with various CSV formats and encodings

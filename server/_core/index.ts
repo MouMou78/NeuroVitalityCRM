@@ -38,6 +38,9 @@ async function startServer() {
   // File upload endpoint
   const uploadRouter = (await import("../upload")).default;
   app.use("/api", uploadRouter);
+  // Email tracking endpoints
+  const trackingRouter = (await import("../tracking-routes")).default;
+  app.use("/api", trackingRouter);
   // tRPC API
   app.use(
     "/api/trpc",

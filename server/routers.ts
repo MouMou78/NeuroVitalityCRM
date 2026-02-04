@@ -1950,8 +1950,15 @@ Generate a subject line and email body. Format your response as JSON with "subje
       }))
       .query(async ({ input, ctx }) => {
         const { getCampaignStats } = await import("./campaign-sender");
-        const stats = await getCampaignStats(input.campaignId, ctx.user.tenantId);
-        return stats;
+        const { getCampaignTrackingStats } = await import("./email-tracking");
+        
+        const basicStats = await getCampaignStats(input.campaignId, ctx.user.tenantId);
+        const trackingStats = await getCampaignTrackingStats(input.campaignId);
+        
+        return {
+          ...basicStats,
+          ...trackingStats,
+        };
       }),
     
     schedule: protectedProcedure
@@ -2110,7 +2117,144 @@ Generate a subject line and email body. Format your response as JSON with "subje
         return { success: true };
       }),
   }),
+  
+  bulkImport: router({
+    parseCSV: protectedProcedure
+      .input(z.object({
+        content: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { parseCSV } = await import("./bulk-import");
+        const rows = parseCSV(input.content);
+        return {
+          success: true,
+          rowCount: rows.length,
+          headers: rows.length > 0 ? Object.keys(rows[0]) : [],
+          preview: rows.slice(0, 5),
+        };
+      }),
+    
+    getAvailableFields: protectedProcedure
+      .query(async () => {
+        const { getAvailableCRMFields } = await import("./bulk-import");
+        return getAvailableCRMFields();
+      }),
+    
+    importContacts: protectedProcedure
+      .input(z.object({
+        content: z.string(),
+        mapping: z.array(z.object({
+          csvColumn: z.string(),
+          crmField: z.string(),
+        })),
+        skipDuplicates: z.boolean().default(true),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { parseCSV, importContacts } = await import("./bulk-import");
+        const rows = parseCSV(input.content);
+        const result = await importContacts(
+          ctx.user.tenantId,
+          rows,
+          input.mapping,
+          input.skipDuplicates
+        );
+        return result;
+      }),
+  }),
 
+  deals: router({
+    listStages: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getDealStagesByTenant } = await import("./db-deals");
+        return getDealStagesByTenant(ctx.user.tenantId);
+      }),
+    
+    createStage: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        order: z.number(),
+        color: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { createDealStage } = await import("./db-deals");
+        return createDealStage({ tenantId: ctx.user.tenantId, ...input });
+      }),
+    
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getDealsByTenant } = await import("./db-deals");
+        return getDealsByTenant(ctx.user.tenantId);
+      }),
+    
+    listByStage: protectedProcedure
+      .input(z.object({ stageId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const { getDealsByStage } = await import("./db-deals");
+        return getDealsByStage(ctx.user.tenantId, input.stageId);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        value: z.string().optional(),
+        currency: z.string().optional(),
+        stageId: z.string(),
+        accountId: z.string().optional(),
+        contactId: z.string().optional(),
+        ownerUserId: z.string().optional(),
+        expectedCloseDate: z.date().optional(),
+        probability: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { createDeal } = await import("./db-deals");
+        return createDeal({ tenantId: ctx.user.tenantId, ...input });
+      }),
+    
+    updateStage: protectedProcedure
+      .input(z.object({
+        dealId: z.string(),
+        newStageId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { updateDealStage } = await import("./db-deals");
+        return updateDealStage(input.dealId, ctx.user.tenantId, input.newStageId);
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        dealId: z.string(),
+        name: z.string().optional(),
+        value: z.string().optional(),
+        currency: z.string().optional(),
+        stageId: z.string().optional(),
+        accountId: z.string().optional(),
+        contactId: z.string().optional(),
+        ownerUserId: z.string().optional(),
+        expectedCloseDate: z.date().optional(),
+        probability: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { updateDeal } = await import("./db-deals");
+        const { dealId, ...data } = input;
+        return updateDeal(dealId, ctx.user.tenantId, data);
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ dealId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const { deleteDeal } = await import("./db-deals");
+        return deleteDeal(input.dealId, ctx.user.tenantId);
+      }),
+    
+    initializeStages: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const { initializeDefaultStages } = await import("./db-deals");
+        return initializeDefaultStages(ctx.user.tenantId);
+      }),
+  }),
+  
   notifications: router({
     getUnread: protectedProcedure.query(async ({ ctx }) => {
       return db.getUserNotifications(ctx.user.id);
