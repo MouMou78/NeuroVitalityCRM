@@ -1177,3 +1177,10 @@
 - [x] Create email delivery for scheduled reports (infrastructure ready)
 - [ ] Build report customization UI (backend endpoints ready)
 - [ ] Test report generation and delivery
+
+## Bug Fixes
+
+### Account Page Contact Display
+- [x] Fix contact names not displaying on Account Detail page (links work but names are blank)
+- [ ] Verify contact data is being fetched correctly
+- [ ] Test contact display on mobile and desktop

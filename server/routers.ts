@@ -1128,7 +1128,12 @@ export const appRouter = router({
       .input(z.object({ accountId: z.string() }))
       .query(async ({ input, ctx }) => {
         const people = await db.getPeopleByTenant(ctx.user.tenantId);
-        return people.filter((p: any) => p.accountId === input.accountId);
+        const filtered = people.filter((p: any) => p.accountId === input.accountId);
+        // Add fullName field for frontend display
+        return filtered.map((p: any) => ({
+          ...p,
+          fullName: [p.firstName, p.lastName].filter(Boolean).join(' ') || 'Unknown'
+        }));
       }),
     
     getAccountActivities: protectedProcedure
