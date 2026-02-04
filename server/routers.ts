@@ -781,6 +781,137 @@ export const appRouter = router({
         await db.deleteAIConversation(input.id);
         return { success: true };
       }),
+    
+    getSuggestions: protectedProcedure
+      .input(z.object({
+        message: z.string(),
+        context: z.object({
+          page: z.string().optional(),
+          contactId: z.string().optional(),
+          contactName: z.string().optional(),
+        }).optional(),
+      }))
+      .query(async ({ input }) => {
+        const suggestions: Array<{ type: string; label: string; action: string; data?: any }> = [];
+        
+        const lowerMessage = input.message.toLowerCase();
+        
+        // Detect intent and generate suggestions
+        if (lowerMessage.includes('contact') || lowerMessage.includes('person') || lowerMessage.includes('lead')) {
+          if (lowerMessage.includes('create') || lowerMessage.includes('add') || lowerMessage.includes('new')) {
+            suggestions.push({
+              type: 'create_contact',
+              label: 'Create new contact',
+              action: '/people?action=create',
+            });
+          }
+          if (lowerMessage.includes('find') || lowerMessage.includes('search') || lowerMessage.includes('show')) {
+            suggestions.push({
+              type: 'view_contacts',
+              label: 'View all contacts',
+              action: '/people',
+            });
+          }
+        }
+        
+        if (lowerMessage.includes('follow') || lowerMessage.includes('schedule') || lowerMessage.includes('remind')) {
+          suggestions.push({
+            type: 'schedule_followup',
+            label: 'Schedule follow-up',
+            action: input.context?.contactId ? `/people/${input.context.contactId}?action=followup` : '/people',
+          });
+        }
+        
+        if (lowerMessage.includes('email') || lowerMessage.includes('message') || lowerMessage.includes('send')) {
+          suggestions.push({
+            type: 'compose_email',
+            label: 'Compose email',
+            action: '/email-generator',
+          });
+        }
+        
+        if (lowerMessage.includes('insight') || lowerMessage.includes('analyz') || lowerMessage.includes('report')) {
+          suggestions.push({
+            type: 'view_insights',
+            label: 'View insights',
+            action: '/insights',
+          });
+        }
+        
+        if (lowerMessage.includes('pipeline') || lowerMessage.includes('funnel') || lowerMessage.includes('deal')) {
+          suggestions.push({
+            type: 'view_pipeline',
+            label: 'View sales pipeline',
+            action: '/funnel',
+          });
+        }
+        
+        return suggestions;
+      }),
+    
+    generateContactInsights: protectedProcedure
+      .input(z.object({
+        contactId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Get contact details
+        const contact = await db.getPersonById(input.contactId);
+        if (!contact) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Contact not found' });
+        }
+        
+        // Get engagement history (moments, events, threads)
+        const threads = await db.getThreadsByPerson(ctx.user.tenantId, input.contactId);
+        const allMoments = await db.getMomentsByTenant(ctx.user.tenantId);
+        const moments = allMoments.filter(m => threads.some(t => t.id === m.threadId));
+        
+        // Build context for AI
+        let context = `Contact: ${contact.fullName}\n`;
+        if (contact.companyName) context += `Company: ${contact.companyName}\n`;
+        if (contact.roleTitle) context += `Title: ${contact.roleTitle}\n`;
+        if (contact.primaryEmail) context += `Email: ${contact.primaryEmail}\n`;
+        if (contact.engagementScore) context += `Engagement Score: ${contact.engagementScore}\n`;
+        
+        context += `\nRecent Activity:\n`;
+        moments.slice(0, 10).forEach((moment: any) => {
+          context += `- ${moment.type}: ${moment.description || ''} (${new Date(moment.timestamp).toLocaleDateString()})\n`;
+        });
+        
+        if (threads.length > 0) {
+          context += `\nActive Threads: ${threads.length}\n`;
+          const latestThread = threads[0];
+          if (latestThread.status) {
+            context += `Latest Thread Status: ${latestThread.status}\n`;
+          }
+          if (latestThread.lastActivityAt) {
+            context += `Last Activity: ${new Date(latestThread.lastActivityAt).toLocaleDateString()}\n`;
+          }
+        }
+        
+        // Generate insights using AI
+        const { invokeLLM } = await import("./_core/llm");
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: "You are a CRM insights analyst. Analyze the contact's engagement history and provide: 1) A brief engagement summary (2-3 sentences), 2) Key patterns or trends, 3) 3 specific next-action recommendations. Be concise and actionable."
+            },
+            {
+              role: "user",
+              content: `Analyze this contact and provide insights:\n\n${context}`
+            }
+          ],
+        });
+        
+        const content = response.choices[0].message.content;
+        const insightsText = typeof content === 'string' ? content : JSON.stringify(content);
+        
+        return {
+          insights: insightsText,
+          contactName: contact.fullName,
+          generatedAt: new Date().toISOString(),
+        };
+      }),
   }),
   
   amplemarket: router({ getAccountById: protectedProcedure

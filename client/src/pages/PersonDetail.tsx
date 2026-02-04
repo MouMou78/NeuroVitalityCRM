@@ -2,7 +2,9 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Mail, Phone, Building, Briefcase, Plus, MapPin, ExternalLink, TrendingUp, CheckCircle2, Target, Flame } from "lucide-react";
+import { Loader2, Mail, Phone, Building, Briefcase, Plus, MapPin, ExternalLink, TrendingUp, CheckCircle2, Target, Flame, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Streamdown } from "streamdown";
 import { Link } from "wouter";
 import { EmailActivityTimeline } from "@/components/EmailActivityTimeline";
 
@@ -12,6 +14,9 @@ interface PersonDetailProps {
 
 export default function PersonDetail({ personId }: PersonDetailProps) {
   const { data, isLoading } = trpc.people.get.useQuery({ id: personId });
+  const [insights, setInsights] = useState<{ insights: string; generatedAt: string } | null>(null);
+  const [showInsights, setShowInsights] = useState(false);
+  const generateInsightsMutation = trpc.assistant.generateContactInsights.useMutation();
 
   if (isLoading) {
     return (
@@ -54,11 +59,68 @@ export default function PersonDetail({ personId }: PersonDetailProps) {
             </div>
           </div>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          New Thread
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              if (!insights) {
+                const result = await generateInsightsMutation.mutateAsync({ contactId: personId });
+                setInsights(result);
+              }
+              setShowInsights(!showInsights);
+            }}
+            disabled={generateInsightsMutation.isPending}
+          >
+            {generateInsightsMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-2" />
+            )}
+            {insights ? (showInsights ? 'Hide' : 'Show') + ' AI Insights' : 'Generate AI Insights'}
+          </Button>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            New Thread
+          </Button>
+        </div>
       </div>
+
+      {/* AI Insights */}
+      {showInsights && insights && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              AI-Powered Insights
+            </CardTitle>
+            <CardDescription>
+              Generated {new Date(insights.generatedAt).toLocaleString()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none">
+              <Streamdown>{insights.insights}</Streamdown>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={async () => {
+                const result = await generateInsightsMutation.mutateAsync({ contactId: personId });
+                setInsights(result);
+              }}
+              disabled={generateInsightsMutation.isPending}
+            >
+              {generateInsightsMutation.isPending ? (
+                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="w-3 h-3 mr-2" />
+              )}
+              Refresh Insights
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Email Activity Timeline */}
       <EmailActivityTimeline 

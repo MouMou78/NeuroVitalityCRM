@@ -767,3 +767,34 @@
 - [x] Implement export to PDF format
 - [x] Include timestamps in exports
 - [x] Add conversation title to exports
+
+
+## Omnipresent AI Features
+
+### Floating AI Chat Widget
+- [x] Create floating button component (bottom-right, draggable)
+- [x] Add slide-out chat panel overlay
+- [x] Integrate with existing AI assistant backend
+- [x] Add context awareness (detect current page/route)
+- [x] Show relevant quick actions based on current page
+- [x] Persist widget state across page navigation
+- [x] Add minimize/maximize animations
+
+### Smart Suggestions
+- [x] Detect user intent from chat messages
+- [x] Generate context-aware action suggestions
+- [x] Add "Create contact" suggestion when discussing people
+- [x] Add "Schedule follow-up" suggestion for action items
+- [x] Add "View insights" suggestion for data queries
+- [x] Display suggestions as clickable pills in chat
+- [x] Execute suggested actions from chat interface
+
+### AI-Powered Contact Insights
+- [x] Add "Generate Insights" button to contact detail pages
+- [x] Create backend procedure for AI insights generation
+- [x] Analyze contact engagement history
+- [x] Generate engagement summary
+- [x] Recommend next best actions
+- [x] Display insights in expandable card on contact page
+- [x] Cache insights to avoid repeated API calls
+- [x] Add refresh button to regenerate insights

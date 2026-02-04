@@ -30,6 +30,7 @@ import EmailGenerator from "./pages/EmailGenerator";
 import ScoringSettings from "./pages/ScoringSettings";
 import Chat from "./pages/Chat";
 import DashboardLayout from "./components/DashboardLayout";
+import FloatingAIChat from "./components/FloatingAIChat";
 
 function Router() {
   return (
@@ -206,6 +207,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <FloatingAIChat />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
