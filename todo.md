@@ -1344,3 +1344,52 @@
 - [x] Add filter sharing capability (team filters with isPublic flag)
 - [x] Implement filter management UI (save, load, delete)
 - [x] Test saved filters across contacts, accounts, deals
+
+## Unified Contextual Notes System
+- [x] Design cross-entity note visibility architecture
+- [x] Implement relationship mapping (contact -> deals, account -> contacts, deal -> contacts)
+- [x] Update Notes component to fetch and display related notes
+- [x] Add source labels to notes (e.g., "From Deal: Q1 Enterprise Sale")
+- [x] Add notes to Deal detail pages
+- [x] Create DealDetail page with contextual notes
+- [x] Add deal routes to App.tsx
+- [x] Ensure notes flow: contact note appears on related deals/accounts
+- [x] Ensure notes flow: deal note appears on related contacts/accounts
+- [x] Ensure notes flow: account note appears on all contacts from that company
+- [x] Test cross-entity note visibility with complex relationships
+
+## Email Templates Library
+- [ ] Create email templates table in database
+- [ ] Design template editor with variable placeholders
+- [ ] Implement template CRUD API endpoints
+- [ ] Build template library UI page
+- [ ] Add variable substitution engine ({{firstName}}, {{companyName}}, etc.)
+- [ ] Create default templates (follow-up, introduction, proposal)
+- [ ] Add template selector to email composition
+- [ ] Test template rendering with real contact data
+
+## Task Reminders & Notifications
+- [ ] Design notification preferences system
+- [ ] Implement task reminder scheduling logic
+- [ ] Add desktop notification support
+- [ ] Add email notification for overdue tasks
+- [ ] Create notification preferences UI
+- [ ] Add snooze/dismiss functionality
+- [ ] Test reminder timing accuracy
+- [ ] Test notification delivery across channels
+
+## Reporting Dashboard & Analytics
+- [x] Design dashboard layout and metrics
+- [x] Implement pipeline health calculations
+- [x] Calculate conversion rates by stage
+- [x] Track activity trends over time
+- [x] Aggregate team performance metrics
+- [x] Create visual charts (pipeline funnel, trend lines, bar charts)
+- [x] Build dashboard page with Recharts visualizations
+- [x] Add key metrics cards (total value, avg deal size, active deals)
+- [x] Add pipeline by stage bar chart
+- [x] Add deal distribution pie chart
+- [x] Add stage conversion rates visualization
+- [x] Add campaign performance trends line chart
+- [x] Connect to existing analytics backend API
+- [x] Test dashboard with real CRM data

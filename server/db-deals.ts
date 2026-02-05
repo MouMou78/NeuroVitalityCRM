@@ -60,6 +60,22 @@ export async function getDealsByTenant(tenantId: string) {
 }
 
 /**
+ * Get a single deal by ID
+ */
+export async function getDealById(dealId: string, tenantId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(deals)
+    .where(and(eq(deals.id, dealId), eq(deals.tenantId, tenantId)))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
  * Get deals by stage
  */
 export async function getDealsByStage(tenantId: string, stageId: string) {

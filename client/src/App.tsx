@@ -14,6 +14,7 @@ import PublicLeadCapture from "./pages/PublicLeadCapture";
 import Integrations from "./pages/Integrations";
 import Funnel from "./pages/Funnel";
 import Analytics from "./pages/Analytics";
+import Dashboard from "./pages/Dashboard";
 import Assistant from "./pages/Assistant";
 import AIAssistant from "./pages/AIAssistant";
 import AmplemarketAccounts from "./pages/AmplemarketAccounts";
@@ -44,6 +45,8 @@ import Accounts from "./pages/Accounts";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
 import ContactMerge from "./pages/ContactMerge";
+import { DealPipeline } from "./pages/DealPipeline";
+import DealDetail from "./pages/DealDetail";
 
 function Router() {
   return (
@@ -208,6 +211,20 @@ function Router() {
         </DashboardLayout>
       </Route>
       
+      <Route path="/deals">
+        <DashboardLayout>
+          <DealPipeline />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/deals/:id">
+        {(params) => (
+          <DashboardLayout>
+            <DealDetail />
+          </DashboardLayout>
+        )}
+      </Route>
+      
       <Route path="/scoring-settings">
         <DashboardLayout>
           <ScoringSettings />
@@ -228,7 +245,13 @@ function Router() {
       
       <Route path="/analytics">
         <DashboardLayout>
-          <Analytics />
+          <Dashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/dashboard">
+        <DashboardLayout>
+          <Dashboard />
         </DashboardLayout>
       </Route>
       

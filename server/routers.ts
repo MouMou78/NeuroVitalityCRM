@@ -3008,6 +3008,17 @@ Generate a subject line and email body. Format your response as JSON with "subje
         return getDealsByTenant(ctx.user.tenantId);
       }),
     
+    get: protectedProcedure
+      .input(z.object({ dealId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const { getDealById } = await import("./db-deals");
+        const deal = await getDealById(input.dealId, ctx.user.tenantId);
+        if (!deal) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Deal not found" });
+        }
+        return deal;
+      }),
+    
     listByStage: protectedProcedure
       .input(z.object({ stageId: z.string() }))
       .query(async ({ input, ctx }) => {
@@ -3150,6 +3161,19 @@ Generate a subject line and email body. Format your response as JSON with "subje
         requireDeletePermission(ctx.user.role);
         await db.deleteNote(input.noteId, ctx.user.tenantId);
         return { success: true };
+      }),
+    
+    contextual: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(["contact", "account", "deal", "task", "thread"]),
+        entityId: z.string(),
+      }))
+      .query(async ({ input, ctx }) => {
+        return db.getContextualNotes({
+          tenantId: ctx.user.tenantId,
+          entityType: input.entityType,
+          entityId: input.entityId,
+        });
       }),
   }),
   

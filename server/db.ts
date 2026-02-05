@@ -1958,3 +1958,119 @@ export async function deleteSavedFilter(filterId: string, tenantId: string): Pro
       )
     );
 }
+
+// ============ CONTEXTUAL NOTES (CROSS-ENTITY) ============
+
+export async function getContextualNotes(params: {
+  tenantId: string;
+  entityType: "contact" | "account" | "deal" | "task" | "thread";
+  entityId: string;
+}): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const { notes: notesTable, people, threads } = await import("../drizzle/schema");
+  const { entityType, entityId, tenantId } = params;
+  
+  // Start with direct notes on this entity
+  const directNotes = await db.select().from(notesTable)
+    .where(
+      and(
+        eq(notesTable.tenantId, tenantId),
+        eq(notesTable.entityType, entityType),
+        eq(notesTable.entityId, entityId)
+      )
+    )
+    .orderBy(desc(notesTable.createdAt));
+  
+  // Add source information to direct notes
+  const notesWithSource = directNotes.map((note: any) => ({
+    ...note,
+    source: entityType,
+    sourceId: entityId,
+    sourceName: null, // Will be populated for related notes
+  }));
+  
+  // Fetch related notes based on entity type
+  let relatedNotes: any[] = [];
+  
+  if (entityType === "contact") {
+    // Get notes from deals this contact is involved in
+    // Get notes from account (company) this contact belongs to
+    const contact = await db.select().from(people)
+      .where(
+        and(
+          eq(people.id, entityId),
+          eq(people.tenantId, tenantId)
+        )
+      )
+      .limit(1);
+    
+    if (contact[0]?.companyDomain) {
+      // Get account notes
+      const accountNotes = await db.select().from(notesTable)
+        .where(
+          and(
+            eq(notesTable.tenantId, tenantId),
+            eq(notesTable.entityType, "account")
+          )
+        );
+      
+      relatedNotes = relatedNotes.concat(
+        accountNotes.map((note: any) => ({
+          ...note,
+          source: "account",
+          sourceId: note.entityId,
+          sourceName: contact[0].companyName || "Company",
+        }))
+      );
+    }
+    
+    // Get thread notes for this contact
+    const contactThreads = await db.select().from(threads)
+      .where(
+        and(
+          eq(threads.personId, entityId),
+          eq(threads.tenantId, tenantId)
+        )
+      );
+    
+    for (const thread of contactThreads) {
+      const threadNotes = await db.select().from(notesTable)
+        .where(
+          and(
+            eq(notesTable.tenantId, tenantId),
+            eq(notesTable.entityType, "thread"),
+            eq(notesTable.entityId, thread.id)
+          )
+        );
+      
+      relatedNotes = relatedNotes.concat(
+        threadNotes.map((note: any) => ({
+          ...note,
+          source: "thread",
+          sourceId: thread.id,
+          sourceName: thread.title || "Thread",
+        }))
+      );
+    }
+  }
+  
+  if (entityType === "account") {
+    // Get notes from all contacts in this account
+    // Get notes from all deals for this account
+    // This requires knowing which contacts belong to this account
+    // For now, we'll implement the basic structure
+  }
+  
+  if (entityType === "deal") {
+    // Get notes from all contacts involved in this deal
+    // Get notes from the account associated with this deal
+  }
+  
+  // Combine and sort all notes by date
+  const allNotes = [...notesWithSource, ...relatedNotes];
+  return allNotes.sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}

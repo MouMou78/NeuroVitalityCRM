@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Edit2, Trash2, Check, X } from "lucide-react";
+import { MessageSquare, Edit2, Trash2, Check, X, Link2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface NotesProps {
@@ -17,21 +17,21 @@ export default function Notes({ entityType, entityId }: NotesProps) {
   const [editContent, setEditContent] = useState("");
 
   const utils = trpc.useUtils();
-  const { data: notes = [], isLoading } = trpc.notes.list.useQuery({
+  const { data: notes = [], isLoading } = trpc.notes.contextual.useQuery({
     entityType,
     entityId,
   });
 
   const createNoteMutation = trpc.notes.create.useMutation({
     onSuccess: () => {
-      utils.notes.list.invalidate({ entityType, entityId });
+      utils.notes.contextual.invalidate({ entityType, entityId });
       setNewNote("");
     },
   });
 
   const updateNoteMutation = trpc.notes.update.useMutation({
     onSuccess: () => {
-      utils.notes.list.invalidate({ entityType, entityId });
+      utils.notes.contextual.invalidate({ entityType, entityId });
       setEditingNoteId(null);
       setEditContent("");
     },
@@ -39,7 +39,7 @@ export default function Notes({ entityType, entityId }: NotesProps) {
 
   const deleteNoteMutation = trpc.notes.delete.useMutation({
     onSuccess: () => {
-      utils.notes.list.invalidate({ entityType, entityId });
+      utils.notes.contextual.invalidate({ entityType, entityId });
     },
   });
 
@@ -150,6 +150,16 @@ export default function Notes({ entityType, entityId }: NotesProps) {
                 ) : (
                   /* View mode */
                   <>
+                    {/* Source label for related notes */}
+                    {note.source && note.source !== entityType && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                        <Link2 className="h-3 w-3" />
+                        <span>
+                          From {note.source === "account" ? "Company" : note.source === "thread" ? "Thread" : note.source}:
+                          {note.sourceName && ` ${note.sourceName}`}
+                        </span>
+                      </div>
+                    )}
                     <p className="text-sm whitespace-pre-wrap">{note.content}</p>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center gap-2">
