@@ -1698,3 +1698,19 @@
 - [x] Copy all rule configuration (trigger, action, conditions, priority)
 - [x] Add " (Copy)" suffix to cloned rule names
 - [x] Test rule cloning workflow
+
+
+## Automation Templates Marketplace
+- [x] Design template schema (id, name, description, category, trigger, action, conditions, tags)
+- [x] Create library of pre-configured templates for common scenarios
+- [x] Add templates for lead nurturing (follow-up sequences, engagement tracking)
+- [x] Add templates for deal management (stage progression, value alerts, stale deal detection)
+- [x] Add templates for task automation (meeting follow-ups, deadline reminders)
+- [x] Build TemplatesMarketplace page with grid/list view
+- [x] Implement category filtering (Lead Nurturing, Deal Management, Task Automation, Notifications)
+- [x] Add template preview showing trigger/action/conditions
+- [x] Create "Install Template" button with one-click installation
+- [x] Add template customization dialog before installation
+- [x] Implement template installation backend procedure
+- [x] Add "Installed" badge for already-installed templates
+- [x] Test template browsing, preview, and installation workflow

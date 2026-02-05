@@ -2502,6 +2502,41 @@ Generate a subject line and email body. Format your response as JSON with "subje
         const { getAutomationExecutions } = await import("./db-automation");
         return getAutomationExecutions(ctx.user.tenantId, input.ruleId);
       }),
+    
+    getTemplates: protectedProcedure
+      .query(async () => {
+        const { automationTemplates } = await import("./automation-templates");
+        return automationTemplates;
+      }),
+    
+    installTemplate: protectedProcedure
+      .input(z.object({
+        templateId: z.string(),
+        name: z.string().optional(),
+        priority: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { getTemplateById } = await import("./automation-templates");
+        const { createAutomationRule } = await import("./db-automation");
+        
+        const template = getTemplateById(input.templateId);
+        if (!template) throw new Error("Template not found");
+        
+        const ruleId = await createAutomationRule({
+          tenantId: ctx.user.tenantId,
+          name: input.name || template.name,
+          description: template.description,
+          triggerType: template.triggerType,
+          triggerConfig: template.triggerConfig,
+          actionType: template.actionType,
+          actionConfig: template.actionConfig,
+          conditions: template.conditions,
+          priority: input.priority !== undefined ? input.priority : template.priority,
+          status: "active",
+        });
+        
+        return { ruleId };
+      }),
   }),
   
   collaboration: router({
