@@ -125,7 +125,12 @@ export async function signup(input: SignupInput) {
     passwordHash,
     name: input.name || null,
     role: 'owner', // First user is owner
+    twoFactorSecret: null,
     twoFactorEnabled: false, // Will be enabled during setup
+    backupCodes: null,
+    passwordResetToken: null,
+    passwordResetExpires: null,
+    disabled: false,
   });
   
   return {
