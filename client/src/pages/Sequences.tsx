@@ -42,6 +42,18 @@ export default function Sequences() {
               Visual Builder
             </Button>
           </Link>
+          <Link href="/sequences/analytics">
+            <Button variant="outline">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Analytics
+            </Button>
+          </Link>
+          <Link href="/sequences/templates">
+            <Button variant="outline">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Templates
+            </Button>
+          </Link>
           <Link href="/sequences/new">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
