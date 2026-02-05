@@ -1188,3 +1188,47 @@ export const emailExamples = mysqlTable("emailExamples", {
 }));
 export type EmailExample = typeof emailExamples.$inferSelect;
 export type InsertEmailExample = typeof emailExamples.$inferInsert;
+
+
+// Email Tracking Events
+export const emailTrackingEvents = mysqlTable("emailTrackingEvents", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  emailId: varchar("emailId", { length: 36 }).notNull(), // References sent email
+  personId: varchar("personId", { length: 36 }), // Recipient
+  eventType: mysqlEnum("eventType", ["sent", "delivered", "opened", "clicked", "bounced", "unsubscribed"]).notNull(),
+  clickedUrl: text("clickedUrl"), // For click events
+  userAgent: text("userAgent"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("email_tracking_email_idx").on(table.emailId),
+  personIdx: index("email_tracking_person_idx").on(table.personId),
+  typeIdx: index("email_tracking_type_idx").on(table.eventType),
+  timestampIdx: index("email_tracking_timestamp_idx").on(table.timestamp),
+}));
+
+export type EmailTrackingEvent = typeof emailTrackingEvents.$inferSelect;
+export type InsertEmailTrackingEvent = typeof emailTrackingEvents.$inferInsert;
+
+// Activity Timeline (unified view of all interactions)
+export const activities = mysqlTable("activities", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  personId: varchar("personId", { length: 36 }),
+  accountId: varchar("accountId", { length: 36 }),
+  userId: varchar("userId", { length: 36 }), // Who performed the activity
+  activityType: mysqlEnum("activityType", ["email", "call", "meeting", "note", "task", "deal_stage_change", "tag_added", "assignment_changed"]).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  metadata: json("metadata"), // Type-specific data
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  personIdx: index("activities_person_idx").on(table.personId),
+  accountIdx: index("activities_account_idx").on(table.accountId),
+  typeIdx: index("activities_type_idx").on(table.activityType),
+  timestampIdx: index("activities_timestamp_idx").on(table.timestamp),
+}));
+
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = typeof activities.$inferInsert;

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 
 export default function ActivityFeed() {
-  const { data: activities, isLoading } = trpc.activities.list.useQuery();
+  const { data: activities, isLoading } = trpc.activityFeed.list.useQuery();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredActivities = activities?.filter((activity) =>

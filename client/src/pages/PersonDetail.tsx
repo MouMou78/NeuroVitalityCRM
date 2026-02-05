@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { Streamdown } from "streamdown";
 import { Link, useLocation } from "wouter";
 import { EmailActivityTimeline } from "@/components/EmailActivityTimeline";
+import { EmailAnalytics } from "@/components/EmailAnalytics";
+import { ActivityTimeline } from "@/components/ActivityTimeline";
 import Notes from "@/components/Notes";
 import { AIEmailAssistant } from "@/components/AIEmailAssistant";
 import { toast } from "sonner";
@@ -233,6 +235,12 @@ export default function PersonDetail({ personId }: PersonDetailProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Email Analytics */}
+      <EmailAnalytics personId={personId} />
+
+      {/* Activity Timeline */}
+      <ActivityTimeline personId={personId} limit={50} />
 
       {/* Email Activity Timeline */}
       <EmailActivityTimeline 

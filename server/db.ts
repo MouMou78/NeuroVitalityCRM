@@ -2436,3 +2436,176 @@ export async function enrollPeopleInSequence(
 
   await db.insert(emailSequenceEnrollments).values(enrollments);
 }
+
+
+// ==================== Email Tracking ====================
+
+export async function recordEmailTrackingEvent(data: {
+  tenantId: string;
+  emailId: string;
+  personId?: string;
+  eventType: "sent" | "delivered" | "opened" | "clicked" | "bounced" | "unsubscribed";
+  clickedUrl?: string;
+  userAgent?: string;
+  ipAddress?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  const { emailTrackingEvents } = await import("../drizzle/schema");
+  const { randomUUID } = await import("crypto");
+
+  await db.insert(emailTrackingEvents).values({
+    id: randomUUID(),
+    ...data,
+  });
+}
+
+export async function getEmailTrackingStats(emailId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { emailTrackingEvents } = await import("../drizzle/schema");
+  const { eq, sql } = await import("drizzle-orm");
+
+  const stats = await db
+    .select({
+      eventType: emailTrackingEvents.eventType,
+      count: sql<number>`count(*)`.as("count"),
+    })
+    .from(emailTrackingEvents)
+    .where(eq(emailTrackingEvents.emailId, emailId))
+    .groupBy(emailTrackingEvents.eventType);
+
+  return stats.reduce((acc, { eventType, count }) => {
+    acc[eventType] = count;
+    return acc;
+  }, {} as Record<string, number>);
+}
+
+export async function getPersonEmailStats(personId: string, tenantId: string) {
+  const db = await getDb();
+  if (!db) return { sent: 0, opened: 0, clicked: 0, openRate: 0, clickRate: 0 };
+
+  const { emailTrackingEvents } = await import("../drizzle/schema");
+  const { eq, and, sql } = await import("drizzle-orm");
+
+  const stats = await db
+    .select({
+      eventType: emailTrackingEvents.eventType,
+      count: sql<number>`count(*)`.as("count"),
+    })
+    .from(emailTrackingEvents)
+    .where(
+      and(
+        eq(emailTrackingEvents.personId, personId),
+        eq(emailTrackingEvents.tenantId, tenantId)
+      )
+    )
+    .groupBy(emailTrackingEvents.eventType);
+
+  const counts = stats.reduce((acc, { eventType, count }) => {
+    acc[eventType] = count;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const sent = counts.sent || 0;
+  const opened = counts.opened || 0;
+  const clicked = counts.clicked || 0;
+
+  return {
+    sent,
+    opened,
+    clicked,
+    openRate: sent > 0 ? Math.round((opened / sent) * 100) : 0,
+    clickRate: sent > 0 ? Math.round((clicked / sent) * 100) : 0,
+  };
+}
+
+// ==================== Activity Timeline ====================
+
+export async function createActivity(data: {
+  tenantId: string;
+  personId?: string;
+  accountId?: string;
+  userId?: string;
+  activityType: "email" | "call" | "meeting" | "note" | "task" | "deal_stage_change" | "tag_added" | "assignment_changed";
+  title: string;
+  description?: string;
+  metadata?: any;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  const { activities } = await import("../drizzle/schema");
+  const { randomUUID } = await import("crypto");
+
+  await db.insert(activities).values({
+    id: randomUUID(),
+    ...data,
+  });
+}
+
+export async function getActivitiesByPerson(personId: string, tenantId: string, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { activities } = await import("../drizzle/schema");
+  const { eq, and, desc } = await import("drizzle-orm");
+
+  return await db
+    .select()
+    .from(activities)
+    .where(
+      and(
+        eq(activities.personId, personId),
+        eq(activities.tenantId, tenantId)
+      )
+    )
+    .orderBy(desc(activities.timestamp))
+    .limit(limit);
+}
+
+export async function getActivitiesByAccount(accountId: string, tenantId: string, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { activities } = await import("../drizzle/schema");
+  const { eq, and, desc } = await import("drizzle-orm");
+
+  return await db
+    .select()
+    .from(activities)
+    .where(
+      and(
+        eq(activities.accountId, accountId),
+        eq(activities.tenantId, tenantId)
+      )
+    )
+    .orderBy(desc(activities.timestamp))
+    .limit(limit);
+}
+
+export async function getActivitiesByType(
+  tenantId: string,
+  activityType: string,
+  limit = 50
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { activities } = await import("../drizzle/schema");
+  const { eq, and, desc } = await import("drizzle-orm");
+
+  return await db
+    .select()
+    .from(activities)
+    .where(
+      and(
+        eq(activities.tenantId, tenantId),
+        eq(activities.activityType, activityType as any)
+      )
+    )
+    .orderBy(desc(activities.timestamp))
+    .limit(limit);
+}

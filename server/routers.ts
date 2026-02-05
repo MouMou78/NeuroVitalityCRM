@@ -1487,7 +1487,7 @@ Generate a subject line and email body. Format your response as JSON with "subje
       }),
   }),
   
-  activities: router({
+  activityFeed: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       // Get all moments for this tenant and format as activities
       const moments = await db.getMomentsByTenant(ctx.user.tenantId);
@@ -3785,6 +3785,84 @@ Generate a subject line and email body. Format your response as JSON with "subje
       .input(z.object({ accountId: z.string() }))
       .query(async ({ input }) => {
         return db.getAccountTags(input.accountId);
+      }),
+  }),
+
+  emailTracking: router({
+    recordEvent: protectedProcedure
+      .input(z.object({
+        emailId: z.string(),
+        personId: z.string().optional(),
+        eventType: z.enum(["sent", "delivered", "opened", "clicked", "bounced", "unsubscribed"]),
+        clickedUrl: z.string().optional(),
+        userAgent: z.string().optional(),
+        ipAddress: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.recordEmailTrackingEvent({
+          tenantId: ctx.user.tenantId,
+          ...input,
+        });
+        return { success: true };
+      }),
+
+    getStats: protectedProcedure
+      .input(z.object({ emailId: z.string() }))
+      .query(async ({ input }) => {
+        return db.getEmailTrackingStats(input.emailId);
+      }),
+
+    getPersonStats: protectedProcedure
+      .input(z.object({ personId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        return db.getPersonEmailStats(input.personId, ctx.user.tenantId);
+      }),
+  }),
+
+  activities: router({
+    create: protectedProcedure
+      .input(z.object({
+        personId: z.string().optional(),
+        accountId: z.string().optional(),
+        activityType: z.enum(["email", "call", "meeting", "note", "task", "deal_stage_change", "tag_added", "assignment_changed"]),
+        title: z.string(),
+        description: z.string().optional(),
+        metadata: z.any().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.createActivity({
+          tenantId: ctx.user.tenantId,
+          userId: ctx.user.id,
+          ...input,
+        });
+        return { success: true };
+      }),
+
+    getByPerson: protectedProcedure
+      .input(z.object({
+        personId: z.string(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        return db.getActivitiesByPerson(input.personId, ctx.user.tenantId, input.limit);
+      }),
+
+    getByAccount: protectedProcedure
+      .input(z.object({
+        accountId: z.string(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        return db.getActivitiesByAccount(input.accountId, ctx.user.tenantId, input.limit);
+      }),
+
+    getByType: protectedProcedure
+      .input(z.object({
+        activityType: z.string(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        return db.getActivitiesByType(ctx.user.tenantId, input.activityType, input.limit);
       }),
   }),
 

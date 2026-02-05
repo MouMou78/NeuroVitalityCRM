@@ -1893,3 +1893,17 @@
 - [x] Implement sequence enrollment tRPC procedures
 - [x] Build sequence enrollment wizard UI
 - [x] Test all bulk action features end-to-end
+
+## Email Tracking & Analytics
+- [x] Create database schema for email tracking events (opens, clicks, bounces)
+- [x] Implement email tracking backend with webhook handlers
+- [x] Build email analytics dashboard with performance metrics
+- [x] Add visual indicators for email opens/clicks on contact timelines
+- [ ] Create sequence performance metrics view
+
+## Activity Timeline
+- [x] Design unified activity timeline component
+- [x] Implement activity aggregation from multiple sources (emails, calls, meetings, notes)
+- [x] Add filtering by activity type and date range
+- [x] Integrate timeline into contact and account detail pages
+- [x] Test all timeline features
