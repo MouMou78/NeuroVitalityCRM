@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Zap, Play, Pause, Trash2, History, Lightbulb, TestTube } from "lucide-react";
+import { Plus, Zap, Play, Pause, Trash2, History, Lightbulb, TestTube, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { ConditionBuilder, type ConditionGroup } from "@/components/ConditionBuilder";
 
@@ -16,12 +16,14 @@ export default function WorkflowAutomation() {
   const [formData, setFormData] = useState<{
     name: string;
     description: string;
-    triggerType: "email_opened" | "email_replied" | "no_reply_after_days" | "meeting_held" | "stage_entered" | "deal_value_threshold";
+    triggerType: "email_opened" | "email_replied" | "no_reply_after_days" | "meeting_held" | "stage_entered" | "deal_value_threshold" | "scheduled";
     triggerConfig: Record<string, any>;
     actionType: "move_stage" | "send_notification" | "create_task" | "enroll_sequence" | "update_field";
     actionConfig: Record<string, any>;
     conditions: ConditionGroup;
     priority: number;
+    schedule?: string;
+    timezone?: string;
   }>({
     name: "",
     description: "",
@@ -31,6 +33,8 @@ export default function WorkflowAutomation() {
     actionConfig: {},
     conditions: { logic: 'AND', rules: [] },
     priority: 0,
+    schedule: undefined,
+    timezone: "UTC",
   });
 
   const { data: rules, isLoading, refetch } = trpc.automation.getRules.useQuery();
@@ -77,6 +81,16 @@ export default function WorkflowAutomation() {
     },
     onError: (error: any) => {
       toast.error(`Failed to delete rule: ${error.message}`);
+    },
+  });
+
+  const cloneMutation = trpc.automation.cloneRule.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast.success("Rule cloned successfully");
+    },
+    onError: (error) => {
+      toast.error(`Failed to clone rule: ${error.message}`);
     },
   });
 
@@ -283,6 +297,7 @@ export default function WorkflowAutomation() {
                       <SelectItem value="no_reply_after_days">No Reply After Days</SelectItem>
                       <SelectItem value="meeting_held">Meeting Held</SelectItem>
                       <SelectItem value="deal_value_threshold">Deal Value Threshold</SelectItem>
+                      <SelectItem value="scheduled">Scheduled (Time-based)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -306,6 +321,44 @@ export default function WorkflowAutomation() {
                   </Select>
                 </div>
               </div>
+
+              {formData.triggerType === "scheduled" && (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="schedule">Schedule (Cron Expression)</Label>
+                    <Input
+                      id="schedule"
+                      value={formData.schedule || ""}
+                      onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
+                      placeholder="0 9 * * 1 (Every Monday at 9am)"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Examples: "0 9 * * *" (Daily at 9am), "0 0 * * 1" (Every Monday)
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Select
+                      value={formData.timezone}
+                      onValueChange={(value) => setFormData({ ...formData, timezone: value })}
+                    >
+                      <SelectTrigger id="timezone">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UTC">UTC</SelectItem>
+                        <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                        <SelectItem value="America/Chicago">Central Time</SelectItem>
+                        <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                        <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                        <SelectItem value="Europe/London">London</SelectItem>
+                        <SelectItem value="Europe/Paris">Paris</SelectItem>
+                        <SelectItem value="Asia/Tokyo">Tokyo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
 
               {formData.triggerType === "stage_entered" && (
                 <div>
@@ -524,6 +577,14 @@ export default function WorkflowAutomation() {
                         >
                           <TestTube className="h-3 w-3 mr-1" />
                           {testingRuleId === rule.id ? "Testing..." : "Test Rule"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => cloneMutation.mutate({ ruleId: rule.id })}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Clone
                         </Button>
                         <Button
                           variant="outline"

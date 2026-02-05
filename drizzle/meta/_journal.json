@@ -225,6 +225,13 @@
       "when": 1770289006745,
       "tag": "0031_spotty_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1770289662602,
+      "tag": "0032_black_impossible_man",
+      "breakpoints": true
     }
   ]
 }

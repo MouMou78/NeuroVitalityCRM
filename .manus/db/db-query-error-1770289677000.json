@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE `automationRules` MODIFY COLUMN `triggerType` enum('email_opened','email_replied','no_reply_after_days','meeting_held','stage_entered','deal_value_threshold','scheduled') NOT NULL;\nALTER TABLE `automationRules` ADD `schedule` text;\nALTER TABLE `automationRules` ADD `timezone` text;\nALTER TABLE `automationRules` ADD `nextRunAt` timestamp;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute ALTER TABLE `automationRules` MODIFY COLUMN `triggerType` enum('email_opened','email_replied','no_reply_after_days','meeting_held','stage_entered','deal_value_threshold','scheduled') NOT NULL;\nALTER TABLE `automationRules` ADD `schedule` text;\nALTER TABLE `automationRules` ADD `timezone` text;\nALTER TABLE `automationRules` ADD `nextRunAt` timestamp;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1060 (42S21) at line 2: Duplicate column name 'schedule'"
+  ]
+}

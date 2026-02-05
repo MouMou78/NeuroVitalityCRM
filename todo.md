@@ -1673,3 +1673,28 @@
 - [x] Show warnings when creating rules that might conflict or loop
 - [x] Add conflict resolution suggestions in validation messages
 - [x] Test all three enhancements together
+
+
+## Rule Execution History Dashboard
+- [x] Create execution history page with timeline view
+- [x] Add execution metrics (success rate, total executions, affected records)
+- [x] Implement filtering by rule, date range, and status
+- [x] Add execution detail view showing what changed
+- [x] Create performance charts (executions over time, success/failure trends)
+- [x] Test history dashboard with sample execution data
+
+## Rule Scheduling System
+- [x] Add schedule field to automationRules schema (cron expression, timezone)
+- [x] Extend trigger types to include time-based triggers
+- [x] Build schedule picker UI component (daily, weekly, monthly, custom cron)
+- [x] Add timezone selector for scheduled rules
+- [x] Implement schedule preview showing next execution times
+- [x] Test scheduled rule creation and display
+
+## Rule Cloning Feature
+- [x] Add "Duplicate Rule" button to rule cards
+- [x] Implement clone mutation in automation router
+- [x] Create clone dialog allowing name and priority modification
+- [x] Copy all rule configuration (trigger, action, conditions, priority)
+- [x] Add " (Copy)" suffix to cloned rule names
+- [x] Test rule cloning workflow

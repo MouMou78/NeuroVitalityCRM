@@ -35,6 +35,10 @@ export async function createAutomationRule(data: {
   triggerConfig?: Record<string, any>;
   actionType: string;
   actionConfig?: Record<string, any>;
+  conditions?: any;
+  priority?: number;
+  schedule?: string;
+  timezone?: string;
   status?: "active" | "paused";
 }) {
   const db = await getDb();
@@ -51,6 +55,10 @@ export async function createAutomationRule(data: {
     triggerConfig: data.triggerConfig || {},
     actionType: data.actionType as any,
     actionConfig: data.actionConfig || {},
+    conditions: data.conditions || { logic: 'AND', rules: [] },
+    priority: data.priority || 0,
+    schedule: data.schedule || null,
+    timezone: data.timezone || "UTC",
     status: data.status || "active",
   });
 

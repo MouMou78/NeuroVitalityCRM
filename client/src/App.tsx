@@ -26,6 +26,7 @@ import AccountDetailPage from "./pages/AccountDetailPage";
 import BulkImport from "./pages/BulkImport";
 import Automation from "./pages/Automation";
 import WorkflowAutomation from "./pages/WorkflowAutomation";
+import RuleExecutionHistory from "./pages/RuleExecutionHistory";
 import Sequences from "./pages/Sequences";
 import SequenceNew from "./pages/SequenceNew";
 import CustomFields from "./pages/CustomFields";
@@ -190,6 +191,12 @@ function Router() {
       <Route path="/workflow-automation">
         <DashboardLayout>
           <WorkflowAutomation />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/rule-execution-history">
+        <DashboardLayout>
+          <RuleExecutionHistory />
         </DashboardLayout>
       </Route>
       

@@ -349,7 +349,8 @@ export const automationRules = mysqlTable("automationRules", {
     "no_reply_after_days",
     "meeting_held",
     "stage_entered",
-    "deal_value_threshold"
+    "deal_value_threshold",
+    "scheduled"
   ]).notNull(),
   triggerConfig: json("triggerConfig").$type<Record<string, any>>().default({}),
   actionType: mysqlEnum("actionType", [
@@ -369,6 +370,9 @@ export const automationRules = mysqlTable("automationRules", {
     }>;
   }>().default({ logic: 'AND', rules: [] }),
   priority: int("priority").default(0).notNull(),
+  schedule: text("schedule"),
+  timezone: text("timezone").default("UTC"),
+  nextRunAt: timestamp("nextRunAt"),
   status: mysqlEnum("status", ["active", "paused"]).default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

@@ -2417,7 +2417,7 @@ Generate a subject line and email body. Format your response as JSON with "subje
       .input(z.object({
         name: z.string(),
         description: z.string().optional(),
-        triggerType: z.enum(["email_opened", "email_replied", "no_reply_after_days", "meeting_held", "stage_entered", "deal_value_threshold"]),
+        triggerType: z.enum(["email_opened", "email_replied", "no_reply_after_days", "meeting_held", "stage_entered", "deal_value_threshold", "scheduled"]),
         triggerConfig: z.record(z.string(), z.any()).optional(),
         actionType: z.enum(["move_stage", "send_notification", "create_task", "enroll_sequence", "update_field"]),
         actionConfig: z.record(z.string(), z.any()).optional(),
@@ -2430,6 +2430,8 @@ Generate a subject line and email body. Format your response as JSON with "subje
           })),
         }).optional(),
         priority: z.number().optional(),
+        schedule: z.string().optional(),
+        timezone: z.string().optional(),
         status: z.enum(["active", "paused"]).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -2463,6 +2465,35 @@ Generate a subject line and email body. Format your response as JSON with "subje
         const { deleteAutomationRule } = await import("./db-automation");
         await deleteAutomationRule(input.ruleId);
         return { success: true };
+      }),
+    
+    cloneRule: protectedProcedure
+      .input(z.object({ 
+        ruleId: z.string(),
+        name: z.string().optional(),
+        priority: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { getAutomationRuleById, createAutomationRule } = await import("./db-automation");
+        const originalRule = await getAutomationRuleById(input.ruleId);
+        if (!originalRule) throw new Error("Rule not found");
+        
+        const { id, createdAt, updatedAt, nextRunAt, ...ruleData } = originalRule;
+        const newRuleId = await createAutomationRule({
+          tenantId: ctx.user.tenantId,
+          name: input.name || `${originalRule.name} (Copy)`,
+          description: ruleData.description || undefined,
+          triggerType: ruleData.triggerType,
+          triggerConfig: ruleData.triggerConfig || undefined,
+          actionType: ruleData.actionType,
+          actionConfig: ruleData.actionConfig || undefined,
+          conditions: ruleData.conditions || undefined,
+          priority: input.priority !== undefined ? input.priority : (ruleData.priority || undefined),
+          schedule: ruleData.schedule || undefined,
+          timezone: ruleData.timezone || undefined,
+          status: "paused", // Clone as paused for safety
+        });
+        return { ruleId: newRuleId };
       }),
     
     getExecutions: protectedProcedure
