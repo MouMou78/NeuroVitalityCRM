@@ -31,6 +31,7 @@ import TemplatesMarketplace from "./pages/TemplatesMarketplace";
 import Sequences from "./pages/Sequences";
 import SequenceNew from "./pages/SequenceNew";
 import SequenceGenerate from "./pages/SequenceGenerate";
+import SequenceBuilderVisual from "./pages/SequenceBuilderVisual";
 import CustomFields from "./pages/CustomFields";
 import ActivityFeed from "./pages/ActivityFeed";
 import EmailGenerator from "./pages/EmailGenerator";
@@ -229,6 +230,12 @@ function Router() {
       <Route path="/sequences/generate">
         <DashboardLayout>
           <SequenceGenerate />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/sequences/visual-builder">
+        <DashboardLayout>
+          <SequenceBuilderVisual />
         </DashboardLayout>
       </Route>
       

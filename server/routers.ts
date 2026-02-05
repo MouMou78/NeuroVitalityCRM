@@ -1548,6 +1548,88 @@ Return ONLY valid JSON in this exact format:
         
         return { success: true, sequenceId: sequence.id };
       }),
+
+    // Conditional sequence procedures
+    createConditional: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        nodes: z.array(z.object({
+          id: z.string(),
+          nodeType: z.enum(["email", "wait", "condition", "ab_split", "goal_check", "exit"]),
+          position: z.object({ x: z.number(), y: z.number() }),
+          label: z.string().optional(),
+          subject: z.string().optional(),
+          body: z.string().optional(),
+          waitDays: z.number().optional(),
+          conditionType: z.enum(["replied", "not_replied", "opened", "not_opened", "clicked_link", "negative_response"]).optional(),
+          variantAPercentage: z.number().optional(),
+          goalType: z.enum(["meeting_booked", "demo_requested", "replied", "link_clicked"]).optional(),
+        })),
+        edges: z.array(z.object({
+          id: z.string(),
+          sourceNodeId: z.string(),
+          targetNodeId: z.string(),
+          edgeType: z.enum(["default", "yes", "no", "variant_a", "variant_b", "goal_met", "goal_not_met"]).optional(),
+          label: z.string().optional(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { createSequenceWithNodes } = await import("./db-sequences");
+        const sequenceId = await createSequenceWithNodes({
+          tenantId: ctx.user.tenantId,
+          name: input.name,
+          description: input.description,
+          nodes: input.nodes,
+          edges: input.edges,
+        });
+        return { success: true, id: sequenceId };
+      }),
+
+    updateConditional: protectedProcedure
+      .input(z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string().optional(),
+        nodes: z.array(z.object({
+          id: z.string(),
+          nodeType: z.enum(["email", "wait", "condition", "ab_split", "goal_check", "exit"]),
+          position: z.object({ x: z.number(), y: z.number() }),
+          label: z.string().optional(),
+          subject: z.string().optional(),
+          body: z.string().optional(),
+          waitDays: z.number().optional(),
+          conditionType: z.enum(["replied", "not_replied", "opened", "not_opened", "clicked_link", "negative_response"]).optional(),
+          variantAPercentage: z.number().optional(),
+          goalType: z.enum(["meeting_booked", "demo_requested", "replied", "link_clicked"]).optional(),
+        })),
+        edges: z.array(z.object({
+          id: z.string(),
+          sourceNodeId: z.string(),
+          targetNodeId: z.string(),
+          edgeType: z.enum(["default", "yes", "no", "variant_a", "variant_b", "goal_met", "goal_not_met"]).optional(),
+          label: z.string().optional(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { updateSequenceWithNodes } = await import("./db-sequences");
+        await updateSequenceWithNodes({
+          sequenceId: input.id,
+          tenantId: ctx.user.tenantId,
+          name: input.name,
+          description: input.description,
+          nodes: input.nodes,
+          edges: input.edges,
+        });
+        return { success: true };
+      }),
+
+    getConditional: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const { getSequenceWithNodes } = await import("./db-sequences");
+        return await getSequenceWithNodes(input.id, ctx.user.tenantId);
+      }),
   }),
   
   emailGenerator: router({

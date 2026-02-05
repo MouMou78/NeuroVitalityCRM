@@ -387,6 +387,87 @@ export const emailSequenceEvents = mysqlTable("emailSequenceEvents", {
 export type EmailSequenceEvent = typeof emailSequenceEvents.$inferSelect;
 export type InsertEmailSequenceEvent = typeof emailSequenceEvents.$inferInsert;
 
+// Conditional Sequence Nodes (for non-linear sequences)
+export const sequenceNodes = mysqlTable("sequenceNodes", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  sequenceId: varchar("sequenceId", { length: 36 }).notNull(),
+  nodeType: mysqlEnum("nodeType", ["email", "wait", "condition", "ab_split", "goal_check", "exit"]).notNull(),
+  position: json("position").$type<{ x: number; y: number }>().notNull(), // For visual builder
+  
+  // Email node fields
+  subject: text("subject"),
+  body: text("body"),
+  
+  // Wait node fields
+  waitDays: int("waitDays"),
+  waitUntilTime: varchar("waitUntilTime", { length: 20 }), // e.g., "09:00" for wait until 9am
+  
+  // Condition node fields
+  conditionType: mysqlEnum("conditionType", [
+    "replied",
+    "not_replied",
+    "opened",
+    "not_opened",
+    "clicked_link",
+    "time_elapsed",
+    "custom_field",
+    "goal_achieved",
+    "negative_response"
+  ]),
+  conditionConfig: json("conditionConfig").$type<Record<string, any>>(), // e.g., {field: "jobTitle", operator: "equals", value: "CEO"}
+  
+  // A/B split node fields
+  variantAPercentage: int("variantAPercentage"), // e.g., 50 for 50/50 split
+  
+  // Goal check node fields
+  goalType: mysqlEnum("goalType", ["meeting_booked", "demo_requested", "replied", "link_clicked", "custom"]),
+  
+  label: text("label"), // Display name for the node
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  sequenceNodeIdx: index("sequence_node_idx").on(table.sequenceId),
+}));
+
+export type SequenceNode = typeof sequenceNodes.$inferSelect;
+export type InsertSequenceNode = typeof sequenceNodes.$inferInsert;
+
+// Sequence Edges (connections between nodes)
+export const sequenceEdges = mysqlTable("sequenceEdges", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  sequenceId: varchar("sequenceId", { length: 36 }).notNull(),
+  sourceNodeId: varchar("sourceNodeId", { length: 36 }).notNull(),
+  targetNodeId: varchar("targetNodeId", { length: 36 }).notNull(),
+  
+  // Edge condition (for branching)
+  edgeType: mysqlEnum("edgeType", ["default", "yes", "no", "variant_a", "variant_b", "goal_met", "goal_not_met"]).notNull().default("default"),
+  label: text("label"), // e.g., "If replied", "If not opened", "Variant A"
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  sequenceEdgeIdx: index("sequence_edge_idx").on(table.sequenceId),
+  sourceNodeIdx: index("source_node_idx").on(table.sourceNodeId),
+}));
+
+export type SequenceEdge = typeof sequenceEdges.$inferSelect;
+export type InsertSequenceEdge = typeof sequenceEdges.$inferInsert;
+
+// Enrollment Path Tracking (which nodes each prospect visited)
+export const enrollmentPathHistory = mysqlTable("enrollmentPathHistory", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  enrollmentId: varchar("enrollmentId", { length: 36 }).notNull(),
+  nodeId: varchar("nodeId", { length: 36 }).notNull(),
+  enteredAt: timestamp("enteredAt").defaultNow().notNull(),
+  exitedAt: timestamp("exitedAt"),
+  edgeTaken: varchar("edgeTaken", { length: 36 }), // Which edge was followed to next node
+  metadata: json("metadata").$type<Record<string, any>>().default({}), // e.g., {variant: "A", conditionMet: true}
+}, (table) => ({
+  enrollmentNodeIdx: index("enrollment_node_idx").on(table.enrollmentId, table.nodeId),
+  enrollmentTimeIdx: index("enrollment_time_idx").on(table.enrollmentId, table.enteredAt),
+}));
+
+export type EnrollmentPathHistory = typeof enrollmentPathHistory.$inferSelect;
+export type InsertEnrollmentPathHistory = typeof enrollmentPathHistory.$inferInsert;
+
 // Pipeline Automation
 export const automationRules = mysqlTable("automationRules", {
   id: varchar("id", { length: 36 }).primaryKey(),

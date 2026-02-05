@@ -2022,3 +2022,16 @@
 
 ## Layout Fixes
 - [x] Fix Workflow Automation page layout - sidebar text overlapping with main content
+
+## Conditional Sequence Builder
+- [x] Update database schema to support sequence branches and conditions
+- [x] Add A/B split testing - randomly route prospects to variant A or B
+- [x] Add reply detection branching - different path if prospect replies
+- [x] Add engagement-based routing - branch on email opens, link clicks
+- [x] Add time-based conditions - different paths based on time elapsed
+- [x] Add custom field conditions - branch based on prospect data (job title, company size, etc.)
+- [x] Add goal achievement detection - exit sequence when goal is met (meeting booked, demo requested)
+- [x] Add negative response handling - special path for "not interested" replies
+- [x] Build visual sequence builder UI with drag-and-drop branching
+- [x] Implement backend conditional routing logic
+- [x] Add sequence flow visualization showing all branches

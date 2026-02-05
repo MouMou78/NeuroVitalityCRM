@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Mail, Play, Pause, Users, TrendingUp, Sparkles } from "lucide-react";
+import { Loader2, Plus, Mail, Play, Pause, Users, TrendingUp, Sparkles, GitBranch } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -34,6 +34,12 @@ export default function Sequences() {
             <Button variant="outline">
               <Sparkles className="w-4 h-4 mr-2" />
               Generate with AI
+            </Button>
+          </Link>
+          <Link href="/sequences/visual-builder">
+            <Button variant="outline">
+              <GitBranch className="w-4 h-4 mr-2" />
+              Visual Builder
             </Button>
           </Link>
           <Link href="/sequences/new">

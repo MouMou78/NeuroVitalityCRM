@@ -260,6 +260,13 @@
       "when": 1770308501582,
       "tag": "0036_perfect_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1770323273557,
+      "tag": "0037_silent_jackpot",
+      "breakpoints": true
     }
   ]
 }
