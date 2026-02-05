@@ -272,9 +272,7 @@ function Router() {
       </Route>
       
       <Route path="/analytics">
-        <DashboardLayout>
-          <Dashboard />
-        </DashboardLayout>
+        <Analytics />
       </Route>
       
       <Route path="/reports">

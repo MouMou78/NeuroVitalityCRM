@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
+    "seed:deals": "NODE_ENV=development tsx seed-deals.mjs",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {

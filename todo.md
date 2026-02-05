@@ -1921,3 +1921,8 @@
 - [x] Add activity-based triggers (email opens, meetings logged, etc.) (already implemented)
 - [x] Implement automatic stage progression rules (move_stage action already exists)
 - [x] Test pipeline automation with real scenarios (system already functional)
+
+## Analytics Fixes
+- [x] Create development-only seed script for sample deal data
+- [x] Fix analytics routes to show advanced metrics (email tracking, velocity)
+- [x] Test analytics dashboard with sample data
