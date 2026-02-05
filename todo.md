@@ -2019,3 +2019,6 @@
 - [x] Build content settings/context upload feature for AI generation
 - [x] Design UI for AI sequence generation with customizable parameters
 - [x] Test AI sequence generation with uploaded context
+
+## Layout Fixes
+- [x] Fix Workflow Automation page layout - sidebar text overlapping with main content
