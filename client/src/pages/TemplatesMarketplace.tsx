@@ -25,6 +25,8 @@ export default function TemplatesMarketplace() {
   const [selectedTemplateForHistory, setSelectedTemplateForHistory] = useState<string | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
+  const [isBulkMode, setIsBulkMode] = useState(false);
   const [customization, setCustomization] = useState<{
     name: string;
     priority: number;
@@ -90,6 +92,29 @@ export default function TemplatesMarketplace() {
     },
     onError: (error: any) => {
       toast.error(`Import failed: ${error.message}`);
+    },
+  });
+
+  const bulkDeleteMutation = trpc.automation.bulkDeleteTemplates.useMutation({
+    onSuccess: () => {
+      toast.success(`${selectedTemplateIds.length} templates deleted successfully`);
+      setSelectedTemplateIds([]);
+      setIsBulkMode(false);
+      refetchMyTemplates();
+    },
+    onError: (error: any) => {
+      toast.error(`Bulk delete failed: ${error.message}`);
+    },
+  });
+
+  const bulkToggleVisibilityMutation = trpc.automation.bulkToggleVisibility.useMutation({
+    onSuccess: () => {
+      toast.success(`Visibility updated for ${selectedTemplateIds.length} templates`);
+      setSelectedTemplateIds([]);
+      refetchMyTemplates();
+    },
+    onError: (error: any) => {
+      toast.error(`Bulk visibility toggle failed: ${error.message}`);
     },
   });
 
@@ -226,6 +251,50 @@ export default function TemplatesMarketplace() {
     }
   };
 
+  const handleBulkExport = () => {
+    if (selectedTemplateIds.length === 0) return;
+    
+    const templatesToExport = myTemplates?.filter((t: any) => 
+      selectedTemplateIds.includes(t.id)
+    ) || [];
+    
+    templatesToExport.forEach(template => handleExportTemplate(template));
+    toast.success(`Exported ${selectedTemplateIds.length} templates`);
+    setSelectedTemplateIds([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedTemplateIds.length === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selectedTemplateIds.length} templates? This action cannot be undone.`)) {
+      bulkDeleteMutation.mutate({ templateIds: selectedTemplateIds });
+    }
+  };
+
+  const handleBulkToggleVisibility = (isPublic: boolean) => {
+    if (selectedTemplateIds.length === 0) return;
+    
+    bulkToggleVisibilityMutation.mutate({ templateIds: selectedTemplateIds, isPublic });
+  };
+
+  const handleSelectAll = () => {
+    if (!myTemplates) return;
+    const allIds = myTemplates.map((t: any) => t.id);
+    setSelectedTemplateIds(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedTemplateIds([]);
+  };
+
+  const toggleTemplateSelection = (templateId: string) => {
+    setSelectedTemplateIds(prev => 
+      prev.includes(templateId)
+        ? prev.filter(id => id !== templateId)
+        : [...prev, templateId]
+    );
+  };
+
   const getCategoryLabel = (category: string) => {
     return categories.find(c => c.value === category)?.label || category;
   };
@@ -256,6 +325,7 @@ export default function TemplatesMarketplace() {
 
   const TemplateCard = ({ template, showActions = false, isUserTemplate = false }: any) => {
     const installed = !isUserTemplate && isTemplateInstalled(template.id);
+    const isSelected = selectedTemplateIds.includes(template.id);
     const { data: rating } = trpc.automation.getRating.useQuery(
       { templateId: template.id },
       { enabled: !isUserTemplate }
@@ -266,9 +336,16 @@ export default function TemplatesMarketplace() {
     );
 
     return (
-      <Card className={installed ? "border-primary/50 bg-primary/5" : ""}>
+      <Card className={`${installed ? "border-primary/50 bg-primary/5" : ""} ${isSelected ? "ring-2 ring-primary" : ""}`}>
         <CardHeader>
           <div className="flex items-start justify-between">
+            {isBulkMode && showActions && (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => toggleTemplateSelection(template.id)}
+                className="mt-1 mr-3"
+              />
+            )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <CardTitle className="text-lg">{template.name}</CardTitle>
@@ -568,6 +645,39 @@ export default function TemplatesMarketplace() {
         </TabsContent>
 
         <TabsContent value="my-templates" className="space-y-6">
+          {/* Bulk Action Toolbar */}
+          {selectedTemplateIds.length > 0 && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium">
+                    {selectedTemplateIds.length} template{selectedTemplateIds.length !== 1 ? 's' : ''} selected
+                  </span>
+                  <Button variant="outline" size="sm" onClick={handleDeselectAll}>
+                    Deselect All
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleBulkExport}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleBulkToggleVisibility(true)}>
+                    <Globe className="h-4 w-4 mr-2" />
+                    Make Public
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleBulkToggleVisibility(false)}>
+                    Make Private
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Filters */}
           <div className="space-y-4">
             <div className="flex gap-4">
@@ -580,6 +690,15 @@ export default function TemplatesMarketplace() {
                   className="pl-10"
                 />
               </div>
+              <Button variant="outline" onClick={() => setIsBulkMode(!isBulkMode)}>
+                <Check className="h-4 w-4 mr-2" />
+                {isBulkMode ? 'Cancel Selection' : 'Select Multiple'}
+              </Button>
+              {isBulkMode && myTemplates && myTemplates.length > 0 && (
+                <Button variant="outline" onClick={handleSelectAll}>
+                  Select All
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Import

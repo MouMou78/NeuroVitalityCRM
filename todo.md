@@ -1809,3 +1809,34 @@
 - [x] Handle import errors gracefully with clear messages
 - [x] Add imported template to user's My Templates
 - [x] Test export/import with various template configurations
+
+
+## Bulk Template Operations
+- [x] Add multi-select checkboxes to template cards in My Templates
+- [x] Create bulk action toolbar showing selected count
+- [x] Implement bulk export (download multiple templates as ZIP)
+- [x] Add bulk delete with confirmation dialog
+- [x] Implement bulk visibility toggle (make multiple templates public/private)
+- [x] Add "Select All" and "Deselect All" buttons
+- [x] Test bulk operations with various selections
+
+## Template Collections
+- [ ] Create templateCollections database table (id, userId, name, description, createdAt)
+- [ ] Create templateCollectionItems junction table (collectionId, templateId)
+- [ ] Add backend procedures for collection CRUD operations
+- [ ] Build collections sidebar in My Templates tab
+- [ ] Implement drag-and-drop to add templates to collections
+- [ ] Add "Create Collection" dialog
+- [ ] Allow renaming and deleting collections
+- [ ] Show template count in each collection
+- [ ] Test collection management workflow
+
+## Template Usage Insights
+- [ ] Create usage analytics page/section
+- [ ] Track template usage frequency (times installed, times executed)
+- [ ] Calculate time saved per template based on automation runs
+- [ ] Show most-used vs least-used templates
+- [ ] Add optimization suggestions for underutilized rules
+- [ ] Create usage trend charts (daily/weekly/monthly)
+- [ ] Display ROI metrics (time saved, tasks automated)
+- [ ] Test insights with sample usage data

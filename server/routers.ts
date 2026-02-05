@@ -2682,6 +2682,26 @@ Generate a subject line and email body. Format your response as JSON with "subje
         const { getRecommendations } = await import("./recommendation-engine");
         return getRecommendations(ctx.user.id, ctx.user.tenantId, input.limit || 5);
       }),
+
+    bulkDeleteTemplates: protectedProcedure
+      .input(z.object({ templateIds: z.array(z.string()) }))
+      .mutation(async ({ ctx, input }) => {
+        const { deleteUserTemplate } = await import("./db-automation-templates");
+        for (const templateId of input.templateIds) {
+          await deleteUserTemplate(templateId);
+        }
+        return { success: true, count: input.templateIds.length };
+      }),
+
+    bulkToggleVisibility: protectedProcedure
+      .input(z.object({ templateIds: z.array(z.string()), isPublic: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const { updateUserTemplate } = await import("./db-automation-templates");
+        for (const templateId of input.templateIds) {
+          await updateUserTemplate(templateId, { isPublic: input.isPublic });
+        }
+        return { success: true, count: input.templateIds.length };
+      }),
   }),
   
   collaboration: router({
