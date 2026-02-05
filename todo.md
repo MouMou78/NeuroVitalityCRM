@@ -2035,3 +2035,6 @@
 - [x] Build visual sequence builder UI with drag-and-drop branching
 - [x] Implement backend conditional routing logic
 - [x] Add sequence flow visualization showing all branches
+
+## Visual Sequence Builder Fixes
+- [x] Fix mini-map in visual sequence builder - not displaying node thumbnails properly

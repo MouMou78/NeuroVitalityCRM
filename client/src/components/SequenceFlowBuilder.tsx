@@ -144,7 +144,22 @@ export default function SequenceFlowBuilder({
       >
         <Background />
         <Controls />
-        <MiniMap />
+        <MiniMap 
+          nodeColor={(node) => {
+            switch (node.type) {
+              case 'email': return '#10b981';
+              case 'wait': return '#3b82f6';
+              case 'condition': return '#8b5cf6';
+              case 'abSplit': return '#f59e0b';
+              case 'goalCheck': return '#06b6d4';
+              case 'exit': return '#ef4444';
+              default: return '#6b7280';
+            }
+          }}
+          nodeStrokeWidth={3}
+          zoomable
+          pannable
+        />
         
         <Panel position="top-left" className="space-y-2">
           <Card className="w-64">
