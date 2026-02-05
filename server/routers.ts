@@ -266,6 +266,15 @@ export const appRouter = router({
       }));
     }),
     
+    getHotLeads: protectedProcedure.query(async ({ ctx }) => {
+      const people = await db.getPeopleByTenant(ctx.user.tenantId);
+      // Return contacts with combined score >= 70
+      return people
+        .filter((p: any) => (p.combinedScore || 0) >= 70)
+        .sort((a: any, b: any) => (b.combinedScore || 0) - (a.combinedScore || 0))
+        .slice(0, 10);
+    }),
+    
     getActivitySummaries: protectedProcedure
       .input(z.object({ personIds: z.array(z.string()) }))
       .query(async ({ input, ctx }) => {
@@ -914,6 +923,41 @@ export const appRouter = router({
       .query(async ({ ctx }) => {
         const { getOverallMetrics } = await import("./analytics");
         return getOverallMetrics(ctx.user.tenantId);
+      }),
+    
+    getPipelineVelocity: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getDealsByTenant } = await import("./db-deals");
+        const deals = await getDealsByTenant(ctx.user.tenantId);
+        
+        const closedDeals = deals.filter((d: any) => d.stageId === "closed-won" || d.stageId === "closed-lost");
+        const wonDeals = deals.filter((d: any) => d.stageId === "closed-won");
+        
+        // Calculate average days to close
+        const daysToClose = closedDeals
+          .filter((d: any) => d.createdAt && d.closedAt)
+          .map((d: any) => {
+            const created = new Date(d.createdAt).getTime();
+            const closed = new Date(d.closedAt).getTime();
+            return Math.floor((closed - created) / (1000 * 60 * 60 * 24));
+          });
+        
+        const avgDaysToClose = daysToClose.length > 0
+          ? Math.round(daysToClose.reduce((a: number, b: number) => a + b, 0) / daysToClose.length)
+          : 0;
+        
+        const winRate = closedDeals.length > 0
+          ? Math.round((wonDeals.length / closedDeals.length) * 100)
+          : 0;
+        
+        const totalValue = wonDeals.reduce((sum: number, d: any) => sum + (Number(d.value) || 0), 0);
+        
+        return {
+          avgDaysToClose,
+          winRate,
+          closedDeals: closedDeals.length,
+          totalValue,
+        };
       }),
     
     get: protectedProcedure
@@ -2958,6 +3002,22 @@ Generate a subject line and email body. Format your response as JSON with "subje
       .query(async ({ ctx }) => {
         const { getOverdueTasks } = await import("./db-tasks");
         return getOverdueTasks(ctx.user.tenantId);
+      }),
+    
+    getDueToday: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getTasksByTenant } = await import("./db-tasks");
+        const tasks = await getTasksByTenant(ctx.user.tenantId);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        return tasks.filter((task: any) => {
+          if (!task.dueDate) return false;
+          const dueDate = new Date(task.dueDate);
+          return dueDate >= today && dueDate < tomorrow;
+        });
       }),
     
     create: protectedProcedure

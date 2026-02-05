@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Sparkles, Wand2, RefreshCw } from "lucide-react";
+import { Sparkles, Wand2, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface AIEmailAssistantProps {
@@ -29,6 +29,10 @@ export function AIEmailAssistant({
 
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [isImproveOpen, setIsImproveOpen] = useState(false);
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  
+  const { data: templates } = trpc.emailTemplates.list.useQuery();
   
   const [generateParams, setGenerateParams] = useState({
     purpose: "cold_outreach",
@@ -83,8 +87,71 @@ export function AIEmailAssistant({
     });
   };
 
+  const handleUseTemplate = () => {
+    const template = templates?.find((t: any) => t.id === selectedTemplateId);
+    if (!template) return;
+    
+    const subject = template.subject;
+    const body = template.content?.map((block: any) => block.content || "").join("\n\n");
+    
+    onApply(subject, body);
+    setIsTemplateOpen(false);
+    toast.success("Template applied");
+  };
+
   return (
     <div className="flex gap-2">
+      {/* Use Template */}
+      <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <FileText className="mr-2 h-4 w-4" />
+            Use Template
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Email Template</DialogTitle>
+            <DialogDescription>
+              Choose a template to start with. You can customize it with AI after applying.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="template">Template</Label>
+              <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                <SelectTrigger id="template">
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates?.map((template: any) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} {template.category && `(${template.category})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedTemplateId && templates?.find((t: any) => t.id === selectedTemplateId) && (
+              <div className="p-4 border rounded-lg bg-muted/50">
+                <p className="text-sm font-medium mb-2">Preview:</p>
+                <p className="text-sm font-semibold">
+                  Subject: {templates.find((t: any) => t.id === selectedTemplateId)?.subject}
+                </p>
+                <p className="text-sm mt-2 text-muted-foreground">
+                  {templates.find((t: any) => t.id === selectedTemplateId)?.content?.[0]?.content?.substring(0, 150)}...
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleUseTemplate} disabled={!selectedTemplateId}>
+              Apply Template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Generate Email */}
       <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
         <DialogTrigger asChild>

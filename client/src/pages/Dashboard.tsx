@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { DollarSign, TrendingUp, Users, Activity } from "lucide-react";
+import { DollarSign, TrendingUp, Users, Activity, CheckCircle2, Flame, TrendingDown } from "lucide-react";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"];
 
@@ -10,6 +10,9 @@ export default function Dashboard() {
   const { data: conversionData, isLoading: conversionLoading } = trpc.analytics.getConversionRates.useQuery();
   const { data: metricsData, isLoading: metricsLoading } = trpc.analytics.getOverallMetrics.useQuery();
   const { data: campaignTrends, isLoading: trendsLoading } = trpc.analytics.getCampaignTrends.useQuery({});
+  const { data: tasksDue } = trpc.tasks.getDueToday.useQuery();
+  const { data: hotLeads } = trpc.people.getHotLeads.useQuery();
+  const { data: pipelineVelocity } = trpc.analytics.getPipelineVelocity.useQuery();
 
   if (pipelineLoading || conversionLoading || metricsLoading || trendsLoading) {
     return (
@@ -30,6 +33,94 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">
           Track your pipeline health, conversion rates, and team performance
         </p>
+      </div>
+
+      {/* Dashboard Widgets */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Tasks Due Today */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tasks Due Today</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{tasksDue?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">tasks requiring attention</p>
+            {tasksDue && tasksDue.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {tasksDue.slice(0, 3).map((task: any) => (
+                  <div key={task.id} className="text-sm">
+                    <p className="font-medium truncate">{task.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {task.priority === "high" && "🔴 "}
+                      {task.priority === "medium" && "🟡 "}
+                      {task.priority === "low" && "🟢 "}
+                      {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}
+                    </p>
+                  </div>
+                ))}
+                {tasksDue.length > 3 && (
+                  <p className="text-xs text-muted-foreground">+{tasksDue.length - 3} more</p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Hot Leads */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Hot Leads</CardTitle>
+            <Flame className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{hotLeads?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">high-scoring contacts</p>
+            {hotLeads && hotLeads.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {hotLeads.slice(0, 3).map((lead: any) => (
+                  <div key={lead.id} className="text-sm">
+                    <p className="font-medium truncate">{lead.fullName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Score: {lead.combinedScore || 0} | {lead.companyName || "No company"}
+                    </p>
+                  </div>
+                ))}
+                {hotLeads.length > 3 && (
+                  <p className="text-xs text-muted-foreground">+{hotLeads.length - 3} more</p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pipeline Velocity */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pipeline Velocity</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pipelineVelocity?.avgDaysToClose || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">avg days to close</p>
+            {pipelineVelocity && (
+              <div className="mt-4 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Win Rate:</span>
+                  <span className="font-medium">{pipelineVelocity.winRate || 0}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Deals Closed:</span>
+                  <span className="font-medium">{pipelineVelocity.closedDeals || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Value:</span>
+                  <span className="font-medium">${(pipelineVelocity.totalValue || 0).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Key Metrics */}

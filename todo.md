@@ -1597,3 +1597,40 @@
 - [x] Update CSV export to handle all three report types
 - [x] Add appropriate data visualizations for each report type
 - [x] Test all report types with real data
+
+
+## Email Template Library
+- [x] Create emailTemplates database table (id, name, subject, body, category, createdBy, createdAt)
+- [x] Build backend CRUD procedures for templates (create, list, get, update, delete)
+- [x] Create EmailTemplates page with template list and management UI
+- [x] Add template editor with subject and body fields
+- [x] Implement template categories (follow-up, proposal, meeting, introduction)
+- [x] Integrate templates with AIEmailAssistant component
+- [x] Add "Use Template" button in email composition sections
+- [x] Allow AI to improve/customize templates before use
+- [x] Test template creation, editing, and usage workflow
+
+## Deal Stage Automation
+- [x] Create workflowRules database table (id, name, trigger, conditions, actions, enabled)
+- [x] Design workflow rule schema (trigger types, condition logic, action types)
+- [x] Build backend procedures for workflow management (create, list, update, delete, execute)
+- [x] Create WorkflowAutomation page for rule configuration
+- [x] Implement trigger types (email sent, deal value changed, stage changed, time-based)
+- [x] Add condition builder UI (if/then logic with multiple conditions)
+- [x] Implement action types (move to stage, assign owner, create task, send notification)
+- [x] Add workflow execution engine that monitors triggers
+- [x] Create workflow history/audit log
+- [x] Test automation rules with real deal scenarios
+
+## Dashboard Widgets
+- [x] Create dashboardWidgets table (id, userId, type, config, position, size)
+- [x] Design widget system architecture (widget types, data sources, layouts)
+- [x] Build backend procedures for widget data (tasks due, hot leads, pipeline velocity)
+- [x] Create reusable Widget component with loading and error states
+- [x] Implement "Tasks Due Today" widget with task list
+- [x] Implement "Hot Leads" widget showing high-scoring contacts
+- [x] Implement "Pipeline Velocity" widget with trend chart
+- [x] Add widget customization UI (add/remove/reorder widgets)
+- [x] Implement drag-and-drop widget positioning
+- [x] Add widget refresh functionality
+- [x] Test all widgets with real data
