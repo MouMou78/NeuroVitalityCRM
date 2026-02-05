@@ -2008,3 +2008,14 @@
 - [x] Install and configure cookie-parser middleware for Express server
 - [x] Fix signup database insert error with default values
 - [x] Fix signup insert query - recreated users table to match custom auth schema
+
+## New Bug Fixes
+- [x] Fix Amplemarket API key input not saving/working on Integrations page
+- [x] Fix Google Calendar integration link going to 404 page
+
+## AI Sequence Generator Feature
+- [x] Add "Generate with AI" button to Sequences page
+- [x] Create AI sequence generator backend with LLM integration
+- [x] Build content settings/context upload feature for AI generation
+- [x] Design UI for AI sequence generation with customizable parameters
+- [x] Test AI sequence generation with uploaded context

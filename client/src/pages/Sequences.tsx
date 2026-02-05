@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Mail, Play, Pause, Users, TrendingUp } from "lucide-react";
+import { Loader2, Plus, Mail, Play, Pause, Users, TrendingUp, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -29,12 +29,20 @@ export default function Sequences() {
             Create and manage multi-step email campaigns
           </p>
         </div>
-        <Link href="/sequences/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            New Sequence
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/sequences/generate">
+            <Button variant="outline">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate with AI
+            </Button>
+          </Link>
+          <Link href="/sequences/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              New Sequence
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {allSequences.length === 0 ? (

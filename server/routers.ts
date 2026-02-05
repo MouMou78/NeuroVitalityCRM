@@ -1442,6 +1442,112 @@ export const appRouter = router({
         await db.enrollPeopleInSequence(input.personIds, input.sequenceId, ctx.user.tenantId);
         return { success: true };
       }),
+
+    generateWithAI: protectedProcedure
+      .input(z.object({
+        sequenceName: z.string(),
+        productDescription: z.string(),
+        targetAudience: z.string(),
+        valueProposition: z.string().optional(),
+        numberOfSteps: z.number().min(3).max(10),
+        tone: z.string(),
+        additionalContext: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        
+        // Build the prompt for AI generation
+        const prompt = `You are an expert email copywriter specializing in B2B sales sequences. Generate a ${input.numberOfSteps}-step email sequence with the following details:
+
+Product/Service: ${input.productDescription}
+
+Target Audience: ${input.targetAudience}
+
+${input.valueProposition ? `Value Proposition: ${input.valueProposition}\n\n` : ''}Tone: ${input.tone}
+
+${input.additionalContext ? `Additional Context: ${input.additionalContext}\n\n` : ''}Create ${input.numberOfSteps} emails that:
+1. Build rapport and establish credibility
+2. Address pain points and demonstrate value
+3. Include clear calls-to-action
+4. Follow best practices for cold outreach
+5. Progress naturally from introduction to conversion
+
+For each email, provide:
+- Subject line (compelling and specific)
+- Email body (personalized, concise, value-focused)
+- Recommended wait time before next email (in days)
+
+Return ONLY valid JSON in this exact format:
+{
+  "emails": [
+    {
+      "stepNumber": 1,
+      "subject": "Subject line here",
+      "body": "Email body here",
+      "waitDays": 0
+    }
+  ]
+}`;
+
+        // Call LLM to generate sequence
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are an expert B2B email copywriter. Always return valid JSON." },
+            { role: "user", content: prompt }
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "email_sequence",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  emails: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        stepNumber: { type: "number" },
+                        subject: { type: "string" },
+                        body: { type: "string" },
+                        waitDays: { type: "number" }
+                      },
+                      required: ["stepNumber", "subject", "body", "waitDays"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["emails"],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+
+        const content = response.choices[0].message.content;
+        const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+        const generatedSequence = JSON.parse(contentStr || '{}');
+        
+        // Create the sequence in database
+        const sequence = await db.createEmailSequence(ctx.user.tenantId, {
+          name: input.sequenceName,
+          description: `AI-generated sequence for ${input.targetAudience}`,
+          status: "active",
+        });
+        
+        // Create the email steps
+        for (const email of generatedSequence.emails) {
+          await db.createEmailSequenceStep(sequence.id, {
+            stepNumber: email.stepNumber,
+            subject: email.subject,
+            body: email.body,
+            delayDays: email.waitDays,
+          });
+        }
+        
+        return { success: true, sequenceId: sequence.id };
+      }),
   }),
   
   emailGenerator: router({

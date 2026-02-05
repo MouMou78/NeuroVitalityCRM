@@ -30,6 +30,7 @@ import RuleExecutionHistory from "./pages/RuleExecutionHistory";
 import TemplatesMarketplace from "./pages/TemplatesMarketplace";
 import Sequences from "./pages/Sequences";
 import SequenceNew from "./pages/SequenceNew";
+import SequenceGenerate from "./pages/SequenceGenerate";
 import CustomFields from "./pages/CustomFields";
 import ActivityFeed from "./pages/ActivityFeed";
 import EmailGenerator from "./pages/EmailGenerator";
@@ -222,6 +223,12 @@ function Router() {
       <Route path="/sequences/new">
         <DashboardLayout>
           <SequenceNew />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/sequences/generate">
+        <DashboardLayout>
+          <SequenceGenerate />
         </DashboardLayout>
       </Route>
       

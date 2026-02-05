@@ -9,7 +9,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Integrations() {
-  const { data: integrations, isLoading } = trpc.integrations.list.useQuery();
+  const { data: integrations, isLoading, refetch } = trpc.integrations.list.useQuery();
   const [amplemarketKey, setAmplemarketKey] = useState("");
   const [apolloKey, setApolloKey] = useState("");
   
@@ -17,6 +17,7 @@ export default function Integrations() {
     onSuccess: () => {
       toast.success("Amplemarket connected successfully");
       setAmplemarketKey("");
+      refetch();
     },
     onError: () => {
       toast.error("Failed to connect Amplemarket");
@@ -27,6 +28,7 @@ export default function Integrations() {
     onSuccess: () => {
       toast.success("Apollo.io connected successfully");
       setApolloKey("");
+      refetch();
     },
     onError: () => {
       toast.error("Failed to connect Apollo.io");
@@ -120,11 +122,13 @@ export default function Integrations() {
                   </ul>
                 </div>
 
-                <Button className="w-full" variant="outline" asChild>
-                  <a href="/settings/google-calendar">
-                    <LinkIcon className="w-4 h-4 mr-2" />
-                    Configure Google Calendar
-                  </a>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => toast.info("Google Calendar integration coming soon. Contact support for early access.")}
+                >
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Configure Google Calendar
                 </Button>
               </div>
             </CardContent>
