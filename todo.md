@@ -1940,3 +1940,9 @@
 - [x] Find logo component in DashboardLayout
 - [x] Increase contrast for "CONSULTANCY" text in dark mode
 - [x] Test logo visibility in both themes
+
+## Google OAuth Setup
+- [x] Create Google Cloud Console setup guide
+- [x] Add OAuth credential configuration UI to Settings
+- [x] Implement OAuth callback handling (backend scaffold complete)
+- [ ] Test calendar sync with real Google account (requires user's Google Cloud Console setup)

@@ -120,9 +120,11 @@ export default function Integrations() {
                   </ul>
                 </div>
 
-                <Button className="w-full" variant="outline" disabled>
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                  Connect Google (Coming Soon)
+                <Button className="w-full" variant="outline" asChild>
+                  <a href="/settings/google-calendar">
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    Configure Google Calendar
+                  </a>
                 </Button>
               </div>
             </CardContent>

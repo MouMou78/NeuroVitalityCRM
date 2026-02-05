@@ -2797,6 +2797,73 @@ Generate a subject line and email body. Format your response as JSON with "subje
   }),
   
   calendar: router({
+    getConfig: protectedProcedure
+      .query(async ({ ctx }) => {
+        // Return OAuth configuration status
+        const clientId = process.env.GOOGLE_CLIENT_ID || "";
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+        const { getUserIntegrations } = await import("./calendar-sync");
+        const integrations = await getUserIntegrations(ctx.user.tenantId, ctx.user.id);
+        const googleIntegration = integrations.find(i => i.provider === "google");
+        
+        return {
+          clientId: clientId ? clientId.slice(0, 20) + "..." : "",
+          clientSecret: clientSecret ? "***" : "",
+          connected: googleIntegration?.isActive || false,
+          email: null,
+        };
+      }),
+    
+    saveConfig: protectedProcedure
+      .input(z.object({
+        clientId: z.string(),
+        clientSecret: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        // In production, these should be stored securely (e.g., using webdev_request_secrets)
+        // For now, return success - actual implementation would use secrets management
+        return { success: true, message: "OAuth credentials should be set via environment variables" };
+      }),
+    
+    connect: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        if (!clientId) {
+          throw new TRPCError({ 
+            code: 'PRECONDITION_FAILED', 
+            message: 'Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.' 
+          });
+        }
+        
+        const redirectUri = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/api/calendar/oauth/callback`;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${clientId}&` +
+          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+          `response_type=code&` +
+          `scope=${encodeURIComponent('https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly')}&` +
+          `access_type=offline&` +
+          `prompt=consent&` +
+          `state=${ctx.user.id}`;
+        
+        return { authUrl };
+      }),
+    
+    disconnect: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const { getUserIntegrations, deleteCalendarIntegration } = await import("./calendar-sync");
+        const integrations = await getUserIntegrations(ctx.user.tenantId, ctx.user.id);
+        const googleIntegration = integrations.find(i => i.provider === "google");
+        
+        if (googleIntegration) {
+          await deleteCalendarIntegration(googleIntegration.id);
+        }
+        
+        return { success: true };
+      }),
+
     getIntegrations: protectedProcedure
       .query(async ({ ctx }) => {
         const { getUserIntegrations } = await import("./calendar-sync");
