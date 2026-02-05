@@ -573,6 +573,41 @@ export const appRouter = router({
           mergedFields: input.mergedFields,
         });
       }),
+    
+    getByDeal: protectedProcedure
+      .input(z.object({ dealId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const { getDealById } = await import("./db-deals");
+        const deal = await getDealById(input.dealId, ctx.user.tenantId);
+        
+        if (!deal) {
+          return [];
+        }
+        
+        // Get contacts associated with this deal
+        const contacts: any[] = [];
+        
+        // Add primary contact if exists
+        if (deal.contactId) {
+          const contact = await db.getPersonById(deal.contactId);
+          if (contact && contact.tenantId === ctx.user.tenantId) {
+            contacts.push(contact);
+          }
+        }
+        
+        // Get all contacts from the deal's account
+        if (deal.accountId) {
+          const accountContacts = await db.getPeopleByAccount(ctx.user.tenantId, deal.accountId);
+          // Add contacts that aren't already in the list
+          for (const contact of accountContacts) {
+            if (!contacts.find(c => c.id === contact.id)) {
+              contacts.push(contact);
+            }
+          }
+        }
+        
+        return contacts;
+      }),
   }),
   
   threads: router({
@@ -634,6 +669,11 @@ export const appRouter = router({
   }),
   
   moments: router({
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getMomentsByTenant(ctx.user.tenantId);
+      }),
+    
     create: protectedProcedure
       .input(z.object({
         threadId: z.string(),
@@ -2950,6 +2990,7 @@ Generate a subject line and email body. Format your response as JSON with "subje
         priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
         dueDate: z.date().optional(),
         assignedToId: z.string().optional(),
+        reminderAt: z.date().optional(),
       }))
       .mutation(async ({ input }) => {
         const { updateTask } = await import("./db-tasks");

@@ -1546,3 +1546,54 @@
 - [ ] Add multi-select dropdown or checkbox list for contact selection
 - [ ] Update email sending to support multiple recipients
 - [ ] Test email sending to multiple contacts from deal page
+
+## Task Edit Dialog Implementation
+- [ ] Create task edit dialog component in Tasks.tsx
+- [ ] Add edit button to each task row
+- [ ] Include all task fields (title, description, dueDate, priority, status)
+- [ ] Add datetime-local input for reminderAt field
+- [ ] Wire up tasks.update mutation with all fields including reminderAt
+- [ ] Add success/error toast notifications
+- [ ] Test task editing workflow
+
+## Deal Email Contact Selector
+- [x] Add contact selector dropdown to DealDetail email section
+- [x] Fetch contacts associated with the deal
+- [x] Implement multi-select UI for choosing recipients
+- [x] Update email sending logic to support multiple recipients
+- [x] Add "Select All" option for convenience
+- [x] Test email sending to multiple contacts from deal page
+
+## Expand Report Types
+- [x] Add deals report type with pipeline metrics
+- [x] Add activities report type with activity trends
+- [x] Implement backend queries for deals and activities data
+- [x] Update CSV export to handle all three report types
+- [x] Add appropriate data visualizations for each report type
+- [x] Test all report types with real data
+
+
+## Task Edit Dialog Implementation
+- [x] Create task edit dialog component in Tasks.tsx
+- [x] Add edit button to each task row
+- [x] Include all task fields (title, description, dueDate, priority, status)
+- [x] Add datetime-local input for reminderAt field
+- [x] Wire up tasks.update mutation with all fields including reminderAt
+- [x] Add success/error toast notifications
+- [x] Test task editing workflow
+
+## Deal Email Contact Selector
+- [x] Add contact selector dropdown to DealDetail email section
+- [x] Fetch contacts associated with the deal
+- [x] Implement multi-select UI for choosing recipients
+- [x] Update email sending logic to support multiple recipients
+- [x] Add "Select All" option for convenience
+- [x] Test email sending to multiple contacts from deal page
+
+## Expand Report Types
+- [x] Add deals report type with pipeline metrics
+- [x] Add activities report type with activity trends
+- [x] Implement backend queries for deals and activities data
+- [x] Update CSV export to handle all three report types
+- [x] Add appropriate data visualizations for each report type
+- [x] Test all report types with real data

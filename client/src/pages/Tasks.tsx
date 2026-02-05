@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, CheckCircle2, Circle, Clock, AlertCircle } from "lucide-react";
+import { Plus, CheckCircle2, Circle, Clock, AlertCircle, Pencil } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export function Tasks() {
   const { user } = useAuth();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
   const [filter, setFilter] = useState<"all" | "my" | "overdue">("all");
 
   const { data: allTasks, isLoading, refetch } = trpc.tasks.list.useQuery();
@@ -40,6 +42,14 @@ export function Tasks() {
     onSuccess: () => refetch(),
   });
 
+  const updateMutation = trpc.tasks.update.useMutation({
+    onSuccess: () => {
+      refetch();
+      setIsEditOpen(false);
+      setEditingTask(null);
+    },
+  });
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -55,6 +65,24 @@ export function Tasks() {
       priority: formData.priority,
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
       reminderAt: formData.reminderAt ? new Date(formData.reminderAt) : undefined,
+    });
+  };
+
+  const handleEdit = (task: any) => {
+    setEditingTask(task);
+    setIsEditOpen(true);
+  };
+
+  const handleUpdate = () => {
+    if (!editingTask) return;
+    updateMutation.mutate({
+      taskId: editingTask.id,
+      title: editingTask.title,
+      description: editingTask.description,
+      priority: editingTask.priority,
+      status: editingTask.status,
+      dueDate: editingTask.dueDate ? new Date(editingTask.dueDate) : undefined,
+      reminderAt: editingTask.reminderAt ? new Date(editingTask.reminderAt) : undefined,
     });
   };
 
@@ -254,18 +282,121 @@ export function Tasks() {
                   )}
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteMutation.mutate({ taskId: task.id })}
-                >
-                  Delete
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(task)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteMutation.mutate({ taskId: task.id })}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             </Card>
           ))
         )}
       </div>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={editingTask?.title || ""}
+                onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                placeholder="Task title"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editingTask?.description || ""}
+                onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                placeholder="Task description"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-priority">Priority</Label>
+              <Select
+                value={editingTask?.priority || "medium"}
+                onValueChange={(value: any) => setEditingTask({ ...editingTask, priority: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={editingTask?.status || "todo"}
+                onValueChange={(value: any) => setEditingTask({ ...editingTask, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todo">To Do</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-dueDate">Due Date</Label>
+              <Input
+                id="edit-dueDate"
+                type="date"
+                value={editingTask?.dueDate ? new Date(editingTask.dueDate).toISOString().split('T')[0] : ""}
+                onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-reminderAt">Reminder</Label>
+              <Input
+                id="edit-reminderAt"
+                type="datetime-local"
+                value={editingTask?.reminderAt ? new Date(editingTask.reminderAt).toISOString().slice(0, 16) : ""}
+                onChange={(e) => setEditingTask({ ...editingTask, reminderAt: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Set a reminder to get notified via email
+              </p>
+            </div>
+
+            <Button onClick={handleUpdate} className="w-full">
+              Update Task
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

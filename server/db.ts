@@ -152,6 +152,17 @@ export async function updatePerson(id: string, data: Partial<Omit<InsertPerson, 
   await db.update(people).set(data).where(eq(people.id, id));
 }
 
+export async function getPeopleByAccount(tenantId: string, accountId: string): Promise<Person[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(people)
+    .where(and(eq(people.tenantId, tenantId), eq(people.accountId, accountId)))
+    .orderBy(desc(people.createdAt));
+}
+
 // ============ THREADS ============
 
 export async function createThread(data: Omit<InsertThread, "id">): Promise<Thread> {

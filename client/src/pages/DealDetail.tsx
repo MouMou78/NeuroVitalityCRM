@@ -3,18 +3,23 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, DollarSign, Calendar, User, Building2 } from "lucide-react";
+import { ArrowLeft, DollarSign, Calendar, User, Building2, Mail } from "lucide-react";
 import Notes from "@/components/Notes";
 import { AIEmailAssistant } from "@/components/AIEmailAssistant";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
 
 export default function DealDetail() {
   const params = useParams();
   const dealId = params.id as string;
   const [, setLocation] = useLocation();
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
 
   const { data: deal, isLoading } = trpc.deals.get.useQuery({ dealId });
+  const { data: dealContacts } = trpc.people.getByDeal.useQuery({ dealId });
   const sendEmailMutation = trpc.email.send.useMutation();
 
   if (isLoading) {
@@ -157,15 +162,84 @@ export default function DealDetail() {
             <CardDescription>Compose an email related to this deal</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Contact Selector */}
+            {dealContacts && dealContacts.length > 0 && (
+              <div className="mb-6 p-4 border rounded-lg bg-muted/50">
+                <Label className="text-sm font-semibold mb-3 block">Select Recipients</Label>
+                <div className="space-y-2">
+                  {dealContacts.map((contact: any) => (
+                    <div key={contact.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`contact-${contact.id}`}
+                        checked={selectedContacts.includes(contact.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedContacts([...selectedContacts, contact.id]);
+                          } else {
+                            setSelectedContacts(selectedContacts.filter(id => id !== contact.id));
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`contact-${contact.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                      >
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        {contact.fullName || contact.firstName + ' ' + contact.lastName} ({contact.primaryEmail})
+                      </label>
+                    </div>
+                  ))}
+                  {dealContacts.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (selectedContacts.length === dealContacts.length) {
+                          setSelectedContacts([]);
+                        } else {
+                          setSelectedContacts(dealContacts.map((c: any) => c.id));
+                        }
+                      }}
+                      className="mt-2"
+                    >
+                      {selectedContacts.length === dealContacts.length ? "Deselect All" : "Select All"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <AIEmailAssistant
               dealId={dealId}
               onApply={(subject: string, body: string) => {
-                // For deals, we need to get the primary contact's email
-                // This is a simplified implementation - in production you'd want to select from multiple contacts
-                toast.info("Email composition ready. In production, this would send to the deal's primary contact.");
-                
-                // Placeholder for actual email sending
-                // sendEmailMutation.mutate({ to: contactEmail, subject, body, dealId });
+                if (!dealContacts || dealContacts.length === 0) {
+                  toast.error("No contacts associated with this deal");
+                  return;
+                }
+
+                if (selectedContacts.length === 0) {
+                  toast.error("Please select at least one recipient");
+                  return;
+                }
+
+                // Send email to each selected contact
+                const selectedEmails = dealContacts
+                  .filter((c: any) => selectedContacts.includes(c.id))
+                  .map((c: any) => c.primaryEmail);
+
+                selectedEmails.forEach((email: string) => {
+                  sendEmailMutation.mutate(
+                    { to: email, subject, body, dealId },
+                    {
+                      onSuccess: () => {
+                        toast.success(`Email sent to ${email}`);
+                      },
+                      onError: (error) => {
+                        toast.error(`Failed to send email to ${email}: ${error.message}`);
+                      },
+                    }
+                  );
+                });
               }}
             />
           </CardContent>

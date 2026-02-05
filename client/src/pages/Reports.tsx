@@ -14,16 +14,30 @@ export default function Reports() {
   const [reportType, setReportType] = useState<"deals" | "contacts" | "activities">("deals");
 
   const { data: contactsData } = trpc.people.list.useQuery();
+  const { data: dealsData } = trpc.deals.list.useQuery();
+  const { data: momentsData } = trpc.moments.list.useQuery();
   
   const exportToCSV = () => {
     let csvContent = "";
     let filename = "";
 
-    if (reportType === "contacts" && (contactsData as any)?.people) {
+    if (reportType === "contacts" && contactsData) {
       filename = `contacts_report_${new Date().toISOString().split('T')[0]}.csv`;
-      csvContent = "Name,Email,Company,Status\n";
-      (contactsData as any).people.forEach((contact: any) => {
-        csvContent += `"${contact.name}","${contact.primaryEmail || ''}","${contact.company || ''}","${contact.status || ''}"\n`;
+      csvContent = "Name,Email,Company,Title\n";
+      contactsData.forEach((contact: any) => {
+        csvContent += `"${contact.name || contact.fullName}","${contact.primaryEmail || ''}","${contact.companyName || ''}","${contact.roleTitle || ''}"\n`;
+      });
+    } else if (reportType === "deals" && dealsData) {
+      filename = `deals_report_${new Date().toISOString().split('T')[0]}.csv`;
+      csvContent = "Deal Name,Value,Stage ID,Expected Close Date,Probability\n";
+      dealsData.forEach((deal: any) => {
+        csvContent += `"${deal.name}","${deal.value || 0}","${deal.stageId}","${deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toLocaleDateString() : ''}","${deal.probability || 50}%"\n`;
+      });
+    } else if (reportType === "activities" && momentsData) {
+      filename = `activities_report_${new Date().toISOString().split('T')[0]}.csv`;
+      csvContent = "Date,Type,Source,Content\n";
+      momentsData.forEach((moment: any) => {
+        csvContent += `"${new Date(moment.happenedAt).toLocaleDateString()}","${moment.type}","${moment.source}","${(moment.content || '').replace(/"/g, '""')}"\n`;
       });
     } else {
       toast.error("No data available to export");
@@ -129,11 +143,11 @@ export default function Reports() {
             <CardDescription>Preview of your report data</CardDescription>
           </CardHeader>
           <CardContent>
-            {reportType === "contacts" && (contactsData as any)?.people && (
+            {reportType === "contacts" && contactsData && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-4">
                   <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Contacts List</span>
+                  <span className="font-medium">Contacts Report</span>
                 </div>
                 <div className="rounded-md border">
                   <table className="w-full text-sm">
@@ -145,27 +159,91 @@ export default function Reports() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(contactsData as any).people.slice(0, 10).map((contact: any) => (
+                      {contactsData.slice(0, 10).map((contact: any) => (
                         <tr key={contact.id} className="border-b last:border-0">
-                          <td className="p-2">{contact.name}</td>
+                          <td className="p-2">{contact.name || contact.fullName}</td>
                           <td className="p-2">{contact.primaryEmail || '-'}</td>
-                          <td className="p-2">{contact.company || '-'}</td>
+                          <td className="p-2">{contact.companyName || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {(contactsData as any).people.length > 10 && (
+                  {contactsData.length > 10 && (
                     <div className="p-2 text-xs text-muted-foreground text-center border-t">
-                      Showing 10 of {(contactsData as any).people.length} contacts
+                      Showing 10 of {contactsData.length} contacts
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {reportType === "activities" && (
-              <div className="flex items-center justify-center h-40 text-muted-foreground">
-                Activities report coming soon
+            {reportType === "deals" && dealsData && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Deals Report</span>
+                </div>
+                <div className="rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="p-2 text-left font-medium">Deal Name</th>
+                        <th className="p-2 text-left font-medium">Value</th>
+                        <th className="p-2 text-left font-medium">Stage</th>
+                        <th className="p-2 text-left font-medium">Probability</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dealsData.slice(0, 10).map((deal: any) => (
+                        <tr key={deal.id} className="border-b last:border-0">
+                          <td className="p-2">{deal.name}</td>
+                          <td className="p-2">${deal.value ? Number(deal.value).toLocaleString() : '0'}</td>
+                          <td className="p-2">{deal.stageId}</td>
+                          <td className="p-2">{deal.probability || 50}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {dealsData.length > 10 && (
+                    <div className="p-2 text-xs text-muted-foreground text-center border-t">
+                      Showing 10 of {dealsData.length} deals
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {reportType === "activities" && momentsData && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Activities Report</span>
+                </div>
+                <div className="rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="p-2 text-left font-medium">Date</th>
+                        <th className="p-2 text-left font-medium">Type</th>
+                        <th className="p-2 text-left font-medium">Source</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {momentsData.slice(0, 10).map((moment: any) => (
+                        <tr key={moment.id} className="border-b last:border-0">
+                          <td className="p-2">{new Date(moment.happenedAt).toLocaleDateString()}</td>
+                          <td className="p-2">{moment.type}</td>
+                          <td className="p-2">{moment.source}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {momentsData.length > 10 && (
+                    <div className="p-2 text-xs text-muted-foreground text-center border-t">
+                      Showing 10 of {momentsData.length} activities
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
