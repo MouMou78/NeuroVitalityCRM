@@ -1866,3 +1866,11 @@
 - [x] Add back buttons to EventDetail page
 - [x] Add back buttons to ThreadDetail page
 - [x] Test all navigation flows to ensure users can always return to list views
+
+## Final Enhancements (Pre-Publishing)
+- [x] Implement Escape key keyboard shortcut for back navigation on detail pages
+- [x] Add breadcrumb navigation to PersonDetail page
+- [x] Add breadcrumb navigation to EventDetail page
+- [x] Add breadcrumb navigation to ThreadDetail page
+- [x] Test keyboard shortcuts and breadcrumbs functionality
+- [ ] Create final checkpoint and publish to 1twentyinternal.com

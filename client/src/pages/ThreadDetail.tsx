@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Mail, Phone, Calendar, MessageSquare, UserPlus, CheckCircle2, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Send, Mail, Phone, Calendar, MessageSquare, UserPlus, CheckCircle2, ArrowLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useLocation, Link } from "wouter";
 
@@ -26,6 +26,18 @@ const momentIcons: Record<string, any> = {
 export default function ThreadDetail({ threadId }: ThreadDetailProps) {
   const [, setLocation] = useLocation();
   const { data, isLoading } = trpc.threads.get.useQuery({ id: threadId });
+  
+  // Keyboard shortcut: Escape to go back
+  useEffect(() => {
+    if (!data) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLocation(`/people/${data.thread.personId}`);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setLocation, data]);
   const [note, setNote] = useState("");
   
   const createMoment = trpc.moments.create.useMutation();
@@ -60,11 +72,18 @@ export default function ThreadDetail({ threadId }: ThreadDetailProps) {
 
   return (
     <div className="space-y-6">
-      <div className="mb-4">
-        <Button variant="ghost" size="sm" onClick={() => setLocation(`/people/${thread.personId}`)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Contact
+      {/* Breadcrumb navigation */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <Button variant="ghost" size="sm" onClick={() => setLocation("/people")} className="h-8 px-2">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          People
         </Button>
+        <ChevronRight className="h-4 w-4" />
+        <Button variant="ghost" size="sm" onClick={() => setLocation(`/people/${thread.personId}`)} className="h-8 px-2 hover:bg-transparent">
+          Contact
+        </Button>
+        <ChevronRight className="h-4 w-4" />
+        <span className="font-medium text-foreground">{thread.title || "Thread"}</span>
       </div>
       <div className="flex items-start justify-between">
         <div>

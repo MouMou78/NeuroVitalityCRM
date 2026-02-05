@@ -1,10 +1,11 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, ExternalLink, Copy, ArrowLeft } from "lucide-react";
+import { Loader2, Calendar, ExternalLink, Copy, ArrowLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 interface EventDetailProps {
   eventId: string;
@@ -13,6 +14,17 @@ interface EventDetailProps {
 export default function EventDetail({ eventId }: EventDetailProps) {
   const [, setLocation] = useLocation();
   const { data: event, isLoading } = trpc.events.get.useQuery({ id: eventId });
+
+  // Keyboard shortcut: Escape to go back
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLocation("/events");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setLocation]);
 
   if (isLoading) {
     return (
@@ -35,11 +47,14 @@ export default function EventDetail({ eventId }: EventDetailProps) {
 
   return (
     <div className="space-y-6">
-      <div className="mb-4">
-        <Button variant="ghost" size="sm" onClick={() => setLocation("/events")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Events
+      {/* Breadcrumb navigation */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <Button variant="ghost" size="sm" onClick={() => setLocation("/events")} className="h-8 px-2">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Events
         </Button>
+        <ChevronRight className="h-4 w-4" />
+        <span className="font-medium text-foreground">{event.name}</span>
       </div>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{event.name}</h1>
