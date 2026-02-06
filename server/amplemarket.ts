@@ -137,6 +137,23 @@ export async function syncAmplemarketContacts(
   // Step 1: Get all lead lists and collect lead IDs with owner info
   // Step 2: Hydrate full contact details via /contacts?ids=... in batches
   if (syncScope === 'all_user_contacts') {
+    console.log("[Amplemarket Sync] ===== COMPARISON LOGIC =====");
+    console.log("extractOwnerEmail function:");
+    console.log("  if (!record.owner) return null;");
+    console.log("  if (typeof record.owner === 'string') return record.owner;");
+    console.log("  if (typeof record.owner === 'object' && record.owner.email) return record.owner.email;");
+    console.log("  return null;");
+    console.log("");
+    console.log("normalizeEmail function:");
+    console.log("  if (!email) return null;");
+    console.log("  return email.toLowerCase().trim();");
+    console.log("");
+    console.log("Comparison:");
+    console.log(`  Selected owner (raw): "${amplemarketUserEmail}"`);
+    console.log(`  Selected owner (normalized): "${normalizedSelectedEmail}"`);
+    console.log(`  Match condition: normalizedContactOwner === normalizedSelectedEmail`);
+    console.log("[Amplemarket Sync] ===== END COMPARISON LOGIC =====");
+    console.log("");
     console.log("[Amplemarket Sync] Using all_user_contacts mode - two-step fetch (list IDs, then hydrate)");
     
     const { createAmplemarketClient } = await import('./amplemarketClient');
@@ -215,23 +232,42 @@ export async function syncAmplemarketContacts(
           console.log(`[Amplemarket Sync] Hydrated ${contacts.length} contacts from batch`);
           fetchedTotal += contacts.length;
           
-          // Log first 5 contacts from first batch to prove owner field format
+          // Log first 5 contacts from first batch - SHOW RAW STRUCTURE
           if (batchIndex === 0 && contacts.length > 0) {
             const sampleSize = Math.min(5, contacts.length);
-            console.log(`[Amplemarket Sync] Sample of first ${sampleSize} hydrated contacts:`);
+            console.log(`[Amplemarket Sync] ===== RAW CONTACT SAMPLES (first ${sampleSize}) =====`);
+            console.log(`Selected owner (normalized): "${normalizedSelectedEmail}"`);
+            console.log("");
+            
             for (let i = 0; i < sampleSize; i++) {
               const sample = contacts[i];
-              const ownerEmail = extractOwnerEmail(sample);
-              console.log(`  Contact ${i + 1}:`, {
-                external_id: sample.id,
+              
+              // Show EXACT raw structure with all owner-related fields
+              const rawSample: any = {
+                id: sample.id,
                 email: sample.email,
-                owner_raw: sample.owner,
-                owner_extracted: ownerEmail,
-                owner_normalized: normalizeEmail(ownerEmail),
-                selected_owner_normalized: normalizedSelectedEmail,
-                matches: normalizeEmail(ownerEmail) === normalizedSelectedEmail
-              });
+              };
+              
+              // Include all fields that might contain owner info
+              const ownerFields = ['owner', 'owner_email', 'user', 'assigned_to', 'created_by', 'updated_by'];
+              for (const field of ownerFields) {
+                if (sample[field] !== undefined) {
+                  rawSample[field] = sample[field];
+                }
+              }
+              
+              console.log(`Contact ${i + 1} RAW:`);
+              console.log(JSON.stringify(rawSample, null, 2));
+              
+              // Show extraction and comparison
+              const ownerEmail = extractOwnerEmail(sample);
+              const normalizedOwner = normalizeEmail(ownerEmail);
+              console.log(`  Extracted owner: "${ownerEmail}"`);
+              console.log(`  Normalized owner: "${normalizedOwner}"`);
+              console.log(`  Matches selected: ${normalizedOwner === normalizedSelectedEmail}`);
+              console.log("");
             }
+            console.log("[Amplemarket Sync] ===== END RAW SAMPLES =====");
           }
           
           // Process each hydrated contact with STRICT owner filtering
@@ -252,6 +288,9 @@ export async function syncAmplemarketContacts(
                 discardedOtherOwners++;
                 continue;
               }
+              
+              // Track contacts that have owner field
+              const contactsWithOwnerField = fetchedTotal - missingOwnerField;
               
               // Filter by owner - only keep contacts matching selected user
               if (normalizedContactOwner !== normalizedSelectedEmail) {
@@ -371,6 +410,7 @@ export async function syncAmplemarketContacts(
       contacts_hydrated_total: fetchedTotal,
       
       // Owner filtering (applied on hydrated contacts)
+      contacts_with_owner_field_count: fetchedTotal - missingOwnerField,
       missing_owner_field: missingOwnerField,
       kept_owner_match: keptMatchingOwner,
       discarded_owner_mismatch: discardedOtherOwners,
@@ -384,6 +424,13 @@ export async function syncAmplemarketContacts(
     console.log("[Amplemarket Sync] ===== SYNC SUMMARY =====");
     console.log(JSON.stringify(syncSummary, null, 2));
     console.log("[Amplemarket Sync] ===== END SUMMARY =====");
+    
+    // HARD FAIL if contacts hydrated but none kept (prevents silent zero runs)
+    if (fetchedTotal > 0 && keptMatchingOwner === 0) {
+      const errorMessage = `Owner field not present or mismatch. Sync aborted to prevent data loss. Hydrated ${fetchedTotal} contacts but none matched owner ${amplemarketUserEmail}. Missing owner field on ${missingOwnerField} contacts. Check which endpoint is used and whether it returns owner.`;
+      console.error("[Amplemarket Sync] HARD FAIL:", errorMessage);
+      throw new Error(errorMessage);
+    }
     
     // Diagnostic message if no contacts matched owner
     let diagnosticMessage = undefined;

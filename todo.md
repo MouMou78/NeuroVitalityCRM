@@ -2436,3 +2436,12 @@
 - [ ] Verify no 400 errors
 - [ ] Verify non-zero kept_owner_match for selected owner
 - [ ] Verify wrong-owner contacts are NOT imported
+
+## Zero Contacts Root Cause Diagnostic
+
+- [x] Add contacts_with_owner_field_count to sync logging
+- [ ] Run sync and extract full counters from logs
+- [x] Extract 5 hydrated contact samples showing exact field structure
+- [x] Show exact comparison code and normalized values
+- [x] Add hard fail if hydrated > 0 AND kept = 0
+- [ ] Deliver diagnostic report with all evidence
