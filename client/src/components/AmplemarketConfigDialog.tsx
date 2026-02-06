@@ -110,7 +110,7 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
                 <span className="text-xs mt-1 block">
                   {(usersError?.message || listsError?.message || sequencesError?.message)?.includes('401')
                     ? 'Go to Amplemarket Dashboard → Settings → API Keys to generate a new key.'
-                    : 'Please check your Amplemarket API key and try reconnecting.'}
+                    : 'If the error persists, check the browser console for details.'}
                 </span>
               </AlertDescription>
             </Alert>

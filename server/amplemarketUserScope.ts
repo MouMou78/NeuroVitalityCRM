@@ -31,6 +31,9 @@ export async function getAmplemarketUserScope(
     let allLists: any[];
     if (Array.isArray(listsResponse.data)) {
       allLists = listsResponse.data;
+    } else if (listsResponse.data?.lead_lists && Array.isArray(listsResponse.data.lead_lists)) {
+      // CORRECT: Amplemarket returns lead_lists (with underscore)
+      allLists = listsResponse.data.lead_lists;
     } else if (listsResponse.data?.leadLists && Array.isArray(listsResponse.data.leadLists)) {
       allLists = listsResponse.data.leadLists;
     } else if (listsResponse.data?.data && Array.isArray(listsResponse.data.data)) {

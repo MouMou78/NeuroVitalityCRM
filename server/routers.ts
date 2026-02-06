@@ -1956,6 +1956,16 @@ Generate a subject line and email body. Format your response as JSON with "subje
           const client = createAmplemarketClient(apiKey);
           const data = await client.getLists();
           
+          // Log exact response shape for debugging
+          console.log('[getAmplemarketLists] Amplemarket API response:', {
+            statusCode: 200,
+            responseKeys: Object.keys(data || {}),
+            hasLeadLists: !!data.lead_lists,
+            leadListsType: Array.isArray(data.lead_lists) ? 'array' : typeof data.lead_lists,
+            leadListsCount: data.lead_lists?.length || 0,
+            sampleData: data.lead_lists?.[0] ? Object.keys(data.lead_lists[0]) : []
+          });
+          
           let lists = data.lead_lists || [];
           
           // Filter by user email if provided
@@ -1965,23 +1975,49 @@ Generate a subject line and email body. Format your response as JSON with "subje
             );
           }
           
-          return lists.map((l: any) => ({
-            id: l.id,
-            name: l.name,
-            owner: l.owner,
-            shared: l.shared,
-            contactCount: null, // Count not available in list endpoint
-          }));
+          // Enforce stable contract: always return { lists: [...] }
+          const result = {
+            lists: lists.map((l: any) => ({
+              id: l.id,
+              name: l.name,
+              owner: l.owner,
+              shared: l.shared,
+              contactCount: null, // Count not available in list endpoint
+            }))
+          };
+          
+          console.log('[getAmplemarketLists] Returning stable contract:', {
+            hasLists: !!result.lists,
+            listsCount: result.lists.length,
+            listsType: Array.isArray(result.lists) ? 'array' : typeof result.lists
+          });
+          
+          return result;
         } catch (error: any) {
+          console.error('[getAmplemarketLists] Error:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            message: error.message,
+            responseData: error.response?.data,
+            errorType: error.constructor.name
+          });
+          
+          // Only show "check API key" for 401 from Amplemarket
           if (error.response?.status === 401) {
             throw new TRPCError({ 
               code: "UNAUTHORIZED", 
-              message: "Amplemarket rejected the API key (401). Please regenerate the key and try reconnecting." 
+              message: "Amplemarket rejected the API key (401). Please regenerate the key and reconnect." 
             });
           }
+          
+          // For all other errors, show accurate cause
+          const errorMessage = error.message?.includes('Endpoint does not exist')
+            ? error.message
+            : `Failed to fetch Amplemarket lists: ${error.response?.data?.message || error.message}`;
+          
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
-            message: `Failed to fetch Amplemarket lists: ${error.response?.data?.message || error.message}` 
+            message: errorMessage
           });
         }
       }),
@@ -2006,6 +2042,16 @@ Generate a subject line and email body. Format your response as JSON with "subje
           const client = createAmplemarketClient(apiKey);
           const data = await client.getSequences();
           
+          // Log exact response shape for debugging
+          console.log('[getAmplemarketSequences] Amplemarket API response:', {
+            statusCode: 200,
+            responseKeys: Object.keys(data || {}),
+            hasSequences: !!data.sequences,
+            sequencesType: Array.isArray(data.sequences) ? 'array' : typeof data.sequences,
+            sequencesCount: data.sequences?.length || 0,
+            sampleData: data.sequences?.[0] ? Object.keys(data.sequences[0]) : []
+          });
+          
           let sequences = data.sequences || [];
           
           // Filter by user email if provided
@@ -2015,21 +2061,47 @@ Generate a subject line and email body. Format your response as JSON with "subje
             );
           }
           
-          return sequences.map((s: any) => ({
-            id: s.id,
-            name: s.name || s.title,
-            createdBy: s.created_by_user_email,
-          }));
+          // Enforce stable contract: always return { sequences: [...] }
+          const result = {
+            sequences: sequences.map((s: any) => ({
+              id: s.id,
+              name: s.name || s.title,
+              createdBy: s.created_by_user_email,
+            }))
+          };
+          
+          console.log('[getAmplemarketSequences] Returning stable contract:', {
+            hasSequences: !!result.sequences,
+            sequencesCount: result.sequences.length,
+            sequencesType: Array.isArray(result.sequences) ? 'array' : typeof result.sequences
+          });
+          
+          return result;
         } catch (error: any) {
+          console.error('[getAmplemarketSequences] Error:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            message: error.message,
+            responseData: error.response?.data,
+            errorType: error.constructor.name
+          });
+          
+          // Only show "check API key" for 401 from Amplemarket
           if (error.response?.status === 401) {
             throw new TRPCError({ 
               code: "UNAUTHORIZED", 
-              message: "Amplemarket rejected the API key (401). Please regenerate the key and try reconnecting." 
+              message: "Amplemarket rejected the API key (401). Please regenerate the key and reconnect." 
             });
           }
+          
+          // For all other errors, show accurate cause
+          const errorMessage = error.message?.includes('Endpoint does not exist')
+            ? error.message
+            : `Failed to fetch Amplemarket sequences: ${error.response?.data?.message || error.message}`;
+          
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
-            message: `Failed to fetch Amplemarket sequences: ${error.response?.data?.message || error.message}` 
+            message: errorMessage
           });
         }
       }),

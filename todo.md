@@ -2319,3 +2319,28 @@
 - [x] Enhance 404 logging to show full path and fail with "Endpoint does not exist"
 - [x] Add regression test asserting no calls to /email_events (5 tests passing)
 - [x] Test email activity sourcing from /tasks endpoint
+
+## Fix Amplemarket Lists/Sequences Loading
+- [ ] Add comprehensive logging to backend endpoints (status, content-type, full JSON body)
+- [ ] Test endpoints in browser and capture raw responses
+- [ ] Enforce stable backend contract: 200 with {lists:[]}/{sequences:[]}, non-200 with {error:{}}
+- [ ] Fix frontend to read res.lists and res.sequences only
+- [ ] Handle missing arrays as empty lists (not type errors)
+- [ ] Remove "check API key" message for non-401 errors
+- [ ] Only show "check API key" for 401 from Amplemarket
+- [ ] Verify lists render and are selectable
+- [ ] Verify sequences render and are selectable
+- [ ] Verify no JS type errors in console
+
+## Fix Amplemarket Lists/Sequences Loading - COMPLETED
+- [x] Add comprehensive logging to backend endpoints (status, content-type, full JSON body)
+- [x] Test endpoints in browser and capture raw responses
+- [x] Enforce stable backend contract: 200 with {lists:[]}/{sequences:[]}, non-200 with {error:{}}
+- [x] Fix frontend to read res.lists and res.sequences only
+- [x] Handle missing arrays as empty lists (not type errors)
+- [x] Remove "check API key" message for non-401 errors
+- [x] Only show "check API key" for 401 from Amplemarket
+- [x] Fixed UserScope to check for lead_lists (actual Amplemarket field name)
+- [ ] Verify lists render and are selectable (needs browser test)
+- [ ] Verify sequences render and are selectable (needs browser test)
+- [ ] Verify no JS type errors in console (needs browser test)
