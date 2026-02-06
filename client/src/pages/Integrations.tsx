@@ -5,12 +5,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Link as LinkIcon, CheckCircle2, XCircle, Settings } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { AmplemarketConfigDialog } from "@/components/AmplemarketConfigDialog";
 
 export default function Integrations() {
   const { data: integrations, isLoading, refetch } = trpc.integrations.list.useQuery();
+  
+  // Handle OAuth callback messages
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (params.get('google_connected') === 'true') {
+      toast.success('Google Calendar connected successfully!');
+      // Clean up URL
+      window.history.replaceState({}, '', '/integrations');
+      refetch();
+    } else if (params.get('google_error')) {
+      const error = params.get('google_error');
+      if (error === 'access_denied') {
+        toast.error('Google Calendar connection cancelled');
+      } else if (error === 'no_refresh_token') {
+        toast.error('Please revoke access in your Google account settings and try again');
+      } else {
+        toast.error('Failed to connect Google Calendar');
+      }
+      // Clean up URL
+      window.history.replaceState({}, '', '/integrations');
+    }
+  }, [refetch]);
   const [amplemarketKey, setAmplemarketKey] = useState("");
   const [apolloKey, setApolloKey] = useState("");
   const [showAmplemarketConfig, setShowAmplemarketConfig] = useState(false);
@@ -139,14 +162,43 @@ export default function Integrations() {
                   </ul>
                 </div>
 
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => toast.info("Google Calendar integration coming soon. Contact support for early access.")}
-                >
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                  Configure Google Calendar
-                </Button>
+                {googleIntegration?.status === "connected" ? (
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => toast.success("Google Workspace already connected and syncing")}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Connected & Syncing
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full"
+                    onClick={async () => {
+                      try {
+                        // Get current user to extract tenantId
+                        const response = await fetch('/api/trpc/auth.me', {
+                          credentials: 'include',
+                        });
+                        const data = await response.json();
+                        const tenantId = data.result?.data?.tenantId;
+                        
+                        if (!tenantId) {
+                          toast.error('Unable to determine tenant ID. Please log in again.');
+                          return;
+                        }
+                        
+                        // Redirect to Google OAuth flow
+                        window.location.href = `/api/oauth/google?tenantId=${tenantId}`;
+                      } catch (error) {
+                        toast.error('Failed to initiate Google OAuth flow');
+                      }
+                    }}
+                  >
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    Connect Google Workspace
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

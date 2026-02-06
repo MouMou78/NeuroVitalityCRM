@@ -6,15 +6,14 @@ import { Loader2, Search, Mail, Phone, MapPin, Building2, CheckCircle2, XCircle 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import { AmplemarketConfigDialog } from "@/components/AmplemarketConfigDialog";
 
 export default function AmplemarketPeople() {
   const { data: people, isLoading, refetch } = trpc.integrations.listAmplemarketPeople.useQuery();
-  const syncMutation = trpc.integrations.syncAmplemarket.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-  });
+  const { data: integrations } = trpc.integrations.list.useQuery();
+  const amplemarketIntegration = integrations?.find((i) => i.provider === "amplemarket");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showConfig, setShowConfig] = useState(false);
 
   const filteredPeople = people?.filter((person) =>
     person.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -32,14 +31,20 @@ export default function AmplemarketPeople() {
             View and manage contacts synced from Amplemarket
           </p>
         </div>
-        <Button
-          onClick={() => syncMutation.mutate()}
-          disabled={syncMutation.isPending}
-          className="w-full md:w-auto shrink-0"
-        >
-          {syncMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          Sync from Amplemarket
-        </Button>
+        <div className="flex flex-col md:flex-row gap-2 items-end md:items-center">
+          {amplemarketIntegration?.config && typeof amplemarketIntegration.config === 'object' && 'syncSchedule' in amplemarketIntegration.config && amplemarketIntegration.config.syncSchedule !== 'manual' && (
+            <p className="text-sm text-muted-foreground">
+              Auto-sync: {amplemarketIntegration.config.syncSchedule}
+            </p>
+          )}
+          <Button
+            onClick={() => setShowConfig(true)}
+            disabled={!amplemarketIntegration}
+            className="w-full md:w-auto shrink-0"
+          >
+            Sync from Amplemarket
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -163,6 +168,14 @@ export default function AmplemarketPeople() {
           )}
         </CardContent>
       </Card>
+      
+      <AmplemarketConfigDialog
+        open={showConfig}
+        onOpenChange={setShowConfig}
+        onSave={() => {
+          refetch();
+        }}
+      />
     </div>
   );
 }

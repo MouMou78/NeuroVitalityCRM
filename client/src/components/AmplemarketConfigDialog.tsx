@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -33,16 +34,19 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
     },
   });
 
-  const { data: amplemarketUsers, isLoading: loadingUsers } = trpc.integrations.getAmplemarketUsers.useQuery(undefined, {
+  const { data: amplemarketUsers, isLoading: loadingUsers, error: usersError } = trpc.integrations.getAmplemarketUsers.useQuery(undefined, {
     enabled: open,
+    retry: false,
   });
 
-  const { data: amplemarketLists, isLoading: loadingLists } = trpc.integrations.getAmplemarketLists.useQuery(undefined, {
+  const { data: amplemarketLists, isLoading: loadingLists, error: listsError } = trpc.integrations.getAmplemarketLists.useQuery(undefined, {
     enabled: open,
+    retry: false,
   });
 
-  const { data: amplemarketSequences, isLoading: loadingSequences } = trpc.integrations.getAmplemarketSequences.useQuery(undefined, {
+  const { data: amplemarketSequences, isLoading: loadingSequences, error: sequencesError } = trpc.integrations.getAmplemarketSequences.useQuery(undefined, {
     enabled: open,
+    retry: false,
   });
 
   const handleSave = () => {
@@ -66,6 +70,18 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Error Alert */}
+          {(usersError || listsError || sequencesError) && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {usersError?.message || listsError?.message || sequencesError?.message}
+                <br />
+                <span className="text-xs mt-1 block">Please check your Amplemarket API key and try reconnecting.</span>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* User Account Selection */}
           <div className="space-y-2">
             <Label>Amplemarket User Account</Label>
@@ -78,15 +94,23 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
                   <div className="flex items-center justify-center p-4">
                     <Loader2 className="w-4 h-4 animate-spin" />
                   </div>
-                ) : (
+                ) : usersError ? (
+                  <div className="p-4 text-sm text-muted-foreground">
+                    Failed to load users
+                  </div>
+                ) : amplemarketUsers && amplemarketUsers.length > 0 ? (
                   <>
                     <SelectItem value="all">All Users</SelectItem>
-                    {amplemarketUsers?.map((user: any) => (
+                    {amplemarketUsers.map((user: any) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name} ({user.email})
                       </SelectItem>
                     ))}
                   </>
+                ) : (
+                  <div className="p-4 text-sm text-muted-foreground">
+                    No users found in your Amplemarket account
+                  </div>
                 )}
               </SelectContent>
             </Select>
@@ -176,8 +200,10 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
                       </div>
                     ))}
                   </>
+                ) : listsError ? (
+                  <p className="text-sm text-destructive">Failed to load lists</p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No lists found</p>
+                  <p className="text-sm text-muted-foreground">No lists found in your Amplemarket account</p>
                 )}
               </div>
             )}
@@ -229,8 +255,10 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
                       </div>
                     ))}
                   </>
+                ) : sequencesError ? (
+                  <p className="text-sm text-destructive">Failed to load sequences</p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No sequences found</p>
+                  <p className="text-sm text-muted-foreground">No sequences found in your Amplemarket account</p>
                 )}
               </div>
             )}

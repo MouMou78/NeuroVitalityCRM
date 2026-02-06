@@ -1847,10 +1847,12 @@ Generate a subject line and email body. Format your response as JSON with "subje
         const integrations = await db.getIntegrationsByTenant(ctx.user.tenantId);
         const amplemarketIntegration = integrations.find((i: any) => i.provider === "amplemarket");
         if (!amplemarketIntegration || amplemarketIntegration.status !== "connected") {
-          return [];
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket not connected" });
         }
         const apiKey = (amplemarketIntegration.config as any)?.apiKey;
-        if (!apiKey) return [];
+        if (!apiKey) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket API key not found" });
+        }
         
         try {
           const response = await axios.get("https://api.amplemarket.com/v1/users", {
@@ -1861,9 +1863,12 @@ Generate a subject line and email body. Format your response as JSON with "subje
             name: u.name || u.full_name,
             email: u.email,
           })) || [];
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to fetch Amplemarket users:", error);
-          return [];
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: `Failed to fetch Amplemarket users: ${error.response?.data?.message || error.message}` 
+          });
         }
       }),
 
@@ -1872,10 +1877,12 @@ Generate a subject line and email body. Format your response as JSON with "subje
         const integrations = await db.getIntegrationsByTenant(ctx.user.tenantId);
         const amplemarketIntegration = integrations.find((i: any) => i.provider === "amplemarket");
         if (!amplemarketIntegration || amplemarketIntegration.status !== "connected") {
-          return [];
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket not connected" });
         }
         const apiKey = (amplemarketIntegration.config as any)?.apiKey;
-        if (!apiKey) return [];
+        if (!apiKey) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket API key not found" });
+        }
         
         try {
           const response = await axios.get("https://api.amplemarket.com/v1/lists", {
@@ -1886,9 +1893,12 @@ Generate a subject line and email body. Format your response as JSON with "subje
             name: l.name,
             contactCount: l.contact_count || l.size || 0,
           })) || [];
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to fetch Amplemarket lists:", error);
-          return [];
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: `Failed to fetch Amplemarket lists: ${error.response?.data?.message || error.message}` 
+          });
         }
       }),
 
@@ -1897,10 +1907,12 @@ Generate a subject line and email body. Format your response as JSON with "subje
         const integrations = await db.getIntegrationsByTenant(ctx.user.tenantId);
         const amplemarketIntegration = integrations.find((i: any) => i.provider === "amplemarket");
         if (!amplemarketIntegration || amplemarketIntegration.status !== "connected") {
-          return [];
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket not connected" });
         }
         const apiKey = (amplemarketIntegration.config as any)?.apiKey;
-        if (!apiKey) return [];
+        if (!apiKey) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket API key not found" });
+        }
         
         try {
           const response = await axios.get("https://api.amplemarket.com/v1/sequences", {
@@ -1910,9 +1922,12 @@ Generate a subject line and email body. Format your response as JSON with "subje
             id: s.id,
             name: s.name || s.title,
           })) || [];
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to fetch Amplemarket sequences:", error);
-          return [];
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: `Failed to fetch Amplemarket sequences: ${error.response?.data?.message || error.message}` 
+          });
         }
       }),
     

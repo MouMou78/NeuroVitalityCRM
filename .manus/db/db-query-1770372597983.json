@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, email, name FROM users WHERE email = 'ian@1twentyconsultancy.com';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2QkRhwd4AVTLhHG.a0950ca1ba2f --database TQEsx2HByTQrcAiUBn2kww --execute SELECT id, email, name FROM users WHERE email = 'ian@1twentyconsultancy.com';",
+  "rows": [
+    {
+      "id": "817b9ea6139e5acd0b64f4ad12bad3b5",
+      "email": "ian@1twentyconsultancy.com",
+      "name": "Ian Mousley"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\n817b9ea6139e5acd0b64f4ad12bad3b5\tian@1twentyconsultancy.com\tIan Mousley\n",
+  "stderr": "",
+  "execution_time_ms": 565
+}

@@ -54,7 +54,7 @@ import Campaigns from "./pages/Campaigns";
 import UserManagement from "./pages/UserManagement";
 import Accounts from "./pages/Accounts";
 import Settings from "./pages/Settings";
-import GoogleCalendarSettings from "./pages/GoogleCalendarSettings";
+
 import Onboarding from "./pages/Onboarding";
 import ContactMerge from "./pages/ContactMerge";
 import { DealPipeline } from "./pages/DealPipeline";
@@ -80,11 +80,7 @@ function Router() {
           <EmailAccounts />
         </DashboardLayout>
       </Route>
-      <Route path="/settings/google-calendar">
-        <DashboardLayout>
-          <GoogleCalendarSettings />
-        </DashboardLayout>
-      </Route>
+
       <Route path="/campaigns">
         <DashboardLayout>
           <Campaigns />

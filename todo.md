@@ -2085,3 +2085,26 @@
 - [x] Create sync performance dashboard showing sync speed, API rate limits, data transfer volumes
 - [x] Add performance metrics charts (sync duration over time, records per second, API calls per hour)
 - [x] Show API rate limit usage and remaining quota
+
+## User-Reported Bugs
+- [x] Simplify Google Workspace integration to OAuth flow (click button → sign in → auto-sync)
+- [x] Fix Amplemarket Accounts and People sync buttons to respect sync configuration rules
+- [ ] Fix Amplemarket config dialog - user account dropdown not loading real accounts
+- [ ] Fix Amplemarket config dialog - lists and sequences selectors not loading data
+- [ ] Improve logo visibility in dark mode (contrast issue)
+
+## Critical Bug Fixes (Feb 2026)
+- [ ] Fix Google Calendar integration - replace API key input with OAuth flow
+- [ ] Audit and fix all sync buttons to respect Amplemarket sync configuration
+- [ ] Fix Amplemarket config dialog - implement real API calls to populate dropdowns
+- [ ] Improve logo visibility in dark mode
+
+- [x] Implement complete Google OAuth flow for Calendar integration
+- [x] Add backend OAuth endpoints (initiate + callback)
+- [x] Store and auto-refresh tokens securely
+- [x] Update Integrations page to one-click connect button
+- [x] Remove GoogleCalendarSettings configuration page
+- [x] Update AmplemarketAccounts sync button to use config dialog
+- [x] Update AmplemarketPeople sync button to use config dialog
+- [x] Ensure all Amplemarket sync buttons follow configuration rules
+- [x] Improve logo visibility in dark mode with increased brightness and contrast
