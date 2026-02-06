@@ -2175,3 +2175,8 @@
 - [x] Simplify Google OAuth to detect tenant from session instead of query param
 - [ ] Verify Amplemarket API endpoint changes are deployed
 - [x] Add better error messages for Amplemarket API failures
+
+## Production Deployment Issue (Feb 6)
+- [ ] Make trivial code change to trigger new deployment with updated credentials
+- [ ] Verify Google OAuth credentials are applied in production
+- [ ] Verify Amplemarket API authentication (401 error suggests wrong API key)
