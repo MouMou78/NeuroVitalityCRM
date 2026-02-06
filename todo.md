@@ -2560,3 +2560,18 @@
 - [x] Return HTTP 422 for zero-result conditions with full diagnostic payload
 - [x] Show one sample lead payload with exact owner field path used
 - [ ] Test sync and verify no undefined values in UI
+
+## Fix Amplemarket Owner Scoping (Mailbox vs User Account)
+- [x] Identify sender/mailbox field in lead payload (mailbox.email, sender_email, from_email, connected_mailbox.email, email_account.email)
+- [x] Log one raw lead sample to pinpoint correct field path
+- [x] Update configuration model to store selected_sender_email (mailbox email) instead of user email
+- [x] Keep amplemarket_user_id optional in config
+- [x] Update AmplemarketConfigDialog UI to select "Amplemarket Mailbox" instead of "User Account"
+- [x] Fetch and display list of mailboxes from Amplemarket API (using existing users endpoint)
+- [x] Update sync logic to use resolveSenderEmail(lead) for filtering
+- [x] Filter leads by: normalise(resolveSenderEmail(lead)) == normalise(selected_sender_email)
+- [x] Update diagnostics counters: sender_field_present_count, sender_match_count, sender_mismatch_count
+- [x] Log resolved sender field path in diagnostics
+- [ ] Test: Selecting ian@joinkliq.io imports leads for that mailbox
+- [ ] Test: Selecting ianm@joinkliq.io imports different set if applicable
+- [ ] Verify: No more "sender field present 0/786" when correct sender field exists

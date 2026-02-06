@@ -898,13 +898,13 @@ export async function syncAmplemarket(
       summary: {
         lists_scanned: listsScanned,
         lead_items_seen: leadsProcessed,
-        lead_ids_deduped: leadsProcessed, // We don't dedupe across lists yet
-        owner_missing: leadsProcessed - leadsWithOwner,
-        owner_match: leadsMatchingOwner,
-        owner_mismatch: syncResult.leads_wrong_owner || 0,
-        created: created,
-        updated: updated,
-        skipped: syncResult.leads_skipped || 0,
+        lead_ids_deduped: leadsProcessed, // No deduplication in this flow
+        sender_missing: leadsProcessed - leadsWithOwner,
+        sender_match: leadsMatchingOwner,
+        sender_mismatch: leadsWrongOwner,
+        created: leadsCreated,
+        updated: leadsUpdated,
+        skipped: leadsSkipped,
       },
       sample: syncResult.sample || null,
     };
@@ -929,10 +929,10 @@ export async function syncAmplemarket(
     }
     
     if (leadsMatchingOwner === 0 && leadsProcessed > 0) {
-      const errorResponse = { ...response, reason: 'Owner mismatch or owner field missing' };
+      const errorResponse = { ...response, reason: 'Sender mismatch or sender field missing' };
       throw new TRPCError({
         code: 'UNPROCESSABLE_CONTENT',
-        message: `Owner mismatch or owner field missing. Processed ${leadsProcessed} leads but none matched "${amplemarketUserEmail}". Owner field present: ${leadsWithOwner}/${leadsProcessed}`,
+        message: `Sender mismatch or sender field missing. Processed ${leadsProcessed} leads but none matched mailbox "${amplemarketUserEmail}". Sender field present: ${leadsWithOwner}/${leadsProcessed}`,
         cause: errorResponse
       });
     }

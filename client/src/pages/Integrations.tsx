@@ -95,14 +95,14 @@ export default function Integrations() {
       const diagnostics = [
         `Lists: ${s.lists_scanned}`,
         `Leads seen: ${s.lead_items_seen}`,
-        `Owner match: ${s.owner_match}/${s.lead_items_seen}`,
+        `Sender match: ${s.sender_match}/${s.lead_items_seen}`,
       ];
       
-      if (s.owner_mismatch > 0) {
-        diagnostics.push(`Owner mismatch: ${s.owner_mismatch}`);
+      if (s.sender_mismatch > 0) {
+        diagnostics.push(`Sender mismatch: ${s.sender_mismatch}`);
       }
-      if (s.owner_missing > 0) {
-        diagnostics.push(`Missing owner: ${s.owner_missing}`);
+      if (s.sender_missing > 0) {
+        diagnostics.push(`Missing sender: ${s.sender_missing}`);
       }
       
       message += ` | ${diagnostics.join(', ')}`;
@@ -110,7 +110,13 @@ export default function Integrations() {
       // Show sample lead if available
       if (data.sample?.lead) {
         const lead = data.sample.lead;
-        message += ` | Sample: ${lead.first_name} ${lead.last_name} (${lead.email}) via ${data.sample.owner_field_path}`;
+        const fieldPath = data.sample.sender_field_path || 'unknown';
+        message += ` | Sample: ${lead.first_name} ${lead.last_name} (${lead.sender_email}) via ${fieldPath}`;
+        
+        // Show all discovered sender field paths
+        if (data.sample.all_sender_field_paths && data.sample.all_sender_field_paths.length > 0) {
+          message += ` | Fields found: ${data.sample.all_sender_field_paths.join(', ')}`;
+        }
       }
       
       toast.success(message, { duration: 10000 });

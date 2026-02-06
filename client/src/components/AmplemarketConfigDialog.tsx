@@ -118,9 +118,9 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
             </Alert>
           )}
 
-          {/* User Account Selection */}
+          {/* Mailbox / Sender Identity Selection */}
           <div className="space-y-2">
-            <Label>Amplemarket User Account</Label>
+            <Label>Amplemarket Mailbox / Sender Identity</Label>
             <Select value={selectedUserId} onValueChange={(value) => {
               setSelectedUserId(value);
               // Clear lists and sequences when user changes
@@ -135,7 +135,7 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
               }
             }}>
               <SelectTrigger>
-                <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select user account"} />
+                <SelectValue placeholder={loadingUsers ? "Loading mailboxes..." : "Select mailbox"} />
               </SelectTrigger>
               <SelectContent>
                 {loadingUsers ? (
@@ -163,7 +163,7 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Choose which Amplemarket user's data to sync
+              Choose which mailbox/sender email to filter leads by. Leads are owned by connected mailboxes (e.g., ian@joinkliq.io), not Amplemarket login accounts.
             </p>
           </div>
 

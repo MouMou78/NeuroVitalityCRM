@@ -23,8 +23,8 @@ export async function syncAmplemarketFromLeads(
   const correlationId = nanoid(10);
   console.log(`[Amplemarket Sync] Correlation ID: ${correlationId}`);
   console.log(`[Amplemarket Sync] Mode: ${syncScope}`);
-  console.log(`[Amplemarket Sync] Selected owner: ${amplemarketUserEmail}`);
-  console.log("[Amplemarket Sync] NOTE: Syncing directly from lead payloads (Amplemarket does not expose contact API for all leads)");
+  console.log(`[Amplemarket Sync] Selected mailbox/sender: ${amplemarketUserEmail}`);
+  console.log("[Amplemarket Sync] NOTE: Syncing directly from lead payloads. Filtering by mailbox/sender email, not Amplemarket user account.");
   
   // Validation
   if (syncScope === 'lists' && selectedListIds.length === 0) {
@@ -35,11 +35,31 @@ export async function syncAmplemarketFromLeads(
   }
   
   // Helper functions
-  const extractOwnerEmail = (record: any): string | null => {
-    if (!record.owner) return null;
-    if (typeof record.owner === 'string') return record.owner;
-    if (typeof record.owner === 'object' && record.owner.email) return record.owner.email;
-    return null;
+  const resolveSenderEmail = (record: any): { email: string | null; fieldPath: string | null } => {
+    // Check multiple possible mailbox/sender fields
+    const checks = [
+      { path: 'mailbox.email', value: record.mailbox?.email },
+      { path: 'mailbox', value: typeof record.mailbox === 'string' ? record.mailbox : null },
+      { path: 'sender_email', value: record.sender_email },
+      { path: 'sender.email', value: record.sender?.email },
+      { path: 'from_email', value: record.from_email },
+      { path: 'from.email', value: record.from?.email },
+      { path: 'connected_mailbox.email', value: record.connected_mailbox?.email },
+      { path: 'connected_mailbox', value: typeof record.connected_mailbox === 'string' ? record.connected_mailbox : null },
+      { path: 'email_account.email', value: record.email_account?.email },
+      { path: 'email_account', value: typeof record.email_account === 'string' ? record.email_account : null },
+      // Fallback to owner field (original logic)
+      { path: 'owner.email', value: record.owner?.email },
+      { path: 'owner', value: typeof record.owner === 'string' ? record.owner : null },
+    ];
+    
+    for (const check of checks) {
+      if (check.value && typeof check.value === 'string') {
+        return { email: check.value, fieldPath: check.path };
+      }
+    }
+    
+    return { email: null, fieldPath: null };
   };
   
   const normalizeEmail = (email: string | null): string | null => {
@@ -61,7 +81,10 @@ export async function syncAmplemarketFromLeads(
   
   // Sample lead for diagnostics
   let sampleLead: any = null;
-  let ownerFieldPath: string | null = null;
+  let senderFieldPath: string | null = null;
+  
+  // Track which sender field paths are found
+  const senderFieldPaths = new Set<string>();
   
   const { createAmplemarketClient } = await import('./amplemarketClient');
   const client = createAmplemarketClient(apiKey);
@@ -101,6 +124,13 @@ export async function syncAmplemarketFromLeads(
       const leads = listDetailResponse.leads || [];
       console.log(`[Amplemarket Sync] Fetched ${leads.length} leads from list`);
       
+      // Log first lead payload to identify mailbox/sender field
+      if (leads.length > 0 && listsScanned === 1 && leadsProcessedTotal === 0) {
+        console.log('[Amplemarket Sync] ===== RAW LEAD SAMPLE =====');
+        console.log(JSON.stringify(leads[0], null, 2));
+        console.log('[Amplemarket Sync] ===== END RAW LEAD SAMPLE =====');
+      }
+      
       // Process each lead directly
       for (const lead of leads) {
         leadsProcessedTotal++;
@@ -112,39 +142,40 @@ export async function syncAmplemarketFromLeads(
             continue;
           }
           
-          // Extract and normalize owner
-          const leadOwnerEmail = extractOwnerEmail(lead);
-          const normalizedLeadOwner = normalizeEmail(leadOwnerEmail);
+          // Extract and normalize sender/mailbox email
+          const { email: leadSenderEmail, fieldPath } = resolveSenderEmail(lead);
+          const normalizedLeadSender = normalizeEmail(leadSenderEmail);
           
-          if (!leadOwnerEmail) {
+          // Track which field paths are found
+          if (fieldPath) {
+            senderFieldPaths.add(fieldPath);
+          }
+          
+          if (!leadSenderEmail) {
             leadsSkipped++;
             continue;
           }
           
           leadsWithOwnerField++;
           
-          // Capture sample lead for diagnostics (first one with owner field)
-          if (!sampleLead && leadOwnerEmail) {
+          // Capture sample lead for diagnostics (first one with sender field)
+          if (!sampleLead && leadSenderEmail) {
             sampleLead = {
               id: lead.id,
               email: lead.email,
               first_name: lead.first_name,
               last_name: lead.last_name,
               company_name: lead.company_name,
-              owner: lead.owner,
+              sender_email: leadSenderEmail,
+              raw_mailbox_field: lead.mailbox,
+              raw_sender_field: lead.sender,
+              raw_owner_field: lead.owner,
             };
-            // Determine owner field path
-            if (typeof lead.owner === 'string') {
-              ownerFieldPath = 'owner';
-            } else if (typeof lead.owner === 'object' && lead.owner?.email) {
-              ownerFieldPath = 'owner.email';
-            } else {
-              ownerFieldPath = 'unknown';
-            }
+            senderFieldPath = fieldPath;
           }
           
-          // Filter by owner
-          if (normalizedLeadOwner !== normalizedSelectedEmail) {
+          // Filter by sender/mailbox
+          if (normalizedLeadSender !== normalizedSelectedEmail) {
             leadsWrongOwner++;
             continue;
           }
@@ -165,7 +196,7 @@ export async function syncAmplemarketFromLeads(
             source: 'amplemarket' as const,
             sourceType: 'lead' as const,
             amplemarketLeadId: lead.id,
-            ownerEmail: leadOwnerEmail,
+            ownerEmail: leadSenderEmail,
             email: lead.email,
             firstName: lead.first_name || null,
             lastName: lead.last_name || null,
@@ -213,12 +244,13 @@ export async function syncAmplemarketFromLeads(
   console.log("[Amplemarket Sync] ===== SYNC COMPLETE =====");
   console.log(`Lists scanned: ${listsScanned}`);
   console.log(`Leads processed: ${leadsProcessedTotal}`);
-  console.log(`Leads with owner field: ${leadsWithOwnerField}`);
-  console.log(`Leads matching owner: ${leadsMatchingOwner}`);
-  console.log(`Leads wrong owner: ${leadsWrongOwner}`);
+  console.log(`Leads with sender field: ${leadsWithOwnerField}`);
+  console.log(`Leads matching sender: ${leadsMatchingOwner}`);
+  console.log(`Leads wrong sender: ${leadsWrongOwner}`);
   console.log(`Leads skipped: ${leadsSkipped}`);
   console.log(`Leads created: ${leadsCreated}`);
   console.log(`Leads updated: ${leadsUpdated}`);
+  console.log(`Sender field paths found: ${Array.from(senderFieldPaths).join(', ')}`);
   console.log("[Amplemarket Sync] ===== END SYNC =====");
   
   // Guardrail: Fail if zero leads synced
@@ -243,7 +275,8 @@ export async function syncAmplemarketFromLeads(
     leads_updated: leadsUpdated,
     sample: sampleLead ? {
       lead: sampleLead,
-      owner_field_path: ownerFieldPath,
+      sender_field_path: senderFieldPath,
+      all_sender_field_paths: Array.from(senderFieldPaths),
     } : null,
   };
 }
