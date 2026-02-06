@@ -2187,3 +2187,11 @@
 - [ ] Update Google OAuth routes to use hardcoded redirect_uri
 - [ ] Add logging to show exact redirect_uri being sent
 - [ ] Verify redirect_uri matches registered Google Cloud URIs
+
+## Amplemarket 401 Authentication Fix
+- [x] Add comprehensive logging to Amplemarket API calls (URL, status, auth method, key presence)
+- [x] Create unified Amplemarket API client wrapper with correct authentication headers
+- [x] Verify tenant scoping and API key retrieval from database
+- [x] Improve frontend error messaging for 401 responses
+- [x] Test with curl command using stored API key
+- [x] Verify users, lists, and sequences endpoints all return 200

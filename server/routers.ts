@@ -1846,32 +1846,41 @@ Generate a subject line and email body. Format your response as JSON with "subje
       .query(async ({ ctx }) => {
         const integrations = await db.getIntegrationsByTenant(ctx.user.tenantId);
         const amplemarketIntegration = integrations.find((i: any) => i.provider === "amplemarket");
+        
+        console.log('[Amplemarket] Tenant ID:', ctx.user.tenantId);
+        console.log('[Amplemarket] Integration found:', !!amplemarketIntegration);
+        console.log('[Amplemarket] Integration status:', amplemarketIntegration?.status);
+        
         if (!amplemarketIntegration || amplemarketIntegration.status !== "connected") {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket not connected" });
         }
+        
         const apiKey = (amplemarketIntegration.config as any)?.apiKey;
+        console.log('[Amplemarket] API key present:', !!apiKey);
+        console.log('[Amplemarket] API key length:', apiKey?.length || 0);
+        
         if (!apiKey) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Amplemarket API key not found" });
         }
         
         try {
-          console.log('[Amplemarket API] Fetching users from https://api.amplemarket.com/users');
-          const response = await axios.get("https://api.amplemarket.com/users", {
-            headers: { "X-Api-Key": apiKey },
-          });
-          console.log('[Amplemarket API] Users response:', response.data);
-          return response.data.users?.map((u: any) => ({
+          const { createAmplemarketClient } = await import('./amplemarketClient');
+          const client = createAmplemarketClient(apiKey);
+          const data = await client.getUsers();
+          
+          return data.users?.map((u: any) => ({
             id: u.id,
             name: u.name || u.full_name,
             email: u.email,
           })) || [];
         } catch (error: any) {
-          console.error('[Amplemarket API] Failed to fetch users:', {
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data,
-            message: error.message
-          });
+          // If 401, provide specific error message
+          if (error.response?.status === 401) {
+            throw new TRPCError({ 
+              code: "UNAUTHORIZED", 
+              message: "Amplemarket rejected the API key (401). Please regenerate the key and try reconnecting." 
+            });
+          }
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
             message: `Failed to fetch Amplemarket users: ${error.response?.data?.message || error.message}` 
@@ -1892,23 +1901,22 @@ Generate a subject line and email body. Format your response as JSON with "subje
         }
         
         try {
-          console.log('[Amplemarket API] Fetching lists from https://api.amplemarket.com/lists');
-          const response = await axios.get("https://api.amplemarket.com/lists", {
-            headers: { "X-Api-Key": apiKey },
-          });
-          console.log('[Amplemarket API] Lists response:', response.data);
-          return response.data.lists?.map((l: any) => ({
+          const { createAmplemarketClient } = await import('./amplemarketClient');
+          const client = createAmplemarketClient(apiKey);
+          const data = await client.getLists();
+          
+          return data.lead_lists?.map((l: any) => ({
             id: l.id,
             name: l.name,
             contactCount: l.contact_count || l.size || 0,
           })) || [];
         } catch (error: any) {
-          console.error('[Amplemarket API] Failed to fetch lists:', {
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data,
-            message: error.message
-          });
+          if (error.response?.status === 401) {
+            throw new TRPCError({ 
+              code: "UNAUTHORIZED", 
+              message: "Amplemarket rejected the API key (401). Please regenerate the key and try reconnecting." 
+            });
+          }
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
             message: `Failed to fetch Amplemarket lists: ${error.response?.data?.message || error.message}` 
@@ -1929,22 +1937,21 @@ Generate a subject line and email body. Format your response as JSON with "subje
         }
         
         try {
-          console.log('[Amplemarket API] Fetching sequences from https://api.amplemarket.com/sequences');
-          const response = await axios.get("https://api.amplemarket.com/sequences", {
-            headers: { "X-Api-Key": apiKey },
-          });
-          console.log('[Amplemarket API] Sequences response:', response.data);
-          return response.data.sequences?.map((s: any) => ({
+          const { createAmplemarketClient } = await import('./amplemarketClient');
+          const client = createAmplemarketClient(apiKey);
+          const data = await client.getSequences();
+          
+          return data.sequences?.map((s: any) => ({
             id: s.id,
             name: s.name || s.title,
           })) || [];
         } catch (error: any) {
-          console.error('[Amplemarket API] Failed to fetch sequences:', {
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data,
-            message: error.message
-          });
+          if (error.response?.status === 401) {
+            throw new TRPCError({ 
+              code: "UNAUTHORIZED", 
+              message: "Amplemarket rejected the API key (401). Please regenerate the key and try reconnecting." 
+            });
+          }
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
             message: `Failed to fetch Amplemarket sequences: ${error.response?.data?.message || error.message}` 

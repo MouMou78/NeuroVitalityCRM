@@ -75,9 +75,15 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {usersError?.message || listsError?.message || sequencesError?.message}
+                {(usersError?.message || listsError?.message || sequencesError?.message)?.includes('401') 
+                  ? 'Amplemarket rejected the API key (401). Please regenerate your API key in Amplemarket and reconnect.'
+                  : (usersError?.message || listsError?.message || sequencesError?.message)}
                 <br />
-                <span className="text-xs mt-1 block">Please check your Amplemarket API key and try reconnecting.</span>
+                <span className="text-xs mt-1 block">
+                  {(usersError?.message || listsError?.message || sequencesError?.message)?.includes('401')
+                    ? 'Go to Amplemarket Dashboard → Settings → API Keys to generate a new key.'
+                    : 'Please check your Amplemarket API key and try reconnecting.'}
+                </span>
               </AlertDescription>
             </Alert>
           )}
