@@ -891,55 +891,49 @@ export async function syncAmplemarket(
     const created = syncResult.leads_created || 0;
     const updated = syncResult.leads_updated || 0;
     
-    // Build comprehensive response with all counters
+    // Build stable response contract
     const response = {
-      // Tracking
-      correlation_id: syncResult.correlationId,
-      tenant_id: tenantId,
-      integration_id: integrationId,
-      scope_mode: syncScope,
-      selected_owner_email: amplemarketUserEmail,
-      
-      // Stage 1: Lead Processing
-      lists_scanned: listsScanned,
-      leads_processed_total: leadsProcessed,
-      leads_with_owner_field: leadsWithOwner,
-      
-      // Stage 2: Owner Filtering
-      leads_matching_owner: leadsMatchingOwner,
-      leads_wrong_owner: syncResult.leads_wrong_owner || 0,
-      
-      // Stage 3: Upsert
-      leads_created: created,
-      leads_updated: updated,
-      leads_skipped: syncResult.leads_skipped || 0,
-      
-      // Totals
-      totalSynced: created + updated
+      correlation_id: syncResult.correlationId || nanoid(10),
+      mode: 'leads',
+      summary: {
+        lists_scanned: listsScanned,
+        lead_items_seen: leadsProcessed,
+        lead_ids_deduped: leadsProcessed, // We don't dedupe across lists yet
+        owner_missing: leadsProcessed - leadsWithOwner,
+        owner_match: leadsMatchingOwner,
+        owner_mismatch: syncResult.leads_wrong_owner || 0,
+        created: created,
+        updated: updated,
+        skipped: syncResult.leads_skipped || 0,
+      },
+      sample: syncResult.sample || null,
     };
     
-    // Enforce hard failure for zero-lead conditions
+    // Enforce hard failure for zero-lead conditions with diagnostic payload
     if (listsScanned === 0) {
+      const errorResponse = { ...response, reason: 'No lists found or list fetch failed' };
       throw new TRPCError({
         code: 'UNPROCESSABLE_CONTENT',
-        message: 'No lists were scanned. Verify that lists exist and are accessible.',
-        cause: { ...response, reason: 'lists_scanned_zero' }
+        message: 'No lists found or list fetch failed',
+        cause: errorResponse
       });
     }
     
-    if (leadsProcessed === 0) {
+    if (leadsProcessed === 0 && listsScanned > 0) {
+      const errorResponse = { ...response, reason: 'Lists returned no leads' };
       throw new TRPCError({
         code: 'UNPROCESSABLE_CONTENT',
-        message: 'No leads were processed from lists. Lists may be empty.',
-        cause: { ...response, reason: 'leads_processed_total_zero' }
+        message: 'Lists returned no leads',
+        cause: errorResponse
       });
     }
     
-    if (leadsMatchingOwner === 0 && leadsWithOwner > 0) {
+    if (leadsMatchingOwner === 0 && leadsProcessed > 0) {
+      const errorResponse = { ...response, reason: 'Owner mismatch or owner field missing' };
       throw new TRPCError({
         code: 'UNPROCESSABLE_CONTENT',
-        message: `Owner mismatch: ${leadsWithOwner} leads have owner field but none match "${amplemarketUserEmail}". Check owner field extraction and normalization.`,
-        cause: { ...response, reason: 'leads_matching_owner_zero' }
+        message: `Owner mismatch or owner field missing. Processed ${leadsProcessed} leads but none matched "${amplemarketUserEmail}". Owner field present: ${leadsWithOwner}/${leadsProcessed}`,
+        cause: errorResponse
       });
     }
     

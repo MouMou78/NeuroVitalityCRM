@@ -2548,3 +2548,15 @@
 - [x] Verify no /contacts API calls are made during sync
 - [ ] Test sync and verify non-zero lead results
 - [ ] Ensure no silent zero runs
+
+## Fix Amplemarket Sync Regression (Terminology + API Contract)
+- [x] Remove all "contacts" terminology from Amplemarket sync UI
+- [x] Update UI to show "Synced X leads (Y created, Z updated)"
+- [x] Fix sync API response contract with stable JSON structure (correlation_id, mode, summary, sample)
+- [x] Default all numeric fields to 0 (never return undefined)
+- [x] Update frontend to read new contract fields (summary.created, summary.updated)
+- [x] Add visible Diagnostics panel to UI showing all counters
+- [x] Implement fail-fast with reason codes (lists_scanned=0, lead_items_seen=0, owner_match=0)
+- [x] Return HTTP 422 for zero-result conditions with full diagnostic payload
+- [x] Show one sample lead payload with exact owner field path used
+- [ ] Test sync and verify no undefined values in UI

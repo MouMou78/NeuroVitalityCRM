@@ -79,8 +79,41 @@ export default function Integrations() {
   });
 
   const syncAmplemarket = trpc.integrations.syncAmplemarket.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Synced ${data.totalSynced} contacts (${data.contactsCreated} created, ${data.contactsUpdated} updated)`);
+    onSuccess: (data: any) => {
+      if (!data.summary) {
+        toast.error('Sync response malformed');
+        return;
+      }
+      
+      const s = data.summary;
+      const total = s.created + s.updated;
+      
+      // Build diagnostic message
+      let message = `Synced ${total} leads (${s.created} created, ${s.updated} updated)`;
+      
+      // Add diagnostics
+      const diagnostics = [
+        `Lists: ${s.lists_scanned}`,
+        `Leads seen: ${s.lead_items_seen}`,
+        `Owner match: ${s.owner_match}/${s.lead_items_seen}`,
+      ];
+      
+      if (s.owner_mismatch > 0) {
+        diagnostics.push(`Owner mismatch: ${s.owner_mismatch}`);
+      }
+      if (s.owner_missing > 0) {
+        diagnostics.push(`Missing owner: ${s.owner_missing}`);
+      }
+      
+      message += ` | ${diagnostics.join(', ')}`;
+      
+      // Show sample lead if available
+      if (data.sample?.lead) {
+        const lead = data.sample.lead;
+        message += ` | Sample: ${lead.first_name} ${lead.last_name} (${lead.email}) via ${data.sample.owner_field_path}`;
+      }
+      
+      toast.success(message, { duration: 10000 });
       refetch();
     },
     onError: (error) => {

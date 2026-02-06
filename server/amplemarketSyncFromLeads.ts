@@ -59,6 +59,10 @@ export async function syncAmplemarketFromLeads(
   let leadsCreated = 0;
   let leadsUpdated = 0;
   
+  // Sample lead for diagnostics
+  let sampleLead: any = null;
+  let ownerFieldPath: string | null = null;
+  
   const { createAmplemarketClient } = await import('./amplemarketClient');
   const client = createAmplemarketClient(apiKey);
   
@@ -118,6 +122,26 @@ export async function syncAmplemarketFromLeads(
           }
           
           leadsWithOwnerField++;
+          
+          // Capture sample lead for diagnostics (first one with owner field)
+          if (!sampleLead && leadOwnerEmail) {
+            sampleLead = {
+              id: lead.id,
+              email: lead.email,
+              first_name: lead.first_name,
+              last_name: lead.last_name,
+              company_name: lead.company_name,
+              owner: lead.owner,
+            };
+            // Determine owner field path
+            if (typeof lead.owner === 'string') {
+              ownerFieldPath = 'owner';
+            } else if (typeof lead.owner === 'object' && lead.owner?.email) {
+              ownerFieldPath = 'owner.email';
+            } else {
+              ownerFieldPath = 'unknown';
+            }
+          }
           
           // Filter by owner
           if (normalizedLeadOwner !== normalizedSelectedEmail) {
@@ -217,5 +241,9 @@ export async function syncAmplemarketFromLeads(
     leads_skipped: leadsSkipped,
     leads_created: leadsCreated,
     leads_updated: leadsUpdated,
+    sample: sampleLead ? {
+      lead: sampleLead,
+      owner_field_path: ownerFieldPath,
+    } : null,
   };
 }
