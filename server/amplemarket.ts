@@ -133,41 +133,43 @@ export async function syncAmplemarketContacts(
   // Counter for all_user_contacts mode
   let missingOwnerField = 0;
   
-  // For all_user_contacts mode, fetch all contacts with pagination
+  // For all_user_contacts mode, use two-step fetch:
+  // Step 1: Get all lead lists and collect lead IDs with owner info
+  // Step 2: Hydrate full contact details via /contacts?ids=... in batches
   if (syncScope === 'all_user_contacts') {
-    console.log("[Amplemarket Sync] Using all_user_contacts mode - fetching all contacts with owner filtering");
+    console.log("[Amplemarket Sync] Using all_user_contacts mode - two-step fetch (list IDs, then hydrate)");
     
     const { createAmplemarketClient } = await import('./amplemarketClient');
     const client = createAmplemarketClient(apiKey);
     
-    let offset = 0;
-    const limit = 100; // Fetch 100 contacts per page
-    let hasMore = true;
+    // Step 1: Collect lead IDs from all lists
+    console.log("[Amplemarket Sync] Step 1: Fetching all lead lists...");
+    const listsResponse = await client.getLists();
+    const allLists = listsResponse.lead_lists || [];
+    console.log(`[Amplemarket Sync] Found ${allLists.length} lead lists`);
     
-    while (hasMore) {
-      console.log(`[Amplemarket Sync] Fetching contacts page: offset=${offset}, limit=${limit}`);
+    const matchingLeadIds: string[] = [];
+    let idsScannedTotal = 0;
+    
+    // Fetch leads from each list and filter by owner
+    for (const list of allLists) {
+      console.log(`[Amplemarket Sync] Fetching leads from list: ${list.name} (${list.id})`);
       
       try {
-        const response = await client.getContacts({ limit, offset });
-        const contacts = response.contacts || [];
+        const listDetailResponse = await client.getListById(list.id);
+        const leads = listDetailResponse.leads || [];
         
-        console.log(`[Amplemarket Sync] Fetched ${contacts.length} contacts from page`);
+        console.log(`[Amplemarket Sync] Fetched ${leads.length} leads from list`);
+        idsScannedTotal += leads.length;
         
-        if (contacts.length === 0) {
-          hasMore = false;
-          break;
-        }
-        
-        fetchedTotal += contacts.length;
-        
-        // Log first 5 contacts from first page to prove owner field format
-        if (offset === 0 && contacts.length > 0) {
-          const sampleSize = Math.min(5, contacts.length);
-          console.log(`[Amplemarket Sync] Sample of first ${sampleSize} contacts:`);
+        // Log first 5 leads from first list to prove owner field format
+        if (matchingLeadIds.length === 0 && leads.length > 0) {
+          const sampleSize = Math.min(5, leads.length);
+          console.log(`[Amplemarket Sync] Sample of first ${sampleSize} leads:`);
           for (let i = 0; i < sampleSize; i++) {
-            const sample = contacts[i];
+            const sample = leads[i];
             const ownerEmail = extractOwnerEmail(sample);
-            console.log(`  Contact ${i + 1}:`, {
+            console.log(`  Lead ${i + 1}:`, {
               external_id: sample.id,
               email: sample.email,
               owner_raw: sample.owner,
@@ -178,122 +180,165 @@ export async function syncAmplemarketContacts(
           }
         }
         
-        // Process each contact with owner filtering
-        for (const contact of contacts) {
-          // Skip if no email
-          if (!contact.email) {
-            skippedCount++;
+        // Filter leads by owner and collect matching IDs
+        for (const lead of leads) {
+          // Skip if no ID
+          if (!lead.id) {
             continue;
           }
           
           // Extract and normalize owner email
-          const contactOwnerEmail = extractOwnerEmail(contact);
-          const normalizedContactOwner = normalizeEmail(contactOwnerEmail);
+          const leadOwnerEmail = extractOwnerEmail(lead);
+          const normalizedLeadOwner = normalizeEmail(leadOwnerEmail);
           
-          if (!contactOwnerEmail) {
+          if (!leadOwnerEmail) {
             missingOwnerField++;
             discardedOtherOwners++;
             continue;
           }
           
-          // Filter by owner - only keep contacts matching selected user
-          if (normalizedContactOwner !== normalizedSelectedEmail) {
+          // Filter by owner - only keep leads matching selected user
+          if (normalizedLeadOwner !== normalizedSelectedEmail) {
             discardedOtherOwners++;
             continue;
           }
           
-          keptMatchingOwner++;
-          
-          // Check if person already exists by email
-          const [existingPerson] = await db
-            .select()
-            .from(people)
-            .where(and(
-              eq(people.tenantId, tenantId),
-              eq(people.primaryEmail, contact.email)
-            ))
-            .limit(1);
-
-          // Create or update account from contact company data
-          const accountId = await syncAccountFromContact(db, tenantId, contact);
-
-          const personData = {
-            accountId,
-            fullName: `${contact.first_name || ""} ${contact.last_name || ""}`.trim() || contact.email,
-            firstName: contact.first_name,
-            lastName: contact.last_name,
-            primaryEmail: contact.email,
-            companyName: contact.company_name,
-            companyDomain: contact.company_domain,
-            companySize: null,
-            roleTitle: contact.title,
-            simplifiedTitle: null,
-            phone: contact.phone_numbers?.[0]?.number || null,
-            manuallyAddedNumber: null,
-            manuallyAddedNumberDncStatus: null,
-            sourcedNumber: null,
-            sourcedNumberDncStatus: null,
-            mobileNumber: null,
-            mobileNumberDncStatus: null,
-            workNumber: null,
-            workNumberDncStatus: null,
-            city: null,
-            state: null,
-            country: null,
-            location: null,
-            linkedinUrl: contact.linkedin_url,
-            industry: contact.industry,
-            status: null,
-            numberOfOpens: 0,
-            label: null,
-            meetingBooked: false,
-            owner: null,
-            sequenceName: null,
-            sequenceTemplateName: null,
-            savedSearchOrLeadListName: null,
-            mailbox: null,
-            contactUrl: null,
-            replied: false,
-            lastStageExecuted: null,
-            lastStageExecutedAt: null,
-            notes: null,
-            enrichmentSource: "amplemarket",
-            enrichmentSnapshot: contact,
-            enrichmentLastSyncedAt: new Date(),
-            integrationId,
-            amplemarketUserId,
-            amplemarketExternalId: contact.id || contact.email,
-            updatedAt: new Date(),
-          };
-
-          if (existingPerson) {
-            // Update existing person
-            await db
-              .update(people)
-              .set(personData)
-              .where(eq(people.id, existingPerson.id));
-            updatedCount++;
-          } else {
-            // Create new person
-            await db.insert(people).values({
-              id: nanoid(),
-              tenantId,
-              ...personData,
-              createdAt: new Date(),
-            });
-            createdCount++;
-          }
-        }
-        
-        offset += contacts.length;
-        
-        // If we got fewer contacts than limit, we've reached the end
-        if (contacts.length < limit) {
-          hasMore = false;
+          // This lead matches the owner - collect its ID
+          matchingLeadIds.push(lead.id);
         }
       } catch (error: any) {
-        console.error(`[Amplemarket Sync] Error fetching contacts page at offset ${offset}:`, error.message);
-        throw error;
+        console.error(`[Amplemarket Sync] Error fetching list ${list.id}:`, error.message);
+        // Continue with next list
+      }
+    }
+    
+    console.log(`[Amplemarket Sync] Step 1 complete: Scanned ${idsScannedTotal} leads, found ${matchingLeadIds.length} matching owner`);
+    fetchedTotal = idsScannedTotal;
+    keptMatchingOwner = matchingLeadIds.length;
+    
+    // Step 2: Hydrate full contact details in batches
+    if (matchingLeadIds.length > 0) {
+      console.log(`[Amplemarket Sync] Step 2: Hydrating ${matchingLeadIds.length} contacts in batches...`);
+      
+      const batchSize = 100; // Hydrate 100 contacts per request
+      const batches = [];
+      for (let i = 0; i < matchingLeadIds.length; i += batchSize) {
+        batches.push(matchingLeadIds.slice(i, i + batchSize));
+      }
+      
+      console.log(`[Amplemarket Sync] Processing ${batches.length} batches of ${batchSize} contacts each`);
+      
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        console.log(`[Amplemarket Sync] Hydrating batch ${batchIndex + 1}/${batches.length} (${batch.length} IDs)`);
+        
+        try {
+          // Call /contacts with ids parameter
+          const idsParam = batch.join(',');
+          const contactsResponse = await (client as any).client.get('/contacts', {
+            params: { ids: idsParam }
+          });
+          
+          const contacts = contactsResponse.data.contacts || [];
+          console.log(`[Amplemarket Sync] Hydrated ${contacts.length} contacts from batch`);
+          
+          // Process each hydrated contact
+          for (const contact of contacts) {
+            try {
+              // Skip if no email
+              if (!contact.email) {
+                skippedCount++;
+                continue;
+              }
+            
+              // Check if person already exists by email
+              const [existingPerson] = await db
+                .select()
+                .from(people)
+                .where(and(
+                  eq(people.tenantId, tenantId),
+                  eq(people.primaryEmail, contact.email)
+                ))
+                .limit(1);
+
+              // Create or update account from contact company data
+              const accountId = await syncAccountFromContact(db, tenantId, contact);
+
+              const personData = {
+                accountId,
+                fullName: `${contact.first_name || ""} ${contact.last_name || ""}`.trim() || contact.email,
+                firstName: contact.first_name,
+                lastName: contact.last_name,
+                primaryEmail: contact.email,
+                companyName: contact.company_name,
+                companyDomain: contact.company_domain,
+                companySize: null,
+                roleTitle: contact.title,
+                simplifiedTitle: null,
+                phone: contact.phone_numbers?.[0]?.number || null,
+                manuallyAddedNumber: null,
+                manuallyAddedNumberDncStatus: null,
+                sourcedNumber: null,
+                sourcedNumberDncStatus: null,
+                mobileNumber: null,
+                mobileNumberDncStatus: null,
+                workNumber: null,
+                workNumberDncStatus: null,
+                city: null,
+                state: null,
+                country: null,
+                location: null,
+                linkedinUrl: contact.linkedin_url,
+                industry: contact.industry,
+                status: null,
+                numberOfOpens: 0,
+                label: null,
+                meetingBooked: false,
+                owner: null,
+                sequenceName: null,
+                sequenceTemplateName: null,
+                savedSearchOrLeadListName: null,
+                mailbox: null,
+                contactUrl: null,
+                replied: false,
+                lastStageExecuted: null,
+                lastStageExecutedAt: null,
+                notes: null,
+                enrichmentSource: "amplemarket",
+                enrichmentSnapshot: contact,
+                enrichmentLastSyncedAt: new Date(),
+                integrationId,
+                amplemarketUserId,
+                amplemarketExternalId: contact.id || contact.email,
+                updatedAt: new Date(),
+              };
+
+              if (existingPerson) {
+                // Update existing person
+                await db
+                  .update(people)
+                  .set(personData)
+                  .where(eq(people.id, existingPerson.id));
+                updatedCount++;
+              } else {
+                // Create new person
+                await db.insert(people).values({
+                  id: nanoid(),
+                  tenantId,
+                  ...personData,
+                  createdAt: new Date(),
+                });
+                createdCount++;
+              }
+            } catch (error: any) {
+              console.error(`[Amplemarket Sync] Error upserting contact ${contact.email}:`, error.message);
+              // Continue with next contact
+            }
+          }
+        } catch (error: any) {
+          console.error(`[Amplemarket Sync] Error hydrating batch ${batchIndex + 1}:`, error.message);
+          // Continue with next batch
+        }
       }
     }
     

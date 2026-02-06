@@ -2413,3 +2413,14 @@
 - [ ] Fix invalid parameter (pagination, type filter, user_id, etc.)
 - [ ] Add parameter validation before making requests
 - [ ] Test sync and verify 200 response
+
+## Fix /contacts Endpoint Usage (Two-Step Fetch)
+
+- [x] Research Amplemarket API for correct listing endpoint (not /contacts)
+- [x] Implement Step A: List contact IDs with pagination
+- [x] Implement Step B: Hydrate contacts in batches using /contacts?ids=
+- [x] Add batching logic (50-100 IDs per request)
+- [x] Apply owner filtering (early if listing includes owner, late if not)
+- [x] Add logging: ids_fetched_total, contacts_hydrated_total, kept_owner_match, discarded_owner_mismatch
+- [x] Add unit test preventing /contacts calls without ids
+- [ ] Test all_user_contacts and verify no 400 errors
