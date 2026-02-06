@@ -91,6 +91,7 @@ export async function syncAmplemarketContacts(
   }
   
   console.log("[Amplemarket Sync] Starting sync with user scoping:", {
+    correlationId: 'will be generated after counters init',
     tenantId,
     integrationId,
     amplemarketUserId,
@@ -101,6 +102,9 @@ export async function syncAmplemarketContacts(
     selectedListIdsArray: selectedListIds
   });
   
+  // Generate correlation ID for tracking
+  const correlationId = nanoid();
+  
   // Initialize sync counters
   let createdCount = 0;
   let updatedCount = 0;
@@ -109,6 +113,8 @@ export async function syncAmplemarketContacts(
   let keptMatchingOwner = 0;
   let discardedOtherOwners = 0;
   const syncStartTime = new Date();
+  
+  console.log(`[Amplemarket Sync] Correlation ID: ${correlationId}`);
   
   // Validation based on sync scope
   if (syncScope === 'lists' && selectedListIds.length === 0) {
@@ -180,6 +186,30 @@ export async function syncAmplemarketContacts(
         
         console.log(`[Amplemarket Sync] Fetched ${leads.length} leads from list`);
         idsScannedTotal += leads.length;
+        
+        // Log first 3 leads from first list as raw samples
+        if (listsScanned === 1 && leads.length > 0) {
+          const sampleSize = Math.min(3, leads.length);
+          console.log(`[Amplemarket Sync] ===== RAW LEAD SAMPLES from /lead-lists/${list.id} (first ${sampleSize}) =====`);
+          for (let i = 0; i < sampleSize; i++) {
+            const lead = leads[i];
+            const redactedSample: any = {
+              id: lead.id,
+            };
+            
+            // Include owner-related fields
+            const ownerFields = ['owner', 'owner_email', 'user', 'assigned_to', 'created_by'];
+            for (const field of ownerFields) {
+              if (lead[field] !== undefined) {
+                redactedSample[field] = lead[field];
+              }
+            }
+            
+            console.log(`Lead ${i + 1}:`);
+            console.log(JSON.stringify(redactedSample, null, 2));
+          }
+          console.log("[Amplemarket Sync] ===== END RAW LEAD SAMPLES =====");
+        }
         
         // Collect ALL lead IDs without filtering (owner filtering happens after hydration)
         for (const lead of leads) {
@@ -439,8 +469,49 @@ export async function syncAmplemarketContacts(
       console.warn("[Amplemarket Sync] DIAGNOSTIC:", diagnosticMessage);
     }
     
-    // Return early for all_user_contacts mode
+    // Determine reason for zero counters
+    let reason = undefined;
+    if (idsScannedTotal === 0) {
+      reason = "no_leads_returned_from_lists";
+    } else if (uniqueLeadIds.length === 0) {
+      reason = "all_leads_filtered_during_dedup";
+    } else if (fetchedTotal === 0) {
+      reason = "hydration_returned_empty";
+    } else if (fetchedTotal - missingOwnerField === 0) {
+      reason = "owner_field_missing";
+    } else if (keptMatchingOwner === 0) {
+      reason = "owner_mismatch";
+    } else if (createdCount === 0 && updatedCount === 0) {
+      reason = "upsert_failed";
+    }
+    
+    // Return early for all_user_contacts mode with full diagnostic counters
     return { 
+      // Tracking
+      correlationId,
+      
+      // Configuration
+      selected_amplemarket_user_email: amplemarketUserEmail,
+      
+      // Stage 1: ID Collection
+      list_ids_scanned_count: listsScanned,
+      lead_ids_fetched_total: idsScannedTotal,
+      lead_ids_deduped_total: uniqueLeadIds.length,
+      
+      // Stage 2: Hydration
+      contacts_hydrated_total: fetchedTotal,
+      
+      // Stage 3: Owner Filtering
+      contacts_with_owner_field_count: fetchedTotal - missingOwnerField,
+      kept_owner_match: keptMatchingOwner,
+      discarded_owner_mismatch: discardedOtherOwners,
+      
+      // Stage 4: Upsert
+      created: createdCount,
+      updated: updatedCount,
+      skipped: skippedCount,
+      
+      // Legacy fields for backward compatibility
       createdCount, 
       updatedCount, 
       skippedCount,
@@ -448,7 +519,10 @@ export async function syncAmplemarketContacts(
       keptMatchingOwner,
       discardedOtherOwners,
       missingOwnerField,
-      diagnosticMessage
+      diagnosticMessage,
+      
+      // Diagnostic
+      reason
     };
   }
   
@@ -699,6 +773,8 @@ export async function syncAmplemarket(
       .set({
         status: "completed",
         completedAt: new Date(),
+        
+        // Legacy fields
         contactsCreated: syncResult.createdCount,
         contactsUpdated: syncResult.updatedCount,
         contactsSkipped: syncResult.skippedCount,
@@ -707,6 +783,20 @@ export async function syncAmplemarket(
         contactsDiscarded: syncResult.discardedOtherOwners,
         missingOwnerField: syncResult.missingOwnerField || 0,
         diagnosticMessage: syncResult.diagnosticMessage || null,
+        
+        // New diagnostic counters
+        correlationId: syncResult.correlationId,
+        listIdsScannedCount: syncResult.list_ids_scanned_count || 0,
+        leadIdsFetchedTotal: syncResult.lead_ids_fetched_total || 0,
+        leadIdsDedupedTotal: syncResult.lead_ids_deduped_total || 0,
+        contactsHydratedTotal: syncResult.contacts_hydrated_total || 0,
+        contactsWithOwnerFieldCount: syncResult.contacts_with_owner_field_count || 0,
+        keptOwnerMatch: syncResult.kept_owner_match || 0,
+        discardedOwnerMismatch: syncResult.discarded_owner_mismatch || 0,
+        created: syncResult.created || 0,
+        updated: syncResult.updated || 0,
+        skipped: syncResult.skipped || 0,
+        reason: syncResult.reason || null,
       })
       .where(eq(amplemarketSyncLogs.id, syncLogId));
 

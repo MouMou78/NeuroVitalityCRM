@@ -2445,3 +2445,30 @@
 - [x] Show exact comparison code and normalized values
 - [x] Add hard fail if hydrated > 0 AND kept = 0
 - [ ] Deliver diagnostic report with all evidence
+
+## Find Correct Amplemarket Endpoint for All Contacts
+
+- [ ] Check server logs for diagnostic output
+- [x] Research Amplemarket API for contact listing endpoints
+- [x] Test candidate endpoints with real API key
+- [ ] Implement new endpoint replacing list-based ID collection
+- [ ] Run sync and verify contacts fetched correctly
+
+## API Research Conclusion
+
+- [x] Confirmed: No workspace-wide contact listing endpoint exists in Amplemarket API
+- [x] Current two-step approach (lists → hydrate) is the only viable method
+- [x] Limitation documented in UI: sync limited to contacts in lists
+- [ ] Wait for user to run sync and provide diagnostic logs
+- [ ] Analyze logs to identify owner field mismatch issue
+
+## Return Diagnostic Counters in Sync API Response
+
+- [x] Add correlation_id to sync response
+- [x] Return all diagnostic counters in sync API response
+- [x] Add reason field for zero counters
+- [x] Display counters in sync UI with clear breakdown
+- [x] Add raw sample logging for lead-lists responses (first 3)
+- [x] Add raw sample logging for contacts responses (first 3)
+- [ ] Run sync and identify which counter is zero
+- [ ] Fix the first failing stage

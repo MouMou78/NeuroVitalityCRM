@@ -1400,6 +1400,21 @@ export const amplemarketSyncLogs = mysqlTable("amplemarketSyncLogs", {
   contactsDiscarded: int("contactsDiscarded").default(0),
   missingOwnerField: int("missingOwnerField").default(0),
   conflictsDetected: int("conflictsDetected").default(0),
+  
+  // New diagnostic counters
+  correlationId: varchar("correlationId", { length: 36 }),
+  listIdsScannedCount: int("listIdsScannedCount").default(0),
+  leadIdsFetchedTotal: int("leadIdsFetchedTotal").default(0),
+  leadIdsDedupedTotal: int("leadIdsDedupedTotal").default(0),
+  contactsHydratedTotal: int("contactsHydratedTotal").default(0),
+  contactsWithOwnerFieldCount: int("contactsWithOwnerFieldCount").default(0),
+  keptOwnerMatch: int("keptOwnerMatch").default(0),
+  discardedOwnerMismatch: int("discardedOwnerMismatch").default(0),
+  created: int("created").default(0),
+  updated: int("updated").default(0),
+  skipped: int("skipped").default(0),
+  reason: varchar("reason", { length: 100 }),
+  
   errors: json("errors").$type<string[]>(),
   errorMessage: text("errorMessage"),
   diagnosticMessage: text("diagnosticMessage"),

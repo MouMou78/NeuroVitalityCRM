@@ -309,6 +309,13 @@
       "when": 1770399780921,
       "tag": "0043_luxuriant_black_crow",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "5",
+      "when": 1770403405660,
+      "tag": "0044_rich_daimon_hellstrom",
+      "breakpoints": true
     }
   ]
 }

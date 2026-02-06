@@ -95,44 +95,97 @@ export function AmplemarketSync() {
               </div>
 
               {syncStatus.status === 'completed' && (
-                <div className="space-y-4 pt-4 border-t">
-                  {/* Fetch & Filter Counters */}
-                  <div className="grid grid-cols-5 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fetched Total</p>
-                      <p className="text-2xl font-bold">{syncStatus.contactsFetched || 0}</p>
+                <div className="space-y-6 pt-4 border-t">
+                  {/* Correlation ID */}
+                  {syncStatus.correlationId && (
+                    <div className="text-xs text-muted-foreground font-mono">
+                      Correlation ID: {syncStatus.correlationId}
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Matched Owner</p>
-                      <p className="text-2xl font-bold text-green-600">{syncStatus.contactsKept || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Wrong Owner</p>
-                      <p className="text-2xl font-bold text-gray-400">{syncStatus.contactsDiscarded || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Missing Owner</p>
-                      <p className="text-2xl font-bold text-red-400">{syncStatus.missingOwnerField || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Skipped</p>
-                      <p className="text-2xl font-bold text-orange-400">{syncStatus.contactsSkipped || 0}</p>
+                  )}
+                  
+                  {/* Diagnostic Reason */}
+                  {syncStatus.reason && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Sync Issue:</strong> {syncStatus.reason.replace(/_/g, ' ')}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Stage 1: ID Collection */}
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Stage 1: ID Collection</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Lists Scanned</p>
+                        <p className="text-2xl font-bold">{syncStatus.listIdsScannedCount || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Lead IDs Fetched</p>
+                        <p className="text-2xl font-bold">{syncStatus.leadIdsFetchedTotal || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">IDs After Dedup</p>
+                        <p className="text-2xl font-bold">{syncStatus.leadIdsDedupedTotal || 0}</p>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Create & Update Counters */}
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Created</p>
-                      <p className="text-2xl font-bold text-green-600">{syncStatus.contactsCreated || 0}</p>
+                  {/* Stage 2: Hydration */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-semibold mb-3">Stage 2: Contact Hydration</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Contacts Hydrated</p>
+                        <p className="text-2xl font-bold">{syncStatus.contactsHydratedTotal || 0}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Updated</p>
-                      <p className="text-2xl font-bold text-blue-600">{syncStatus.contactsUpdated || 0}</p>
+                  </div>
+                  
+                  {/* Stage 3: Owner Filtering */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-semibold mb-3">Stage 3: Owner Filtering</h4>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">With Owner Field</p>
+                        <p className="text-2xl font-bold">{syncStatus.contactsWithOwnerFieldCount || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Matched Owner</p>
+                        <p className="text-2xl font-bold text-green-600">{syncStatus.keptOwnerMatch || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Wrong Owner</p>
+                        <p className="text-2xl font-bold text-gray-400">{syncStatus.discardedOwnerMismatch || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Missing Owner</p>
+                        <p className="text-2xl font-bold text-red-400">{(syncStatus.contactsHydratedTotal || 0) - (syncStatus.contactsWithOwnerFieldCount || 0)}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Synced</p>
-                      <p className="text-2xl font-bold text-purple-600">{(syncStatus.contactsCreated || 0) + (syncStatus.contactsUpdated || 0)}</p>
+                  </div>
+                  
+                  {/* Stage 4: Upsert */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-semibold mb-3">Stage 4: Database Upsert</h4>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Created</p>
+                        <p className="text-2xl font-bold text-green-600">{syncStatus.created || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Updated</p>
+                        <p className="text-2xl font-bold text-blue-600">{syncStatus.updated || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Skipped</p>
+                        <p className="text-2xl font-bold text-orange-400">{syncStatus.skipped || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Synced</p>
+                        <p className="text-2xl font-bold text-purple-600">{(syncStatus.created || 0) + (syncStatus.updated || 0)}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
