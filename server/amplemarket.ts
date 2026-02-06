@@ -1,6 +1,6 @@
 import axios from "axios";
 import { nanoid } from "nanoid";
-import { accounts, people, integrations } from "../drizzle/schema";
+import { accounts, people, integrations, amplemarketSyncLogs } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 const AMPLEMARKET_API_BASE = "https://api.amplemarket.com";
@@ -251,30 +251,74 @@ export async function syncAmplemarket(
   amplemarketUserEmail: string,
   selectedListIds: string[] = []
 ) {
-  const syncResult = await syncAmplemarketContacts(
-    db,
+  const syncStartTime = new Date();
+  
+  // Create sync log entry
+  const syncLogId = nanoid();
+  await db.insert(amplemarketSyncLogs).values({
+    id: syncLogId,
     tenantId,
     integrationId,
-    apiKey,
+    status: "running",
+    startedAt: syncStartTime,
     amplemarketUserId,
     amplemarketUserEmail,
-    selectedListIds
-  );
+    selectedLists: selectedListIds.join(","),
+    contactsCreated: 0,
+    contactsUpdated: 0,
+    contactsSkipped: 0,
+  });
 
-  // Update last synced timestamp
-  await db
-    .update(integrations)
-    .set({ lastSyncedAt: new Date() })
-    .where(and(
-      eq(integrations.tenantId, tenantId),
-      eq(integrations.provider, "amplemarket")
-    ));
+  try {
+    const syncResult = await syncAmplemarketContacts(
+      db,
+      tenantId,
+      integrationId,
+      apiKey,
+      amplemarketUserId,
+      amplemarketUserEmail,
+      selectedListIds
+    );
 
-  return {
-    accountsSynced: 0, // Accounts are derived from contacts
-    contactsCreated: syncResult.createdCount,
-    contactsUpdated: syncResult.updatedCount,
-    contactsSkipped: syncResult.skippedCount,
-    totalSynced: syncResult.createdCount + syncResult.updatedCount
-  };
+    // Update sync log with results
+    await db
+      .update(amplemarketSyncLogs)
+      .set({
+        status: "completed",
+        completedAt: new Date(),
+        contactsCreated: syncResult.createdCount,
+        contactsUpdated: syncResult.updatedCount,
+        contactsSkipped: syncResult.skippedCount,
+      })
+      .where(eq(amplemarketSyncLogs.id, syncLogId));
+
+    // Update last synced timestamp
+    await db
+      .update(integrations)
+      .set({ lastSyncedAt: new Date() })
+      .where(and(
+        eq(integrations.tenantId, tenantId),
+        eq(integrations.provider, "amplemarket")
+      ));
+
+    return {
+      accountsSynced: 0, // Accounts are derived from contacts
+      contactsCreated: syncResult.createdCount,
+      contactsUpdated: syncResult.updatedCount,
+      contactsSkipped: syncResult.skippedCount,
+      totalSynced: syncResult.createdCount + syncResult.updatedCount
+    };
+  } catch (error: any) {
+    // Update sync log with error
+    await db
+      .update(amplemarketSyncLogs)
+      .set({
+        status: "failed",
+        completedAt: new Date(),
+        errorMessage: error.message || "Unknown error",
+      })
+      .where(eq(amplemarketSyncLogs.id, syncLogId));
+    
+    throw error;
+  }
 }

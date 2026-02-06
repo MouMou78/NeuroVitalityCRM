@@ -37,8 +37,55 @@ export async function rollbackLastAmplemarketSync(
     .limit(1);
 
   if (!lastSync) {
-    console.log("[Amplemarket Rollback] No sync log found, nothing to rollback");
-    return { deletedPeople: 0, deletedAccounts: 0, syncLogId: null };
+    console.warn("[Amplemarket Rollback] No sync log found - falling back to delete ALL Amplemarket records");
+    console.warn("[Amplemarket Rollback] This happens when records were imported before sync logging was implemented");
+    
+    // Count records before deletion
+    const [peopleCount] = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(people)
+      .where(and(
+        eq(people.tenantId, tenantId),
+        eq(people.enrichmentSource, "amplemarket")
+      ));
+    
+    const [accountsCount] = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(accounts)
+      .where(and(
+        eq(accounts.tenantId, tenantId),
+        eq(accounts.enrichmentSource, "amplemarket")
+      ));
+    
+    console.log("[Amplemarket Rollback] Fallback mode - will delete:", {
+      people: peopleCount.count,
+      accounts: accountsCount.count
+    });
+    
+    // Delete all Amplemarket records
+    const deletedPeopleResult = await db
+      .delete(people)
+      .where(and(
+        eq(people.tenantId, tenantId),
+        eq(people.enrichmentSource, "amplemarket")
+      ));
+    
+    const deletedAccountsResult = await db
+      .delete(accounts)
+      .where(and(
+        eq(accounts.tenantId, tenantId),
+        eq(accounts.enrichmentSource, "amplemarket")
+      ));
+    
+    const deletedPeopleCount = deletedPeopleResult.rowsAffected || 0;
+    const deletedAccountsCount = deletedAccountsResult.rowsAffected || 0;
+    
+    console.log("[Amplemarket Rollback] Fallback deletion complete:", {
+      deletedPeople: deletedPeopleCount,
+      deletedAccounts: deletedAccountsCount
+    });
+    
+    return { deletedPeople: deletedPeopleCount, deletedAccounts: deletedAccountsCount, syncLogId: null };
   }
 
   const syncStartTime = lastSync.startedAt;
@@ -50,14 +97,76 @@ export async function rollbackLastAmplemarketSync(
     contactsUpdated: lastSync.contactsUpdated
   });
 
+  // Before deletion: count matching records to prove filter correctness
+  // Match records where:
+  // 1. Basic criteria: tenant + source + sync timestamp
+  // 2. integrationId is NULL (legacy records) OR matches current integration
+  const [peopleCount] = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(people)
+    .where(and(
+      eq(people.tenantId, tenantId),
+      eq(people.enrichmentSource, "amplemarket"),
+      gte(people.enrichmentLastSyncedAt, syncStartTime),
+      sql`(${people.integrationId} IS NULL OR ${people.integrationId} = ${integrationId})`
+    ));
+
+  const [accountsCount] = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(accounts)
+    .where(and(
+      eq(accounts.tenantId, tenantId),
+      eq(accounts.enrichmentSource, "amplemarket"),
+      gte(accounts.updatedAt, syncStartTime),
+      sql`(${accounts.integrationId} IS NULL OR ${accounts.integrationId} = ${integrationId})`
+    ));
+
+  console.log("[Amplemarket Rollback] Pre-deletion count check:", {
+    peopleMatchingFilter: peopleCount.count,
+    accountsMatchingFilter: accountsCount.count,
+    filter: {
+      tenantId,
+      enrichmentSource: "amplemarket",
+      integrationId,
+      syncStartTime: syncStartTime.toISOString()
+    }
+  });
+
+  // If counts are zero, explain why
+  if (peopleCount.count === 0 && accountsCount.count === 0) {
+    console.warn("[Amplemarket Rollback] No records match filter. Possible reasons:");
+    console.warn("  1. enrichmentSource field is not set to 'amplemarket'");
+    console.warn("  2. integrationId field is null or doesn't match", integrationId);
+    console.warn("  3. enrichmentLastSyncedAt is null or before sync start time");
+    console.warn("  4. Records were imported with different tenant_id");
+    
+    // Query a sample of Amplemarket records to show actual field values
+    const samplePeople = await db
+      .select({
+        id: people.id,
+        tenantId: people.tenantId,
+        enrichmentSource: people.enrichmentSource,
+        integrationId: people.integrationId,
+        amplemarketUserId: people.amplemarketUserId,
+        amplemarketExternalId: people.amplemarketExternalId,
+        enrichmentLastSyncedAt: people.enrichmentLastSyncedAt,
+        createdAt: people.createdAt
+      })
+      .from(people)
+      .where(eq(people.tenantId, tenantId))
+      .limit(3);
+    
+    console.log("[Amplemarket Rollback] Sample records from this tenant:", samplePeople);
+  }
+
   // Delete people records from this sync
   const deletedPeopleResult = await db
     .delete(people)
     .where(and(
       eq(people.tenantId, tenantId),
       eq(people.enrichmentSource, "amplemarket"),
-      eq(people.integrationId, integrationId),
-      gte(people.enrichmentLastSyncedAt, syncStartTime)
+      gte(people.enrichmentLastSyncedAt, syncStartTime),
+      sql`(${people.integrationId} IS NULL OR ${people.integrationId} = ${integrationId})`
     ));
 
   const deletedPeopleCount = deletedPeopleResult.rowsAffected || 0;
@@ -68,10 +177,8 @@ export async function rollbackLastAmplemarketSync(
     .where(and(
       eq(accounts.tenantId, tenantId),
       eq(accounts.enrichmentSource, "amplemarket"),
-      eq(accounts.integrationId, integrationId),
-      // Accounts don't have enrichmentLastSyncedAt, so we use a different approach
-      // We'll delete accounts that were created/updated in the same time window
-      gte(accounts.updatedAt, syncStartTime)
+      gte(accounts.updatedAt, syncStartTime),
+      sql`(${accounts.integrationId} IS NULL OR ${accounts.integrationId} = ${integrationId})`
     ));
 
   const deletedAccountsCount = deletedAccountsResult.rowsAffected || 0;
@@ -79,7 +186,10 @@ export async function rollbackLastAmplemarketSync(
   console.log("[Amplemarket Rollback] Deletion complete:", {
     deletedPeople: deletedPeopleCount,
     deletedAccounts: deletedAccountsCount,
-    syncLogId: lastSync.id
+    syncLogId: lastSync.id,
+    expectedPeople: peopleCount.count,
+    expectedAccounts: accountsCount.count,
+    mismatch: deletedPeopleCount !== peopleCount.count || deletedAccountsCount !== accountsCount.count
   });
 
   // Log the rollback operation

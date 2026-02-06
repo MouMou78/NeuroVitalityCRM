@@ -2267,3 +2267,22 @@
 - [ ] Test changing Amplemarket user and resyncing with correct data
 - [x] Verify no workspace-wide imports occur (enforced by list selection requirement)
 - [x] Verify no silent deletes during sync (all deletes are explicit via rollback)
+
+## Amplemarket Rollback Debugging
+- [ ] Add comprehensive logging to rollback execution (tenant_id, integration_id, last_sync_started_at, delete counts per table)
+- [ ] Query database to verify 3 example imported records have correct tracking fields
+- [ ] Test rollback execution and capture exact SQL/ORM queries used
+- [ ] Show before and after counts for Amplemarket-sourced records
+- [ ] Fix tagging if any tracking fields are missing or null
+- [ ] Fix rollback filter if not matching records correctly
+- [ ] Verify rollback removes records and UI reflects changes
+- [ ] Add sync_run_id tracking for more reliable rollback
+
+## Amplemarket Rollback Debugging
+- [x] Add comprehensive logging to rollback execution (tenant, integration, sync timestamp, delete counts)
+- [x] Query database to verify imported records have correct tracking fields
+- [x] Test rollback execution and capture exact SQL queries and counts
+- [x] Fix tagging or filtering issues - added OR condition for NULL integrationId
+- [x] Add fallback rollback mode when no sync log exists (deletes all Amplemarket records)
+- [x] Ensure future syncs create sync logs with full tracking
+- [ ] Verify rollback removes records and UI reflects changes
