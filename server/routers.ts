@@ -1985,6 +1985,49 @@ Generate a subject line and email body. Format your response as JSON with "subje
           });
         }
       }),
+
+    // Amplemarket Sync Operations
+    fetchAmplemarketListCounts: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const { fetchAndCacheListCounts } = await import('./amplemarketSync');
+        return fetchAndCacheListCounts(ctx.user.tenantId);
+      }),
+
+    getAmplemarketListCounts: protectedProcedure
+      .input(z.object({
+        userEmail: z.string().optional(),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        const { getCachedListCounts } = await import('./amplemarketSync');
+        return getCachedListCounts(ctx.user.tenantId, input?.userEmail);
+      }),
+
+    getAmplemarketSyncHistory: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional(),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        const { getSyncHistory } = await import('./amplemarketSync');
+        return getSyncHistory(ctx.user.tenantId, input?.limit);
+      }),
+
+    getAmplemarketSyncStatus: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getLatestSyncStatus } = await import('./amplemarketSync');
+        return getLatestSyncStatus(ctx.user.tenantId);
+      }),
+
+    previewAmplemarketSync: protectedProcedure
+      .input(z.object({
+        userId: z.string().optional(),
+        selectedLists: z.array(z.string()).optional(),
+        selectedSequences: z.array(z.string()).optional(),
+        conflictStrategy: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { previewAmplemarketSync } = await import('./amplemarketSync');
+        return previewAmplemarketSync(ctx.user.tenantId, input);
+      }),
     
     listAmplemarketAccounts: protectedProcedure
       .query(async ({ ctx }) => {

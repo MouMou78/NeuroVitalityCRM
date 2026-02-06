@@ -274,6 +274,13 @@
       "when": 1770378154228,
       "tag": "0038_confused_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1770385926281,
+      "tag": "0039_fluffy_mongu",
+      "breakpoints": true
     }
   ]
 }

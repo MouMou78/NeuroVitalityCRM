@@ -2215,3 +2215,17 @@
 - [x] Pass userEmail parameter in API calls
 - [x] Test user selection triggers proper filtering
 - [x] Verify contact counts show "unavailable" instead of "0 contacts"
+
+## Amplemarket Enhanced Features
+- [x] Create database schema for cached list counts (amplemarketListCache table)
+- [x] Create database schema for sync status tracking (amplemarketSyncLogs table)
+- [x] Implement background job to fetch list contact counts
+- [x] Build sync status dashboard showing last sync, success/failure, contacts synced
+- [x] Add manual "Fetch List Counts" button to dashboard
+- [x] Implement sync preview endpoint to show pending changes
+- [x] Create sync preview UI with create/update/merge highlights
+- [x] Add conflict resolution preview display
+- [x] Update list display to show cached contact counts
+- [x] Add loading states and error handling for all new features
+- [x] Create /amplemarket/sync route and page
+- [ ] Test all features end-to-end

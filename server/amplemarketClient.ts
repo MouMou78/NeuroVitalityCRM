@@ -84,6 +84,14 @@ export class AmplemarketClient {
   }
 
   /**
+   * Get single list by ID with full details including leads
+   */
+  async getListById(listId: string) {
+    const response = await this.client.get(`/lead-lists/${listId}`);
+    return response.data;
+  }
+
+  /**
    * Get contacts from Amplemarket
    */
   async getContacts(params?: { list_id?: string; limit?: number; offset?: number }) {

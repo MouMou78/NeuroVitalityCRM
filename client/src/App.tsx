@@ -23,6 +23,7 @@ import Assistant from "./pages/Assistant";
 import AIAssistant from "./pages/AIAssistant";
 import AmplemarketAccounts from "./pages/AmplemarketAccounts";
 import AmplemarketPeople from "./pages/AmplemarketPeople";
+import { AmplemarketSync } from "./pages/AmplemarketSync";
 import AccountDetail from "./pages/AccountDetail";
 import AccountDetailPage from "./pages/AccountDetailPage";
 
@@ -199,6 +200,12 @@ function Router() {
       <Route path="/amplemarket/people">
         <DashboardLayout>
           <AmplemarketPeople />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/amplemarket/sync">
+        <DashboardLayout>
+          <AmplemarketSync />
         </DashboardLayout>
       </Route>
       

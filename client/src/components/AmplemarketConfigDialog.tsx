@@ -56,6 +56,23 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
     }
   );
 
+  // Fetch cached list counts
+  const { data: cachedCounts } = trpc.integrations.getAmplemarketListCounts.useQuery(
+    selectedUserEmail ? { userEmail: selectedUserEmail } : undefined,
+    {
+      enabled: open,
+      retry: false,
+    }
+  );
+
+  // Create a map of list IDs to cached counts
+  const countMap = new Map();
+  if (cachedCounts) {
+    for (const cache of cachedCounts) {
+      countMap.set(cache.listId, cache.contactCount);
+    }
+  }
+
   const handleSave = () => {
     updateConfig.mutate({
       syncSchedule,
@@ -223,7 +240,7 @@ export function AmplemarketConfigDialog({ open, onOpenChange, currentConfig, onS
                           {list.name}
                           {list.shared && <span className="text-xs text-muted-foreground ml-1">(Shared)</span>}
                           <span className="text-xs text-muted-foreground ml-1">
-                            {list.contactCount !== null ? `(${list.contactCount} contacts)` : '(count unavailable)'}
+                            {countMap.has(list.id) ? `(${countMap.get(list.id)} contacts)` : '(count unavailable)'}
                           </span>
                         </label>
                       </div>

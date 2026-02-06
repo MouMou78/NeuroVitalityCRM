@@ -2618,3 +2618,173 @@ export async function getActivitiesByType(
     .orderBy(desc(activities.timestamp))
     .limit(limit);
 }
+
+// ==================== Amplemarket Sync ====================
+
+export async function createSyncLog(data: {
+  id: string;
+  tenantId: string;
+  syncType: 'full' | 'incremental' | 'preview' | 'list_counts';
+  status: 'pending' | 'running' | 'completed' | 'failed';
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  const { amplemarketSyncLogs } = await import("../drizzle/schema");
+
+  await db.insert(amplemarketSyncLogs).values(data);
+}
+
+export async function updateSyncLog(
+  id: string,
+  data: {
+    status?: 'pending' | 'running' | 'completed' | 'failed';
+    errorMessage?: string;
+    metadata?: any;
+    errors?: string[];
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  const { amplemarketSyncLogs } = await import("../drizzle/schema");
+  const { eq, sql } = await import("drizzle-orm");
+
+  const updates: any = {};
+  if (data.status) updates.status = data.status;
+  if (data.errorMessage) updates.errorMessage = data.errorMessage;
+  if (data.metadata) updates.metadata = data.metadata;
+  if (data.errors) updates.errors = data.errors;
+  
+  if (data.status === 'completed' || data.status === 'failed') {
+    updates.completedAt = sql`NOW()`;
+  }
+
+  await db
+    .update(amplemarketSyncLogs)
+    .set(updates)
+    .where(eq(amplemarketSyncLogs.id, id));
+}
+
+export async function cacheListCount(
+  tenantId: string,
+  data: {
+    listId: string;
+    listName: string;
+    owner?: string;
+    shared: boolean;
+    contactCount: number;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  const { amplemarketListCache } = await import("../drizzle/schema");
+  const { randomUUID } = await import("crypto");
+  const { eq, and, sql } = await import("drizzle-orm");
+
+  // Check if exists
+  const existing = await db
+    .select()
+    .from(amplemarketListCache)
+    .where(
+      and(
+        eq(amplemarketListCache.tenantId, tenantId),
+        eq(amplemarketListCache.listId, data.listId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    // Update existing
+    await db
+      .update(amplemarketListCache)
+      .set({
+        listName: data.listName,
+        owner: data.owner || null,
+        shared: data.shared,
+        contactCount: data.contactCount,
+        lastFetchedAt: sql`NOW()`,
+      })
+      .where(
+        and(
+          eq(amplemarketListCache.tenantId, tenantId),
+          eq(amplemarketListCache.listId, data.listId)
+        )
+      );
+  } else {
+    // Insert new
+    await db.insert(amplemarketListCache).values({
+      id: randomUUID(),
+      tenantId,
+      ...data,
+    });
+  }
+}
+
+export async function getCachedListCounts(tenantId: string, userEmail?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { amplemarketListCache } = await import("../drizzle/schema");
+  const { eq, and, or, asc } = await import("drizzle-orm");
+
+  if (userEmail) {
+    return await db
+      .select()
+      .from(amplemarketListCache)
+      .where(
+        and(
+          eq(amplemarketListCache.tenantId, tenantId),
+          or(
+            eq(amplemarketListCache.owner, userEmail),
+            eq(amplemarketListCache.shared, true)
+          )
+        )
+      )
+      .orderBy(asc(amplemarketListCache.listName));
+  }
+
+  return await db
+    .select()
+    .from(amplemarketListCache)
+    .where(eq(amplemarketListCache.tenantId, tenantId))
+    .orderBy(asc(amplemarketListCache.listName));
+}
+
+export async function getAmplemarketSyncHistory(tenantId: string, limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { amplemarketSyncLogs } = await import("../drizzle/schema");
+  const { eq, desc } = await import("drizzle-orm");
+
+  return await db
+    .select()
+    .from(amplemarketSyncLogs)
+    .where(eq(amplemarketSyncLogs.tenantId, tenantId))
+    .orderBy(desc(amplemarketSyncLogs.startedAt))
+    .limit(limit);
+}
+
+export async function getLatestSyncStatus(tenantId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { amplemarketSyncLogs } = await import("../drizzle/schema");
+  const { eq, and, ne, desc } = await import("drizzle-orm");
+
+  const results = await db
+    .select()
+    .from(amplemarketSyncLogs)
+    .where(
+      and(
+        eq(amplemarketSyncLogs.tenantId, tenantId),
+        ne(amplemarketSyncLogs.syncType, 'list_counts')
+      )
+    )
+    .orderBy(desc(amplemarketSyncLogs.startedAt))
+    .limit(1);
+
+  return results[0] || null;
+}

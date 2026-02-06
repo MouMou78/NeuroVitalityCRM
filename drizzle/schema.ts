@@ -1352,3 +1352,48 @@ export const webhookEvents = mysqlTable("webhookEvents", {
 
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
+
+// Amplemarket List Cache (for contact counts)
+export const amplemarketListCache = mysqlTable("amplemarketListCache", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  listId: varchar("listId", { length: 100 }).notNull(), // Amplemarket list ID
+  listName: varchar("listName", { length: 500 }).notNull(),
+  owner: varchar("owner", { length: 320 }), // Owner email
+  shared: boolean("shared").default(false),
+  contactCount: int("contactCount").notNull(),
+  lastFetchedAt: timestamp("lastFetchedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantListIdx: unique("tenant_list_unique").on(table.tenantId, table.listId),
+  tenantIdx: index("amplemarket_list_cache_tenant_idx").on(table.tenantId),
+}));
+
+export type AmplemarketListCache = typeof amplemarketListCache.$inferSelect;
+export type InsertAmplemarketListCache = typeof amplemarketListCache.$inferInsert;
+
+// Amplemarket Sync Logs (for sync status tracking)
+export const amplemarketSyncLogs = mysqlTable("amplemarketSyncLogs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  syncType: mysqlEnum("syncType", ["full", "incremental", "preview", "list_counts"]).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).default("pending").notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  contactsCreated: int("contactsCreated").default(0),
+  contactsUpdated: int("contactsUpdated").default(0),
+  contactsMerged: int("contactsMerged").default(0),
+  conflictsDetected: int("conflictsDetected").default(0),
+  errors: json("errors").$type<string[]>(),
+  errorMessage: text("errorMessage"),
+  metadata: json("metadata").$type<Record<string, any>>(), // Additional sync details
+  triggeredBy: varchar("triggeredBy", { length: 36 }), // User ID who triggered manual sync
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("amplemarket_sync_logs_tenant_idx").on(table.tenantId),
+  statusIdx: index("amplemarket_sync_logs_status_idx").on(table.status),
+  startedIdx: index("amplemarket_sync_logs_started_idx").on(table.startedAt),
+}));
+
+export type AmplemarketSyncLog = typeof amplemarketSyncLogs.$inferSelect;
+export type InsertAmplemarketSyncLog = typeof amplemarketSyncLogs.$inferInsert;
