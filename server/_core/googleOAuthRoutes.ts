@@ -26,15 +26,21 @@ export function registerGoogleOAuthRoutes(app: Express) {
    */
   app.get("/api/oauth/google", async (req: Request, res: Response) => {
     try {
-      const tenantId = req.query.tenantId as string;
+      // Get tenant ID from authenticated session
+      const { createContext } = await import('./context');
+      const ctx = await createContext({ req, res, info: {} as any });
+      
       const requestHost = req.get("host");
+      console.log(`[Google OAuth Start] Request host: ${requestHost}`);
+      console.log(`[Google OAuth Start] User: ${ctx.user?.email || 'NOT AUTHENTICATED'}`);
+      console.log(`[Google OAuth Start] Tenant ID: ${ctx.user?.tenantId || 'MISSING'}`);
       
-      console.log(`[Google OAuth Start] Request host: ${requestHost}, tenantId: ${tenantId || 'MISSING'}`);
-      
-      if (!tenantId) {
-        console.error("[Google OAuth Start] tenantId is missing from request");
-        return res.status(400).json({ error: "tenantId is required" });
+      if (!ctx.user || !ctx.user.tenantId) {
+        console.error("[Google OAuth Start] User not authenticated or missing tenantId");
+        return res.status(401).send('Please log in first before connecting Google Calendar');
       }
+
+      const tenantId = ctx.user.tenantId;
 
       // Generate secure state parameter
       const state = generateOAuthState();

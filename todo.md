@@ -2169,3 +2169,9 @@
 - [x] Log request host, tenantId, and state values
 - [ ] Test Google OAuth flow and collect logs (requires publish)
 - [ ] Verify tenant_id is correctly restored in callback (requires publish)
+
+## Tenant ID and Amplemarket Issues (Feb 6 - Production)
+- [x] Fix auth.me endpoint to return tenantId in response (already working)
+- [x] Simplify Google OAuth to detect tenant from session instead of query param
+- [ ] Verify Amplemarket API endpoint changes are deployed
+- [x] Add better error messages for Amplemarket API failures

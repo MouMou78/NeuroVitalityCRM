@@ -1855,16 +1855,23 @@ Generate a subject line and email body. Format your response as JSON with "subje
         }
         
         try {
+          console.log('[Amplemarket API] Fetching users from https://api.amplemarket.com/users');
           const response = await axios.get("https://api.amplemarket.com/users", {
             headers: { "X-Api-Key": apiKey },
           });
+          console.log('[Amplemarket API] Users response:', response.data);
           return response.data.users?.map((u: any) => ({
             id: u.id,
             name: u.name || u.full_name,
             email: u.email,
           })) || [];
         } catch (error: any) {
-          console.error("Failed to fetch Amplemarket users:", error);
+          console.error('[Amplemarket API] Failed to fetch users:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message
+          });
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
             message: `Failed to fetch Amplemarket users: ${error.response?.data?.message || error.message}` 
@@ -1885,16 +1892,23 @@ Generate a subject line and email body. Format your response as JSON with "subje
         }
         
         try {
+          console.log('[Amplemarket API] Fetching lists from https://api.amplemarket.com/lists');
           const response = await axios.get("https://api.amplemarket.com/lists", {
             headers: { "X-Api-Key": apiKey },
           });
+          console.log('[Amplemarket API] Lists response:', response.data);
           return response.data.lists?.map((l: any) => ({
             id: l.id,
             name: l.name,
             contactCount: l.contact_count || l.size || 0,
           })) || [];
         } catch (error: any) {
-          console.error("Failed to fetch Amplemarket lists:", error);
+          console.error('[Amplemarket API] Failed to fetch lists:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message
+          });
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
             message: `Failed to fetch Amplemarket lists: ${error.response?.data?.message || error.message}` 
@@ -1915,15 +1929,22 @@ Generate a subject line and email body. Format your response as JSON with "subje
         }
         
         try {
+          console.log('[Amplemarket API] Fetching sequences from https://api.amplemarket.com/sequences');
           const response = await axios.get("https://api.amplemarket.com/sequences", {
             headers: { "X-Api-Key": apiKey },
           });
+          console.log('[Amplemarket API] Sequences response:', response.data);
           return response.data.sequences?.map((s: any) => ({
             id: s.id,
             name: s.name || s.title,
           })) || [];
         } catch (error: any) {
-          console.error("Failed to fetch Amplemarket sequences:", error);
+          console.error('[Amplemarket API] Failed to fetch sequences:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message
+          });
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
             message: `Failed to fetch Amplemarket sequences: ${error.response?.data?.message || error.message}` 

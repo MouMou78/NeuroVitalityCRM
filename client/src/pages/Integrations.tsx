@@ -174,25 +174,9 @@ export default function Integrations() {
                 ) : (
                   <Button 
                     className="w-full"
-                    onClick={async () => {
-                      try {
-                        // Get current user to extract tenantId
-                        const response = await fetch('/api/trpc/auth.me', {
-                          credentials: 'include',
-                        });
-                        const data = await response.json();
-                        const tenantId = data.result?.data?.tenantId;
-                        
-                        if (!tenantId) {
-                          toast.error('Unable to determine tenant ID. Please log in again.');
-                          return;
-                        }
-                        
-                        // Redirect to Google OAuth flow
-                        window.location.href = `/api/oauth/google?tenantId=${tenantId}`;
-                      } catch (error) {
-                        toast.error('Failed to initiate Google OAuth flow');
-                      }
+                    onClick={() => {
+                      // Tenant ID will be retrieved from session on the backend
+                      window.location.href = `/api/oauth/google`;
                     }}
                   >
                     <LinkIcon className="w-4 h-4 mr-2" />
