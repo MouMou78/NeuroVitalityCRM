@@ -27,15 +27,22 @@ export default function SequenceNew() {
     { stepNumber: 1, type: "email", subject: "", body: "", delayDays: 0 }
   ]);
 
-  const createSequence = trpc.sequences.create.useMutation({
-    onSuccess: () => {
-      toast.success("Sequence created successfully");
-      setLocation("/sequences");
+  // Sequences feature removed with Amplemarket integration
+  // const createSequence = trpc.sequences.create.useMutation({
+  //   onSuccess: () => {
+  //     toast.success("Sequence created successfully");
+  //     setLocation("/sequences");
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(error.message || "Failed to create sequence");
+  //   },
+  // });
+  const createSequence = {
+    mutate: () => {
+      toast.info("Sequences feature is not available");
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create sequence");
-    },
-  });
+    isPending: false,
+  };
 
   const addStep = () => {
     const newStepNumber = steps.length + 1;

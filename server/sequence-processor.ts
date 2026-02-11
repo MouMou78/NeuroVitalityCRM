@@ -218,7 +218,7 @@ async function sendSequenceEmail(enrollment: any, step: any) {
   } as any);
 
   // Inject tracking
-  const baseUrl = process.env.VITE_APP_URL || "https://1twentycrm.manus.space";
+  const baseUrl = process.env.VITE_APP_URL || "https://yourcrm.example.com";
   const trackedBody = injectTrackingIntoEmail(step.body, enrollment.id, baseUrl);
 
   // Send email

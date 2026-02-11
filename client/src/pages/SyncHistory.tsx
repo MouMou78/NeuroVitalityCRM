@@ -5,7 +5,11 @@ import { Loader2, CheckCircle2, AlertCircle, XCircle, Clock } from "lucide-react
 import { Button } from "@/components/ui/button";
 
 export default function SyncHistory() {
-  const { data: history, isLoading, refetch } = trpc.integrations.getSyncHistory.useQuery();
+  // Integrations feature removed with Amplemarket integration
+  // const { data: history, isLoading, refetch } = trpc.integrations.getSyncHistory.useQuery();
+  const history: any[] = [];
+  const isLoading = false;
+  const refetch = () => {};
 
   const getStatusIcon = (status: string) => {
     switch (status) {

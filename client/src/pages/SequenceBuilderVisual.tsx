@@ -12,29 +12,44 @@ export default function SequenceBuilderVisual() {
   const [, params] = useRoute('/sequences/builder/:id');
   const sequenceId = params?.id;
 
-  const { data: sequence, isLoading } = trpc.sequences.getConditional.useQuery(
-    { id: sequenceId! },
-    { enabled: !!sequenceId }
-  );
+  // Sequences feature removed with Amplemarket integration
+  // const { data: sequence, isLoading } = trpc.sequences.getConditional.useQuery(
+  //   { id: sequenceId! },
+  //   { enabled: !!sequenceId }
+  // );
+  const sequence: any = null;
+  const isLoading = false;
 
-  const createMutation = trpc.sequences.createConditional.useMutation({
-    onSuccess: (data) => {
-      toast.success('Sequence saved successfully!');
-      navigate(`/sequences/${data.id}`);
+  // const createMutation = trpc.sequences.createConditional.useMutation({
+  //   onSuccess: (data) => {
+  //     toast.success('Sequence saved successfully!');
+  //     navigate(`/sequences/${data.id}`);
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(error.message || 'Failed to save sequence');
+  //   },
+  // });
+  const createMutation = {
+    mutateAsync: async () => {
+      toast.info("Sequences feature is not available");
     },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to save sequence');
-    },
-  });
+    isPending: false,
+  };
 
-  const updateMutation = trpc.sequences.updateConditional.useMutation({
-    onSuccess: () => {
-      toast.success('Sequence updated successfully!');
+  // const updateMutation = trpc.sequences.updateConditional.useMutation({
+  //   onSuccess: () => {
+  //     toast.success('Sequence updated successfully!');
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(error.message || 'Failed to update sequence');
+  //   },
+  // });
+  const updateMutation = {
+    mutateAsync: async () => {
+      toast.info("Sequences feature is not available");
     },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to update sequence');
-    },
-  });
+    isPending: false,
+  };
 
   const handleSave = async (nodes: Node[], edges: Edge[]) => {
     if (!nodes.length) {

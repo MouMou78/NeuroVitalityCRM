@@ -2632,3 +2632,19 @@
 - [ ] Update backend to return empty array when Google Calendar not connected instead of throwing error
 - [ ] Update frontend to handle missing calendar integration gracefully
 - [ ] Test People page loads without errors when Google Calendar disconnected
+
+## TypeScript Cleanup and Branding
+- [x] Fix TypeScript errors in SequenceNew.tsx
+- [x] Fix TypeScript errors in Sequences.tsx (remove sequences router references)
+- [x] Fix TypeScript errors in SyncHistory.tsx (remove integrations router references)
+- [x] Fix TypeScript errors in SyncPerformance.tsx (remove integrations router references)
+- [x] Fix TypeScript errors in SequenceGenerate.tsx
+- [x] Fix TypeScript errors in SequenceBuilderVisual.tsx
+- [x] Replace "1twenty" branding with generic "CRM" branding in all files
+- [x] Update HTML title from "1twenty CRM" to "White Label CRM"
+- [x] Update guest user email to guest@whitelabelcrm.demo
+- [x] Update OAuth redirect URLs to use generic placeholder
+- [x] Update campaign and sequence URLs to use generic placeholder
+- [ ] Fix remaining TypeScript errors (mutateAsync parameter issues)
+- [ ] Update dashboard welcome message to remove "1twenty" references
+- [ ] Update logo references to use generic branding

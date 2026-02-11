@@ -8,7 +8,10 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 
 export default function Sequences() {
-  const { data: sequences, isLoading } = trpc.sequences.list.useQuery();
+  // Sequences feature removed with Amplemarket integration
+  // const { data: sequences, isLoading } = trpc.sequences.list.useQuery();
+  const isLoading = false;
+  const sequences: any[] = [];
 
   if (isLoading) {
     return (

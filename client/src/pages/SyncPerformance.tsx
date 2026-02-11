@@ -4,7 +4,11 @@ import { trpc } from "@/lib/trpc";
 import { Activity, Clock, Database, TrendingUp, Zap } from "lucide-react";
 
 export default function SyncPerformance() {
-  const { data: metrics, isLoading, refetch } = trpc.integrations.getSyncMetrics.useQuery();
+  // Integrations feature removed with Amplemarket integration
+  // const { data: metrics, isLoading, refetch } = trpc.integrations.getSyncMetrics.useQuery();
+  const metrics: any = null;
+  const isLoading = false;
+  const refetch = () => {};
 
   if (isLoading) {
     return (

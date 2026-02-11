@@ -19,15 +19,22 @@ export default function SequenceGenerate() {
   const [tone, setTone] = useState("professional");
   const [additionalContext, setAdditionalContext] = useState("");
   
-  const generateMutation = trpc.sequences.generateWithAI.useMutation({
-    onSuccess: (data: { success: boolean; sequenceId: string }) => {
-      toast.success("Sequence generated successfully!");
-      navigate(`/sequences/${data.sequenceId}`);
+  // Sequences feature removed with Amplemarket integration
+  // const generateMutation = trpc.sequences.generateWithAI.useMutation({
+  //   onSuccess: (data: { success: boolean; sequenceId: string }) => {
+  //     toast.success("Sequence generated successfully!");
+  //     navigate(`/sequences/${data.sequenceId}`);
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(error.message || "Failed to generate sequence");
+  //   },
+  // });
+  const generateMutation = {
+    mutateAsync: async () => {
+      toast.info("Sequences feature is not available");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to generate sequence");
-    },
-  });
+    isPending: false,
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();

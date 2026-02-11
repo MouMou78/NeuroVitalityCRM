@@ -90,7 +90,7 @@ export async function sendCampaign(campaignId: string, tenantId: string, userId:
     try {
       // Inject tracking pixels and links
       const { injectTrackingIntoEmail } = await import("./email-tracking");
-      const baseUrl = process.env.VITE_APP_URL || "https://1twentycrm.manus.space";
+      const baseUrl = process.env.VITE_APP_URL || "https://yourcrm.example.com";
       const trackedBody = injectTrackingIntoEmail(campaignData.body, recipient.id, baseUrl);
       
       // Send email with tracking
