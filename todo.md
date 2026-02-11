@@ -2592,3 +2592,16 @@
 - [x] Create default guest user for unauthenticated access
 - [x] Update backend to allow unauthenticated requests
 - [x] Test CRM access without login
+
+## Fix Remaining Login Requirements
+- [ ] Investigate what is still showing login screen
+- [ ] Check browser cache and cookies
+- [ ] Verify useAuth mock user is being returned
+- [ ] Check for server-side authentication middleware
+- [ ] Test with fresh browser session
+
+## Fix Backend Authentication Error
+- [x] Identify backend authentication middleware causing "Please login" error
+- [x] Update backend context to return mock user for unauthenticated requests
+- [x] Update protected procedures to allow guest access
+- [x] Test backend returns mock user without authentication

@@ -44,6 +44,25 @@ export async function createContext(
     user = null;
   }
 
+  // If no user found, return mock guest user for development
+  if (!user) {
+    user = {
+      id: 'guest-user-id',
+      tenantId: 'default-tenant',
+      email: 'demo@whitelabelcrm.com',
+      passwordHash: '',
+      name: 'Demo User',
+      role: 'admin',
+      twoFactorSecret: null,
+      twoFactorEnabled: false,
+      backupCodes: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      disabled: false,
+      createdAt: new Date(),
+    };
+  }
+
   return {
     req: opts.req,
     res: opts.res,
