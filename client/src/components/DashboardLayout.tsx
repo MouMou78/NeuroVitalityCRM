@@ -188,7 +188,7 @@ function DashboardLayoutContent({
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
-  const [logoError, setLogoError] = useState(false);
+  // Logo error state removed - using simple text logo
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
@@ -260,18 +260,9 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center justify-center min-w-0 flex-1">
-                  {import.meta.env.VITE_APP_LOGO && import.meta.env.VITE_APP_LOGO.startsWith('http') && !logoError ? (
-                    <img 
-                      src={import.meta.env.VITE_APP_LOGO} 
-                      alt="Logo" 
-                      className="h-8 w-auto object-contain" 
-                      onError={() => setLogoError(true)}
-                    />
-                  ) : (
-                    <div className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                      {import.meta.env.VITE_APP_TITLE || "CRM"}
-                    </div>
-                  )}
+                  <div className="text-xl font-bold tracking-tight">
+                    CRM
+                  </div>
                 </div>
               ) : null}
             </div>

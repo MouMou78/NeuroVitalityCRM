@@ -2679,3 +2679,9 @@
 - [x] Remove empty Engagement section from DashboardLayout (no items remaining)
 - [x] Update CUSTOMIZATION.md with step-by-step branding update instructions
 - [ ] Note: User must manually update VITE_APP_LOGO and VITE_APP_TITLE via Management UI (see CUSTOMIZATION.md)
+
+## Simplify Logo for White Glove Onboarding
+- [x] Remove logo image logic completely from DashboardLayout
+- [x] Display simple "CRM" text without gradient or styling
+- [x] Remove dependency on VITE_APP_LOGO environment variable
+- [x] Remove unused logoError state
