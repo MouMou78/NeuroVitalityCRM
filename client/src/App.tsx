@@ -57,6 +57,7 @@ import AccountImport from "./pages/AccountImport";
 import Settings from "./pages/Settings";
 import WebhookMonitor from "./pages/WebhookMonitor";
 import BookDemo from "./pages/BookDemo";
+import CalendarView from "./pages/CalendarView";
 
 import Onboarding from "./pages/Onboarding";
 import WelcomeSplash from "./pages/WelcomeSplash";
@@ -128,6 +129,12 @@ function Router() {
         </DashboardLayout>
       </Route>
       
+      <Route path="/calendar">
+        <DashboardLayout>
+          <CalendarView />
+        </DashboardLayout>
+      </Route>
+
       <Route path="/calendar/book">
         <DashboardLayout>
           <BookDemo />

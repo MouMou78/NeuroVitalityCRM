@@ -3123,3 +3123,88 @@ export async function findDuplicateAccounts(
 
   return result;
 }
+
+// ============ CALENDAR VIEW ============
+
+/**
+ * Get all demo bookings for a tenant within a date range (for calendar view)
+ */
+export async function getDemoBookingsByDateRange(
+  tenantId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<DemoBooking[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(demoBookings)
+    .where(
+      and(
+        eq(demoBookings.tenantId, tenantId),
+        sql`${demoBookings.startTime} >= ${startDate}`,
+        sql`${demoBookings.startTime} < ${endDate}`
+      )
+    )
+    .orderBy(asc(demoBookings.startTime));
+}
+
+/**
+ * Get all demo bookings for a specific user (as manager or booker) within a date range
+ */
+export async function getDemoBookingsByUserAndDateRange(
+  tenantId: string,
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<DemoBooking[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(demoBookings)
+    .where(
+      and(
+        eq(demoBookings.tenantId, tenantId),
+        or(
+          eq(demoBookings.salesManagerId, userId),
+          eq(demoBookings.bookedByUserId, userId)
+        ),
+        sql`${demoBookings.startTime} >= ${startDate}`,
+        sql`${demoBookings.startTime} < ${endDate}`
+      )
+    )
+    .orderBy(asc(demoBookings.startTime));
+}
+
+/**
+ * Cancel a demo booking
+ */
+export async function cancelDemoBooking(
+  tenantId: string,
+  bookingId: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(demoBookings)
+    .set({ status: "cancelled" })
+    .where(and(eq(demoBookings.id, bookingId), eq(demoBookings.tenantId, tenantId)));
+}
+
+/**
+ * Get a single demo booking by ID
+ */
+export async function getDemoBookingById(
+  tenantId: string,
+  bookingId: string
+): Promise<DemoBooking | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(demoBookings)
+    .where(and(eq(demoBookings.id, bookingId), eq(demoBookings.tenantId, tenantId)))
+    .limit(1);
+  return result[0] ?? null;
+}

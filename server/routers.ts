@@ -2860,6 +2860,48 @@ export const appRouter = router({
         // Get users with role "admin" or "owner" (sales managers)
         return db.getUsersByRoles(ctx.user.tenantId, ['admin', 'owner']);
       }),
+
+    // ── Calendar View procedures ──────────────────────────────────────────────
+
+    listAllUsers: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getAllUsersByTenant(ctx.user.tenantId);
+      }),
+
+    getBookingsForRange: protectedProcedure
+      .input(z.object({
+        startDate: z.string(), // ISO date string
+        endDate: z.string(),   // ISO date string
+        userId: z.string().optional(), // filter by specific user; omit for all
+      }))
+      .query(async ({ input, ctx }) => {
+        const start = new Date(input.startDate);
+        const end = new Date(input.endDate);
+        if (input.userId) {
+          return db.getDemoBookingsByUserAndDateRange(
+            ctx.user.tenantId,
+            input.userId,
+            start,
+            end
+          );
+        }
+        return db.getDemoBookingsByDateRange(ctx.user.tenantId, start, end);
+      }),
+
+    cancelBooking: protectedProcedure
+      .input(z.object({ bookingId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.cancelDemoBooking(ctx.user.tenantId, input.bookingId);
+        return { success: true };
+      }),
+
+    getBookingById: protectedProcedure
+      .input(z.object({ bookingId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const booking = await db.getDemoBookingById(ctx.user.tenantId, input.bookingId);
+        if (!booking) throw new TRPCError({ code: 'NOT_FOUND' });
+        return booking;
+      }),
   }),
   
   documents: router({
