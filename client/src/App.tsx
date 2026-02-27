@@ -74,7 +74,11 @@ function Router() {
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/welcome" component={WelcomeSplash} />
       <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/settings" component={Settings} />
+      <Route path="/settings">
+        <DashboardLayout>
+          <Settings />
+        </DashboardLayout>
+      </Route>
       <Route path="/reset-password" component={ResetPassword} />
       
       {/* Public routes */}

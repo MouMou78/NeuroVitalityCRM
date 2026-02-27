@@ -13,6 +13,9 @@ import {
   generatePasswordResetToken,
   resetPassword,
 } from '../customAuth';
+import { getDb } from '../db';
+import { users } from '../../drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export const customAuthRouter = router({
   /**
@@ -105,9 +108,9 @@ export const customAuthRouter = router({
   }),
 
   /**
-   * Get current user from session
+   * Get current user from session (includes live twoFactorEnabled status)
    */
-  me: publicProcedure.query(({ ctx }) => {
+  me: publicProcedure.query(async ({ ctx }) => {
     const sessionCookie = ctx.req.cookies['custom_auth_session'];
     if (!sessionCookie) {
       return null;
@@ -115,6 +118,34 @@ export const customAuthRouter = router({
     
     try {
       const session = JSON.parse(sessionCookie);
+      // Fetch live user record to get up-to-date twoFactorEnabled status
+      const db = await getDb();
+      if (db && session.userId) {
+        const userResults = await db
+          .select({
+            id: users.id,
+            email: users.email,
+            name: users.name,
+            role: users.role,
+            tenantId: users.tenantId,
+            twoFactorEnabled: users.twoFactorEnabled,
+            disabled: users.disabled,
+          })
+          .from(users)
+          .where(eq(users.id, session.userId))
+          .limit(1);
+        if (userResults.length > 0) {
+          const u = userResults[0];
+          return {
+            userId: u.id,
+            email: u.email,
+            name: u.name || '',
+            role: u.role,
+            tenantId: u.tenantId,
+            twoFactorEnabled: u.twoFactorEnabled,
+          };
+        }
+      }
       return session;
     } catch {
       return null;
