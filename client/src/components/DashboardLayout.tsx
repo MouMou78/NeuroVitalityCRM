@@ -64,6 +64,7 @@ const settingsItems = [
   // { icon: Settings, label: "Integrations", path: "/integrations" },
   // { icon: Sliders, label: "Custom Fields", path: "/custom-fields" },
   { icon: Target, label: "Lead Scoring", path: "/scoring-settings" },
+  { icon: Users, label: "Team & Users", path: "/admin/users" },
 ];
 
 // Amplemarket removed per user request

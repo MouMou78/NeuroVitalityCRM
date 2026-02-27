@@ -1979,7 +1979,7 @@ export const appRouter = router({
   admin: router({
     listUsers: protectedProcedure
       .query(async ({ ctx }) => {
-        if (ctx.user.role !== 'admin') {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         const users = await db.getAllUsersByTenant(ctx.user.tenantId);
@@ -1992,7 +1992,7 @@ export const appRouter = router({
         role: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin') {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         await db.updateUserRole(input.userId, input.role);
@@ -2004,7 +2004,7 @@ export const appRouter = router({
         userId: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin') {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         await db.toggleUserStatus(input.userId);
@@ -2016,10 +2016,77 @@ export const appRouter = router({
         userId: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin') {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         await db.resetUserTwoFactor(input.userId);
+        return { success: true };
+      }),
+
+    inviteUser: protectedProcedure
+      .input(z.object({
+        email: z.string().email(),
+        name: z.string().optional(),
+        role: z.enum(['owner', 'admin', 'member']),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'owner' && ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        if (input.role === 'owner' && ctx.user.role !== 'owner') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only owners can invite other owners' });
+        }
+        const existing = await db.getUserByEmail(ctx.user.tenantId, input.email);
+        if (existing) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'A user with this email already exists' });
+        }
+        const { randomBytes } = await import('crypto');
+        const bcrypt = await import('bcryptjs');
+        const tempPassword = randomBytes(16).toString('hex');
+        const passwordHash = await bcrypt.hash(tempPassword, 12);
+        const userId = randomBytes(16).toString('hex');
+        const { getDb } = await import('./db');
+        const { users: usersTable } = await import('../drizzle/schema');
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+        await dbConn.insert(usersTable).values({
+          id: userId,
+          tenantId: ctx.user.tenantId,
+          email: input.email,
+          passwordHash,
+          name: input.name || input.email.split('@')[0],
+          role: input.role,
+          twoFactorEnabled: false,
+          disabled: false,
+        });
+        const resetToken = randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await db.setPasswordResetToken(userId, resetToken, expires);
+        const appUrl = process.env.APP_URL || 'https://www.crmneurovitality.com';
+        const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
+        return {
+          success: true,
+          userId,
+          email: input.email,
+          resetUrl,
+        };
+      }),
+
+    deleteUser: protectedProcedure
+      .input(z.object({ userId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'owner' && ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'You cannot delete your own account' });
+        }
+        const { getDb } = await import('./db');
+        const { users: usersTable } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+        await dbConn.delete(usersTable).where(eq(usersTable.id, input.userId));
         return { success: true };
       }),
   }),

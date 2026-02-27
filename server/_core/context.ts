@@ -1,7 +1,5 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
-import { sdk } from "./sdk";
-import { createGuestContext } from "./guest-context";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -12,7 +10,6 @@ export type TrpcContext = {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  // Use custom authentication with session cookies
   let user: User | null = null;
 
   try {
@@ -27,14 +24,14 @@ export async function createContext(
       
       const db = await getDb();
       if (db) {
-        const users = await db
+        const result = await db
           .select()
           .from(userTable)
           .where(eq(userTable.id, sessionData.userId))
           .limit(1);
         
-        if (users.length > 0) {
-          user = users[0];
+        if (result.length > 0) {
+          user = result[0];
         }
       }
     }
@@ -44,45 +41,9 @@ export async function createContext(
     user = null;
   }
 
-  // If no user found, return mock guest user for development
-  if (!user) {
-    user = {
-      id: 'guest-user-id',
-      tenantId: 'default-tenant',
-      email: 'demo@whitelabelcrm.com',
-      passwordHash: '',
-      name: 'Demo User',
-      role: 'admin',
-      twoFactorSecret: null,
-      twoFactorEnabled: false,
-      backupCodes: null,
-      passwordResetToken: null,
-      passwordResetExpires: null,
-      disabled: false,
-      createdAt: new Date(),
-    };
-  }
-
   return {
     req: opts.req,
     res: opts.res,
     user,
   };
-  
-  /* Original OAuth flow - disabled for guest access
-  let user: User | null = null;
-
-  try {
-    user = await sdk.authenticateRequest(opts.req);
-  } catch (error) {
-    // Authentication is optional for public procedures.
-    user = null;
-  }
-
-  return {
-    req: opts.req,
-    res: opts.res,
-    user,
-  };
-  */
 }
