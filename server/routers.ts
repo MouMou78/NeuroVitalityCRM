@@ -2595,8 +2595,8 @@ export const appRouter = router({
     getConfig: protectedProcedure
       .query(async ({ ctx }) => {
         // Return OAuth configuration status
-        const clientId = process.env.GOOGLE_CLIENT_ID || "";
-        const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+        const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || "";
+        const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET || "";
         const { getUserIntegrations } = await import("./calendar-sync");
         const integrations = await getUserIntegrations(ctx.user.tenantId, ctx.user.id);
         const googleIntegration = integrations.find(i => i.provider === "google");
@@ -2625,25 +2625,17 @@ export const appRouter = router({
     
     connect: protectedProcedure
       .mutation(async ({ ctx }) => {
-        const clientId = process.env.GOOGLE_CLIENT_ID;
+        const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
         if (!clientId) {
           throw new TRPCError({ 
             code: 'PRECONDITION_FAILED', 
-            message: 'Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.' 
+            message: 'Google OAuth not configured. Please set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables.' 
           });
         }
         
-        const redirectUri = `${process.env.VITE_APP_URL || 'https://crm.neurovitality.com'}/api/calendar/oauth/callback`;
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-          `client_id=${clientId}&` +
-          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-          `response_type=code&` +
-          `scope=${encodeURIComponent('https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly')}&` +
-          `access_type=offline&` +
-          `prompt=consent&` +
-          `state=${ctx.user.id}`;
-        
-        return { authUrl };
+        // Redirect the user directly to the Google OAuth initiation route
+        // which is registered as GET /api/oauth/google and handles state + redirect_uri
+        return { authUrl: '/api/oauth/google' };
       }),
     
     disconnect: protectedProcedure
@@ -3907,6 +3899,12 @@ export const appRouter = router({
         const { improveEmail } = await import("./ai-email");
         return improveEmail(input);
       }),
+  }),
+
+  integrations: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return db.getIntegrationsByTenant(ctx.user.tenantId);
+    }),
   }),
 
   webhooks: router({
