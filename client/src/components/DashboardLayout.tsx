@@ -260,9 +260,11 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center justify-center min-w-0 flex-1">
-                  <div className="text-xl font-bold tracking-tight">
-                    CRM
-                  </div>
+                  <img 
+                    src="/neurovitality-logo.png" 
+                    alt="NeuroVitality" 
+                    className="h-8 w-auto object-contain"
+                  />
                 </div>
               ) : null}
             </div>
