@@ -2012,7 +2012,8 @@ export const appRouter = router({
   admin: router({
     listUsers: protectedProcedure
       .query(async ({ ctx }) => {
-        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+        const { hasMinRole } = await import('./permissions');
+        if (!hasMinRole(ctx.user.role, 'admin')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         const users = await db.getAllUsersByTenant(ctx.user.tenantId);
@@ -2119,7 +2120,8 @@ export const appRouter = router({
     deleteUser: protectedProcedure
       .input(z.object({ userId: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'owner' && ctx.user.role !== 'admin') {
+        const { hasMinRole } = await import('./permissions');
+        if (!hasMinRole(ctx.user.role, 'admin')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         if (input.userId === ctx.user.id) {
@@ -2726,7 +2728,8 @@ export const appRouter = router({
         clientSecret: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+        const { hasMinRole: _hmrOAuth } = await import('./permissions');
+        if (!_hmrOAuth(ctx.user.role, 'admin')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         // In production, these should be stored securely (e.g., using webdev_request_secrets)
