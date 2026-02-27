@@ -203,7 +203,7 @@ export const accountTags = pgTable("account_tags", {
 }, (table) => ({
   accountTagIdx: unique("account_tag_unique").on(table.accountId, table.tagId),
   accountIdx: index("account_idx").on(table.accountId),
-  tagIdx: index("tag_idx").on(table.tagId),
+  tagIdx: index("tag_idx_1").on(table.tagId),
 }));
 
 export type AccountTag = typeof accountTags.$inferSelect;
@@ -266,7 +266,7 @@ export const nextActions = pgTable("nextActions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
 }, (table) => ({
-  tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
+  tenantStatusIdx: index("tenant_status_idx_1").on(table.tenantId, table.status),
   tenantAssignedIdx: index("tenant_assigned_idx").on(table.tenantId, table.assignedUserId, table.status),
   tenantDueIdx: index("tenant_due_idx").on(table.tenantId, table.dueAt),
   tenantThreadStatusIdx: index("tenant_thread_status_idx").on(table.tenantId, table.threadId, table.status),
@@ -345,7 +345,7 @@ export const emailSequences = pgTable("emailSequences", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
-  tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
+  tenantStatusIdx: index("tenant_status_idx_2").on(table.tenantId, table.status),
 }));
 
 export type EmailSequence = typeof emailSequences.$inferSelect;
@@ -382,8 +382,8 @@ export const emailSequenceEnrollments = pgTable("emailSequenceEnrollments", {
   totalReplies: integer("totalReplies").notNull().default(0),
 }, (table) => ({
   tenantSequenceIdx: index("tenant_sequence_idx").on(table.tenantId, table.sequenceId),
-  tenantPersonIdx: index("tenant_person_idx").on(table.tenantId, table.personId),
-  tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
+  tenantPersonIdx: index("tenant_person_idx_1").on(table.tenantId, table.personId),
+  tenantStatusIdx: index("tenant_status_idx_3").on(table.tenantId, table.status),
   tenantScheduledIdx: index("tenant_scheduled_idx").on(table.tenantId, table.nextEmailScheduledAt),
 }));
 
@@ -502,7 +502,7 @@ export const automationRules = pgTable("automationRules", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
-  tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
+  tenantStatusIdx: index("tenant_status_idx_4").on(table.tenantId, table.status),
   tenantTriggerIdx: index("tenant_trigger_idx").on(table.tenantId, table.triggerType),
 }));
 
@@ -555,7 +555,7 @@ export const templateAnalytics = pgTable("templateAnalytics", {
   lastInstalledAt: timestamp("lastInstalledAt"),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
-  templateIdx: index("template_idx").on(table.templateId),
+  templateIdx: index("template_idx_1").on(table.templateId),
 }));
 
 export type TemplateAnalytics = typeof templateAnalytics.$inferSelect;
@@ -589,7 +589,7 @@ export const userTemplates = pgTable("userTemplates", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
-  userIdx: index("user_idx").on(table.userId),
+  userIdx: index("user_idx_1").on(table.userId),
   tenantIdx: index("tenant_idx").on(table.tenantId),
   publicIdx: index("public_idx").on(table.isPublic),
 }));
@@ -621,7 +621,7 @@ export const templateVersions = pgTable("templateVersions", {
   changelog: text("changelog"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
-  templateIdx: index("template_idx").on(table.templateId),
+  templateIdx: index("template_idx_2").on(table.templateId),
   versionIdx: index("version_idx").on(table.version),
 }));
 
@@ -638,7 +638,7 @@ export const trackingEvents = pgTable("trackingEvents", {
   eventData: json("eventData").$type<Record<string, any>>().default({}),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 }, (table) => ({
-  tenantPersonIdx: index("tenant_person_idx").on(table.tenantId, table.personId),
+  tenantPersonIdx: index("tenant_person_idx_2").on(table.tenantId, table.personId),
   tenantAccountIdx: index("tenant_account_idx").on(table.tenantId, table.accountId),
   tenantTimestampIdx: index("tenant_timestamp_idx").on(table.tenantId, table.timestamp),
   tenantTypeIdx: index("tenant_type_idx").on(table.tenantId, table.eventType),
@@ -659,8 +659,8 @@ export const channels = pgTable("channels", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   archivedAt: timestamp("archivedAt"),
 }, (table) => ({
-  tenantIdx: index("tenant_idx").on(table.tenantId),
-  tenantNameIdx: index("tenant_name_idx").on(table.tenantId, table.name),
+  tenantIdx: index("tenant_idx_1").on(table.tenantId),
+  tenantNameIdx: index("tenant_name_idx_1").on(table.tenantId, table.name),
 }));
 
 export type Channel = typeof channels.$inferSelect;
@@ -675,7 +675,7 @@ export const channelMembers = pgTable("channelMembers", {
   lastReadAt: timestamp("lastReadAt"),
 }, (table) => ({
   channelUserIdx: unique("channel_user_unique").on(table.channelId, table.userId),
-  userIdx: index("user_idx").on(table.userId),
+  userIdx: index("user_idx_2").on(table.userId),
 }));
 
 export type ChannelMember = typeof channelMembers.$inferSelect;
@@ -762,7 +762,7 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   userReadIdx: index("user_read_idx").on(table.userId, table.isRead),
-  createdIdx: index("created_idx").on(table.createdAt),
+  createdIdx: index("created_idx_1").on(table.createdAt),
 }));
 
 export type Notification = typeof notifications.$inferSelect;
@@ -1377,7 +1377,7 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
-  tenantIdx: index("tenant_idx").on(table.tenantId),
+  tenantIdx: index("tenant_idx_2").on(table.tenantId),
   emailIdx: index("email_idx").on(table.email),
   ownerEmailIdx: index("owner_email_idx").on(table.ownerEmail),
   amplemarketLeadIdIdx: unique("amplemarket_lead_id_unique").on(table.tenantId, table.amplemarketLeadId),

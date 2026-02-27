@@ -1,1 +1,0 @@
-ALTER TABLE `automationRules` ADD `conditions` json DEFAULT ('{"logic":"AND","rules":[]}');

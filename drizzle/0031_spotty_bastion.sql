@@ -1,1 +1,0 @@
-ALTER TABLE `automationRules` ADD `priority` int DEFAULT 0 NOT NULL;

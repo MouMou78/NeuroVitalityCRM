@@ -29,7 +29,34 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+async function runMigrations() {
+  if (!process.env.DATABASE_URL) {
+    console.warn("[Database] DATABASE_URL not set — skipping migrations.");
+    return;
+  }
+  try {
+    const { drizzle } = await import("drizzle-orm/postgres-js");
+    const { migrate } = await import("drizzle-orm/postgres-js/migrator");
+    const postgres = (await import("postgres")).default;
+    const client = postgres(process.env.DATABASE_URL, {
+      ssl: { rejectUnauthorized: false },
+      max: 1,
+    });
+    const db = drizzle(client);
+    console.log("[Database] Running migrations...");
+    await migrate(db, { migrationsFolder: "./drizzle" });
+    console.log("[Database] Migrations complete.");
+    await client.end();
+  } catch (err) {
+    console.error("[Database] Migration error:", err);
+    // Don't crash the server — app can still run if tables already exist
+  }
+}
+
 async function startServer() {
+  // Run DB migrations before starting the server
+  await runMigrations();
+
   const app = express();
   const server = createServer(app);
   // Trust proxy to handle HTTPS behind load balancers
