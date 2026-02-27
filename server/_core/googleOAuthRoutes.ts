@@ -49,7 +49,7 @@ export function registerGoogleOAuthRoutes(app: Express) {
       console.log(`[Google OAuth Start] Generated state: ${state}, stored tenantId: ${tenantId}`);
 
       // Use hardcoded redirect URI from environment variable
-      const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI || "https://yourcrm.example.com/api/oauth/google/callback";
+      const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI || "https://crm.neurovitality.com/api/oauth/google/callback";
       console.log(`[Google OAuth Start] Using redirect_uri: ${redirectUri}`);
 
       // Generate Google authorization URL
@@ -100,7 +100,7 @@ export function registerGoogleOAuthRoutes(app: Express) {
       console.log(`[Google OAuth Callback] Restored tenantId from state: ${tenantId}`);
 
       // Use hardcoded redirect URI (must match the one used in authorization request)
-      const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI || "https://yourcrm.example.com/api/oauth/google/callback";
+      const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI || "https://crm.neurovitality.com/api/oauth/google/callback";
       console.log(`[Google OAuth Callback] Using redirect_uri: ${redirectUri}`);
 
       // Exchange authorization code for tokens

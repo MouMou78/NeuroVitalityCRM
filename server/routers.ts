@@ -2633,7 +2633,7 @@ export const appRouter = router({
           });
         }
         
-        const redirectUri = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/api/calendar/oauth/callback`;
+        const redirectUri = `${process.env.VITE_APP_URL || 'https://crm.neurovitality.com'}/api/calendar/oauth/callback`;
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
           `client_id=${clientId}&` +
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
