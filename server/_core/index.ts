@@ -66,6 +66,27 @@ async function startServer() {
   // Health check endpoint for Railway deployment — responds immediately
   app.get("/api/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 
+  // TEMPORARY: one-time endpoint to upgrade ian@neurovitalityltd.com to engineering role
+  // This endpoint will be removed after use
+  app.post("/api/upgrade-to-engineering", async (req: any, res: any) => {
+    const secret = req.body?.secret;
+    if (secret !== "NV-ENG-UPGRADE-2026") {
+      return res.status(403).json({ error: "Invalid secret" });
+    }
+    try {
+      const { getDb } = await import("../db");
+      const { users } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: "DB unavailable" });
+      const result = await db.update(users).set({ role: "engineering" }).where(eq(users.email, "ian@neurovitalityltd.com")).returning({ id: users.id, email: users.email, role: users.role });
+      if (result.length === 0) return res.status(404).json({ error: "User not found" });
+      return res.json({ success: true, user: result[0] });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

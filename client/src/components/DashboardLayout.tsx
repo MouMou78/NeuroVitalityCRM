@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor } from "lucide-react";
+import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor, Brain } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -63,6 +63,7 @@ const settingsItems = [
   { icon: Zap, label: "Integrations", path: "/integrations" },
   { icon: Target, label: "Lead Scoring", path: "/scoring-settings" },
   { icon: Users, label: "Team & Users", path: "/admin/users" },
+  { icon: Brain, label: "AI Memory", path: "/admin/ai-memory", engineeringOnly: true },
   { icon: Settings, label: "Security & Preferences", path: "/settings" },
 ];
 
@@ -310,7 +311,9 @@ function DashboardLayoutContent({
                     <ChevronDown className="h-4 w-4 transition-transform group-open/settings:rotate-180" />
                   </summary>
                   <SidebarMenuSub className="ml-4 mt-1">
-                    {settingsItems.map(item => {
+                    {settingsItems
+                      .filter(item => !(item as any).engineeringOnly || user?.role === 'engineering')
+                      .map(item => {
                       const isActive = location === item.path;
                       return (
                         <SidebarMenuSubItem key={item.path}>
@@ -324,6 +327,9 @@ function DashboardLayoutContent({
                           >
                             <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
                             <span>{item.label}</span>
+                            {(item as any).engineeringOnly && (
+                              <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">ENG</span>
+                            )}
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       );

@@ -1191,13 +1191,19 @@ export const appRouter = router({
     // ---- Persistent Memory endpoints ----
     getMemories: protectedProcedure
       .query(async ({ ctx }) => {
-        const { getAllMemories } = await import("./aiMemoryService");
+        const { requireAIMemoryPermission, getAllMemories } = await Promise.all([
+          import("./permissions"),
+          import("./aiMemoryService"),
+        ]).then(([p, m]) => ({ requireAIMemoryPermission: p.requireAIMemoryPermission, getAllMemories: m.getAllMemories }));
+        requireAIMemoryPermission(ctx.user.role);
         return getAllMemories(ctx.user.tenantId);
       }),
 
     deleteMemory: protectedProcedure
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input, ctx }) => {
+        const { requireAIMemoryPermission } = await import("./permissions");
+        requireAIMemoryPermission(ctx.user.role);
         const { deleteMemory } = await import("./aiMemoryService");
         await deleteMemory(input.id, ctx.user.tenantId);
         return { success: true };
@@ -2019,8 +2025,13 @@ export const appRouter = router({
         role: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+        const { hasMinRole } = await import('./permissions');
+        if (!hasMinRole(ctx.user.role, 'admin')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        // Only engineering can assign engineering role
+        if (input.role === 'engineering' && ctx.user.role !== 'engineering') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only engineering can assign the engineering role' });
         }
         await db.updateUserRole(input.userId, input.role);
         return { success: true };
@@ -2031,7 +2042,8 @@ export const appRouter = router({
         userId: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+        const { hasMinRole } = await import('./permissions');
+        if (!hasMinRole(ctx.user.role, 'admin')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         await db.toggleUserStatus(input.userId);
@@ -2043,7 +2055,8 @@ export const appRouter = router({
         userId: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+        const { hasMinRole } = await import('./permissions');
+        if (!hasMinRole(ctx.user.role, 'admin')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
         await db.resetUserTwoFactor(input.userId);
@@ -2054,14 +2067,18 @@ export const appRouter = router({
       .input(z.object({
         email: z.string().email(),
         name: z.string().optional(),
-        role: z.enum(['owner', 'admin', 'member']),
+        role: z.enum(['engineering', 'owner', 'admin', 'manager', 'sales', 'operations', 'collaborator', 'user', 'member']),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'owner' && ctx.user.role !== 'admin') {
+        const { hasMinRole } = await import('./permissions');
+        if (!hasMinRole(ctx.user.role, 'admin')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
-        if (input.role === 'owner' && ctx.user.role !== 'owner') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only owners can invite other owners' });
+        if (input.role === 'owner' && !hasMinRole(ctx.user.role, 'owner')) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only owners and above can invite owners' });
+        }
+        if (input.role === 'engineering' && ctx.user.role !== 'engineering') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only engineering can invite other engineering users' });
         }
         const existing = await db.getUserByEmail(ctx.user.tenantId, input.email);
         if (existing) {

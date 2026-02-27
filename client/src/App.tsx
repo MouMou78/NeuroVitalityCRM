@@ -51,6 +51,7 @@ import ResetPassword from "./pages/ResetPassword";
 import EmailAccounts from "./pages/EmailAccounts";
 import Campaigns from "./pages/Campaigns";
 import UserManagement from "./pages/UserManagement";
+import AIMemoryManager from "./pages/AIMemoryManager";
 import Accounts from "./pages/Accounts";
 import AccountMerge from "./pages/AccountMerge";
 import AccountImport from "./pages/AccountImport";
@@ -99,6 +100,11 @@ function Router() {
       <Route path="/admin/users">
         <DashboardLayout>
           <UserManagement />
+        </DashboardLayout>
+      </Route>
+      <Route path="/admin/ai-memory">
+        <DashboardLayout>
+          <AIMemoryManager />
         </DashboardLayout>
       </Route>
       
