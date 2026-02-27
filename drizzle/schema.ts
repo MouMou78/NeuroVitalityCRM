@@ -1407,3 +1407,37 @@ export const demoBookings = pgTable("demo_bookings", {
 
 export type DemoBooking = typeof demoBookings.$inferSelect;
 export type InsertDemoBooking = typeof demoBookings.$inferInsert;
+
+// ============ AI PERSISTENT MEMORY ============
+// Stores facts, preferences, and learnings the AI accumulates over time
+export const aiMemory = pgTable("aiMemory", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  // Optional: memory scoped to a specific user (null = tenant-wide shared memory)
+  userId: varchar("userId", { length: 36 }),
+  // Category of memory for retrieval filtering
+  // 'contact_insight' | 'deal_insight' | 'team_preference' | 'business_context'
+  // | 'follow_up_pattern' | 'user_preference' | 'key_decision' | 'general'
+  category: varchar("category", { length: 50 }).notNull(),
+  // The memory content — a concise factual statement
+  content: text("content").notNull(),
+  // Optional entity link
+  entityType: varchar("entityType", { length: 50 }), // 'contact' | 'deal' | 'account' | 'user'
+  entityId: varchar("entityId", { length: 36 }),
+  entityName: varchar("entityName", { length: 255 }),
+  // Importance score 1-10 (higher = recalled more prominently)
+  importance: integer("importance").default(5).notNull(),
+  // How many times this memory has been referenced (reinforcement)
+  reinforceCount: integer("reinforceCount").default(1).notNull(),
+  // Source of the memory: 'ai_extracted' | 'user_stated' | 'system_observed'
+  source: varchar("source", { length: 50 }).default("ai_extracted").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("ai_memory_tenant_idx").on(table.tenantId),
+  categoryIdx: index("ai_memory_category_idx").on(table.tenantId, table.category),
+  entityIdx: index("ai_memory_entity_idx").on(table.entityType, table.entityId),
+  userIdx: index("ai_memory_user_idx").on(table.userId),
+}));
+export type AIMemory = typeof aiMemory.$inferSelect;
+export type InsertAIMemory = typeof aiMemory.$inferInsert;

@@ -1187,6 +1187,33 @@ export const appRouter = router({
         await db.deleteAIConversation(input.id);
         return { success: true };
       }),
+
+    // ---- Persistent Memory endpoints ----
+    getMemories: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getAllMemories } = await import("./aiMemoryService");
+        return getAllMemories(ctx.user.tenantId);
+      }),
+
+    deleteMemory: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const { deleteMemory } = await import("./aiMemoryService");
+        await deleteMemory(input.id, ctx.user.tenantId);
+        return { success: true };
+      }),
+
+    rememberThis: protectedProcedure
+      .input(z.object({ content: z.string().min(1).max(500) }))
+      .mutation(async ({ input, ctx }) => {
+        const { storeUserStatedMemory } = await import("./aiMemoryService");
+        await storeUserStatedMemory({
+          tenantId: ctx.user.tenantId,
+          userId: ctx.user.id,
+          content: input.content,
+        });
+        return { success: true };
+      }),
     
     getSuggestions: protectedProcedure
       .input(z.object({

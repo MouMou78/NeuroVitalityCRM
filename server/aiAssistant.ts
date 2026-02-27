@@ -3,6 +3,11 @@ import * as db from "./db";
 import { getDb } from "./db";
 import { notes, deals } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import {
+  getMemoriesForTenant,
+  formatMemoriesForPrompt,
+  extractAndStoreMemories,
+} from "./aiMemoryService";
 
 interface Message {
   role: "system" | "user" | "assistant";
@@ -14,15 +19,20 @@ export async function queryAIAssistant(params: {
   userId: number;
   messages: Message[];
 }): Promise<string> {
-  const { tenantId, messages: conversationMessages } = params;
+  const { tenantId, userId, messages: conversationMessages } = params;
+  const tenantIdStr = String(tenantId);
+  const userIdStr = String(userId);
 
-  // Gather comprehensive CRM context
-  const context = await gatherCRMContext(String(tenantId));
+  // Gather comprehensive CRM context AND persistent memories in parallel
+  const [context, memories] = await Promise.all([
+    gatherCRMContext(tenantIdStr),
+    getMemoriesForTenant(tenantIdStr),
+  ]);
 
-  // Build system prompt with full CRM context
-  const systemPrompt = buildSystemPrompt(context);
+  // Build system prompt with full CRM context + persistent memory
+  const systemPrompt = buildSystemPrompt(context, memories);
 
-  // Prepare messages for LLM — include full conversation history for memory within session
+  // Prepare messages for LLM — include full conversation history for within-session memory
   const llmMessages: Message[] = [
     { role: "system", content: systemPrompt },
     ...conversationMessages,
@@ -34,9 +44,26 @@ export async function queryAIAssistant(params: {
   });
 
   const content = response.choices[0].message.content;
-  return typeof content === "string"
+  const aiResponse = typeof content === "string"
     ? content
     : "I apologize, but I couldn't generate a response. Please try again.";
+
+  // Asynchronously extract and store new memories from this exchange
+  // (non-blocking — does not delay the response)
+  const lastUserMessage = conversationMessages
+    .filter((m) => m.role === "user")
+    .slice(-1)[0]?.content || "";
+
+  if (lastUserMessage) {
+    extractAndStoreMemories({
+      tenantId: tenantIdStr,
+      userId: userIdStr,
+      userMessage: lastUserMessage,
+      aiResponse,
+    }).catch((err) => console.error("[aiAssistant] Memory extraction error:", err));
+  }
+
+  return aiResponse;
 }
 
 async function gatherCRMContext(tenantId: string) {
@@ -173,7 +200,7 @@ async function gatherCRMContext(tenantId: string) {
   };
 }
 
-function buildSystemPrompt(context: any): string {
+function buildSystemPrompt(context: any, memories: any[] = []): string {
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     year: "numeric",
@@ -260,6 +287,12 @@ ${context.topContacts
 
 ---
 
+## PERSISTENT MEMORY (What I've Learned Over Time)
+
+${formatMemoriesForPrompt(memories)}
+
+---
+
 ## YOUR ROLE & CAPABILITIES
 
 You are always on, always learning, and always available. You:
@@ -267,17 +300,20 @@ You are always on, always learning, and always available. You:
 1. **Answer questions about the CRM data** — contacts, deals, pipeline, activities, notes
 2. **Analyse sales performance** — funnel health, deal velocity, at-risk opportunities
 3. **Surface insights from team chat** — you read team conversations and can reference what the team has discussed
-4. **Remember context within this conversation** — you retain everything discussed so far in this session, and past conversations are saved so you can be asked to recall them
-5. **Coach the team** — suggest next best actions, flag overdue follow-ups, identify patterns
-6. **Help with writing** — draft emails, proposals, follow-up messages based on CRM context
+4. **Remember context within this conversation** — you retain everything discussed so far in this session
+5. **Apply persistent memory** — you remember facts, preferences, and insights from ALL past sessions
+6. **Coach the team** — suggest next best actions, flag overdue follow-ups, identify patterns
+7. **Help with writing** — draft emails, proposals, follow-up messages based on CRM context
 
 ## GUIDELINES
 
 - Always base answers on the actual data provided above
+- Apply your persistent memories to personalise responses — if you know a preference or past decision, use it
 - Be specific — reference deal names, contact names, dates, and values
 - When you spot risks (overdue deals, stale contacts, missed follow-ups), proactively flag them
 - Use markdown formatting for clarity (bold key points, use tables for comparisons)
 - Keep responses focused and actionable — avoid generic advice
 - If asked about something not in your data, say so clearly and suggest how to find it
-- Maintain a professional but warm tone — you are a trusted business advisor`;
+- Maintain a professional but warm tone — you are a trusted business advisor
+- If the user says "remember that..." or "note that...", acknowledge you will store this as a memory`;
 }
