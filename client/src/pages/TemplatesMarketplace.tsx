@@ -962,7 +962,7 @@ export default function TemplatesMarketplace() {
           <DialogHeader>
             <DialogTitle>Import Template</DialogTitle>
             <CardDescription>
-              Upload a JSON template file exported from CRM Template
+              Upload a JSON template file exported from NeuroVitality CRM
             </CardDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">

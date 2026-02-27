@@ -140,7 +140,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Log in to your CRM Template account</CardDescription>
+          <CardDescription>Log in to your NeuroVitality CRM account</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
