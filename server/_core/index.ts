@@ -66,59 +66,6 @@ async function startServer() {
   // Health check endpoint for Railway deployment — responds immediately
   app.get("/api/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 
-  // TEMPORARY: One-time admin password setup endpoint — will be removed after use
-  app.post("/api/admin-setup", async (req, res) => {
-    const { email, password, name, secret } = req.body;
-    if (secret !== 'NV-SETUP-2026-TEMP') {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    try {
-      const { getUserByEmail, updatePassword, getDb } = await import('../db');
-      const bcrypt = await import('bcryptjs');
-      const { randomBytes } = await import('crypto');
-      const hash = await bcrypt.hash(password, 12);
-      const user = await getUserByEmail(email);
-      if (user) {
-        // Update existing user's password and name
-        await updatePassword(user.id, hash);
-        if (name) {
-          const db = await getDb();
-          const { users } = await import('../../drizzle/schema');
-          const { eq } = await import('drizzle-orm');
-          if (db) await db.update(users).set({ name }).where(eq(users.id, user.id));
-        }
-        return res.json({ success: true, message: `Password updated for ${email}` });
-      } else {
-        // Create new admin user
-        const db = await getDb();
-        if (!db) return res.status(500).json({ error: 'Database not available' });
-        const { users, tenants } = await import('../../drizzle/schema');
-        // Get or create default tenant
-        let tenantId: string;
-        const existingTenants = await db.select().from(tenants).limit(1);
-        if (existingTenants.length > 0) {
-          tenantId = existingTenants[0].id;
-        } else {
-          tenantId = randomBytes(16).toString('hex');
-          await db.insert(tenants).values({ id: tenantId, name: 'NeuroVitality' });
-        }
-        const userId = randomBytes(16).toString('hex');
-        await db.insert(users).values({
-          id: userId,
-          tenantId,
-          email,
-          passwordHash: hash,
-          name: name || email.split('@')[0],
-          role: 'owner',
-          twoFactorEnabled: false,
-          disabled: false,
-        });
-        return res.json({ success: true, message: `Admin user created: ${email}`, userId });
-      }
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message });
-    }
-  });
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
