@@ -59,6 +59,7 @@ import WebhookMonitor from "./pages/WebhookMonitor";
 import BookDemo from "./pages/BookDemo";
 
 import Onboarding from "./pages/Onboarding";
+import WelcomeSplash from "./pages/WelcomeSplash";
 import ContactMerge from "./pages/ContactMerge";
 import { DealPipeline } from "./pages/DealPipeline";
 import DealDetail from "./pages/DealDetail";
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/welcome" component={WelcomeSplash} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/settings" component={Settings} />
       <Route path="/reset-password" component={ResetPassword} />

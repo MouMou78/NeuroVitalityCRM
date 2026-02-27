@@ -39,8 +39,8 @@ export default function Signup() {
 
   const verifyMutation = trpc.customAuth.verify2FASetup.useMutation({
     onSuccess: () => {
-      alert("Account created! You can now log in.");
-      setLocation("/login");
+      // Redirect to welcome splash for first-time users
+      setLocation("/welcome");
     },
     onError: (error) => {
       alert(`Verification failed: ${error.message}`);
