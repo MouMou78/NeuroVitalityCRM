@@ -60,9 +60,7 @@ const insightsItems = [
 ];
 
 const settingsItems = [
-  // Integrations and Custom Fields removed - features not available
-  // { icon: Settings, label: "Integrations", path: "/integrations" },
-  // { icon: Sliders, label: "Custom Fields", path: "/custom-fields" },
+  { icon: Zap, label: "Integrations", path: "/integrations" },
   { icon: Target, label: "Lead Scoring", path: "/scoring-settings" },
   { icon: Users, label: "Team & Users", path: "/admin/users" },
   { icon: Settings, label: "Security & Preferences", path: "/settings" },

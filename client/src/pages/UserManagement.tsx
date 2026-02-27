@@ -35,7 +35,7 @@ export default function UserManagement() {
   const [copied, setCopied] = useState(false);
 
   const { data: users = [], isLoading } = trpc.admin.listUsers.useQuery();
-  const { data: currentUser } = trpc.auth.me.useQuery();
+  const { data: currentUser } = trpc.customAuth.me.useQuery();
   const utils = trpc.useUtils();
 
   const updateRoleMutation = trpc.admin.updateUserRole.useMutation({

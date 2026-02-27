@@ -12,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
-  const { data: currentUser } = trpc.auth.me.useQuery();
+  const { data: currentUser } = trpc.customAuth.me.useQuery();
 
   return (
     <div className="container max-w-4xl py-8">
@@ -75,7 +75,7 @@ export default function Settings() {
         </Card>
 
         {/* Security / 2FA */}
-        {currentUser && <TwoFactorSection userId={currentUser.userId} />}
+        {currentUser && <TwoFactorSection userId={(currentUser as any).userId} />}
       </div>
     </div>
   );
@@ -89,7 +89,7 @@ function TwoFactorSection({ userId }: { userId: string }) {
   const [copied, setCopied] = useState(false);
 
   // Check if 2FA is already enabled by looking at the me endpoint
-  const { data: currentUser, refetch } = trpc.auth.me.useQuery();
+  const { data: currentUser, refetch } = trpc.customAuth.me.useQuery();
   const twoFactorEnabled = (currentUser as any)?.twoFactorEnabled;
 
   const setup2FAMutation = trpc.customAuth.setup2FA.useMutation({
