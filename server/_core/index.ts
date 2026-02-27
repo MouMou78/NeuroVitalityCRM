@@ -66,6 +66,25 @@ async function startServer() {
   // Health check endpoint for Railway deployment — responds immediately
   app.get("/api/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 
+  // TEMPORARY: One-time admin password setup endpoint — will be removed after use
+  app.post("/api/admin-setup", async (req, res) => {
+    const { email, password, secret } = req.body;
+    if (secret !== 'NV-SETUP-2026-TEMP') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    try {
+      const { getUserByEmail, updatePassword } = await import('../db');
+      const bcrypt = await import('bcryptjs');
+      const user = await getUserByEmail(email);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      const hash = await bcrypt.hash(password, 12);
+      await updatePassword(user.id, hash);
+      return res.json({ success: true, message: `Password set for ${email}` });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Google OAuth routes
