@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install && pnpm run build && pnpm run db:push"
+
+[deploy]
+startCommand = "pnpm run start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environments.production.variables]
+NODE_ENV = "production"
+PORT = "3000"

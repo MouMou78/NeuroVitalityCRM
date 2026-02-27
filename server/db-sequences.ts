@@ -1,6 +1,8 @@
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
-const db = drizzle(process.env.DATABASE_URL!);
+const _pgClient = postgres(process.env.DATABASE_URL!, { ssl: { rejectUnauthorized: false } });
+const db = drizzle(_pgClient);
 import { sequenceNodes, sequenceEdges, emailSequences } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";

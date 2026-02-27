@@ -1,11 +1,11 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, index, unique, boolean, decimal } from "drizzle-orm/mysql-core";
+import { integer, pgTable, text, timestamp, varchar, json, index, unique, boolean, decimal, serial } from "drizzle-orm/pg-core";
 
 /**
  * Multi-tenant CRM schema for KompassCRM
  * Supports tenants, users, people, threads, moments, next_actions, events, and integrations
  */
 
-export const tenants = mysqlTable("tenants", {
+export const tenants = pgTable("tenants", {
   id: varchar("id", { length: 36 }).primaryKey(),
   name: text("name").notNull(),
   domain: text("domain"),
@@ -17,13 +17,13 @@ export const tenants = mysqlTable("tenants", {
 export type Tenant = typeof tenants.$inferSelect;
 export type InsertTenant = typeof tenants.$inferInsert;
 
-export const users = mysqlTable("users", {
+export const users = pgTable("users", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   passwordHash: text("passwordHash").notNull(),
   name: text("name"),
-  role: mysqlEnum("role", ["owner", "collaborator", "restricted", "admin", "user"]).default("user").notNull(),
+  role: text("role").default("user").notNull(),
   twoFactorSecret: text("twoFactorSecret"),
   twoFactorEnabled: boolean("twoFactorEnabled").default(false).notNull(),
   backupCodes: json("backupCodes").$type<string[]>(),
@@ -38,7 +38,7 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-export const accounts = mysqlTable("accounts", {
+export const accounts = pgTable("accounts", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -48,7 +48,7 @@ export const accounts = mysqlTable("accounts", {
   revenue: varchar("revenue", { length: 100 }),
   technologies: json("technologies").$type<string[]>(),
   headquarters: text("headquarters"),
-  foundingYear: int("foundingYear"),
+  foundingYear: integer("foundingYear"),
   lastFundingRound: varchar("lastFundingRound", { length: 100 }),
   firstContacted: timestamp("firstContacted"),
   linkedinUrl: varchar("linkedinUrl", { length: 500 }),
@@ -61,18 +61,18 @@ export const accounts = mysqlTable("accounts", {
   amplemarketExternalId: varchar("amplemarketExternalId", { length: 100 }),
   
   // Lead Scoring Fields
-  fitScore: int("fitScore").default(0),
-  intentScore: int("intentScore").default(0),
-  combinedScore: int("combinedScore").default(0),
-  fitTier: mysqlEnum("fitTier", ["A", "B", "C"]),
-  intentTier: mysqlEnum("intentTier", ["Hot", "Warm", "Cold"]),
+  fitScore: integer("fitScore").default(0),
+  intentScore: integer("intentScore").default(0),
+  combinedScore: integer("combinedScore").default(0),
+  fitTier: text("fitTier"),
+  intentTier: text("intentTier"),
   scoreReasons: json("scoreReasons").$type<string[]>(),
-  lifecycleStage: mysqlEnum("lifecycleStage", ["Lead", "MQL", "SQL", "Opportunity", "ClosedWon", "ClosedLost"]).default("Lead"),
+  lifecycleStage: text("lifecycleStage").default("Lead"),
   lifecycleStageEnteredAt: timestamp("lifecycleStageEnteredAt"),
   ownerUserId: varchar("ownerUserId", { length: 36 }),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantDomainIdx: index("tenant_domain_idx").on(table.tenantId, table.domain),
   tenantNameIdx: index("tenant_account_name_idx").on(table.tenantId, table.name),
@@ -81,7 +81,7 @@ export const accounts = mysqlTable("accounts", {
 export type Account = typeof accounts.$inferSelect;
 export type InsertAccount = typeof accounts.$inferInsert;
 
-export const people = mysqlTable("people", {
+export const people = pgTable("people", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   accountId: varchar("accountId", { length: 36 }),
@@ -112,7 +112,7 @@ export const people = mysqlTable("people", {
   linkedinUrl: varchar("linkedinUrl", { length: 500 }),
   industry: text("industry"),
   status: varchar("status", { length: 50 }),
-  numberOfOpens: int("numberOfOpens").default(0),
+  numberOfOpens: integer("numberOfOpens").default(0),
   label: varchar("label", { length: 100 }),
   meetingBooked: boolean("meetingBooked").default(false),
   owner: varchar("owner", { length: 320 }),
@@ -122,22 +122,22 @@ export const people = mysqlTable("people", {
   mailbox: varchar("mailbox", { length: 320 }),
   contactUrl: varchar("contactUrl", { length: 500 }),
   replied: boolean("replied").default(false),
-  engagementScore: int("engagementScore").default(0),
-  lastStageExecuted: int("lastStageExecuted"),
+  engagementScore: integer("engagementScore").default(0),
+  lastStageExecuted: integer("lastStageExecuted"),
   lastStageExecutedAt: timestamp("lastStageExecutedAt"),
   notes: text("notes"),
   tags: json("tags").$type<string[]>().default([]),
   
   // Lead Scoring Fields
-  fitScore: int("fitScore").default(0),
-  intentScore: int("intentScore").default(0),
-  combinedScore: int("combinedScore").default(0),
-  fitTier: mysqlEnum("fitTier", ["A", "B", "C"]),
-  intentTier: mysqlEnum("intentTier", ["Hot", "Warm", "Cold"]),
+  fitScore: integer("fitScore").default(0),
+  intentScore: integer("intentScore").default(0),
+  combinedScore: integer("combinedScore").default(0),
+  fitTier: text("fitTier"),
+  intentTier: text("intentTier"),
   scoreReasons: json("scoreReasons").$type<string[]>(),
-  lifecycleStage: mysqlEnum("lifecycleStage", ["Lead", "MQL", "SQL", "Opportunity", "ClosedWon", "ClosedLost"]).default("Lead"),
+  lifecycleStage: text("lifecycleStage").default("Lead"),
   lifecycleStageEnteredAt: timestamp("lifecycleStageEnteredAt"),
-  seniority: mysqlEnum("seniority", ["C-Level", "VP", "Director", "Manager", "IC", "Other"]),
+  seniority: text("seniority"),
   department: varchar("department", { length: 100 }),
   region: varchar("region", { length: 100 }),
   
@@ -155,7 +155,7 @@ export const people = mysqlTable("people", {
   assignedAt: timestamp("assignedAt"),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantEmailIdx: unique("tenant_primary_email_unique").on(table.tenantId, table.primaryEmail),
   tenantNameIdx: index("tenant_name_idx").on(table.tenantId, table.fullName),
@@ -165,13 +165,13 @@ export type Person = typeof people.$inferSelect;
 export type InsertPerson = typeof people.$inferInsert;
 
 // Tags for categorizing people and accounts
-export const tags = mysqlTable("tags", {
+export const tags = pgTable("tags", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   color: varchar("color", { length: 7 }).default("#3b82f6"), // Hex color code
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantNameIdx: unique("tenant_tag_name_unique").on(table.tenantId, table.name),
 }));
@@ -180,7 +180,7 @@ export type Tag = typeof tags.$inferSelect;
 export type InsertTag = typeof tags.$inferInsert;
 
 // Junction table for many-to-many relationship between people and tags
-export const personTags = mysqlTable("person_tags", {
+export const personTags = pgTable("person_tags", {
   id: varchar("id", { length: 36 }).primaryKey(),
   personId: varchar("personId", { length: 36 }).notNull(),
   tagId: varchar("tagId", { length: 36 }).notNull(),
@@ -195,7 +195,7 @@ export type PersonTag = typeof personTags.$inferSelect;
 export type InsertPersonTag = typeof personTags.$inferInsert;
 
 // Junction table for many-to-many relationship between accounts and tags
-export const accountTags = mysqlTable("account_tags", {
+export const accountTags = pgTable("account_tags", {
   id: varchar("id", { length: 36 }).primaryKey(),
   accountId: varchar("accountId", { length: 36 }).notNull(),
   tagId: varchar("tagId", { length: 36 }).notNull(),
@@ -209,16 +209,16 @@ export const accountTags = mysqlTable("account_tags", {
 export type AccountTag = typeof accountTags.$inferSelect;
 export type InsertAccountTag = typeof accountTags.$inferInsert;
 
-export const threads = mysqlTable("threads", {
+export const threads = pgTable("threads", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   personId: varchar("personId", { length: 36 }).notNull(),
   source: text("source").notNull(),
   intent: text("intent").notNull(),
-  status: mysqlEnum("status", ["active", "waiting", "dormant", "closed"]).default("active").notNull(),
+  status: text("status").default("active").notNull(),
   title: text("title"),
   lastActivityAt: timestamp("lastActivityAt"),
-  ownerUserId: int("ownerUserId"),
+  ownerUserId: integer("ownerUserId"),
   collaboratorUserIds: json("collaboratorUserIds").$type<number[]>(),
   visibility: varchar("visibility", { length: 20 }).default("private"),
   dealSignal: json("dealSignal").$type<{value_estimate?: number; confidence?: 'low'|'medium'|'high'; outcome?: 'won'|'lost'}>(),
@@ -233,24 +233,13 @@ export const threads = mysqlTable("threads", {
 export type Thread = typeof threads.$inferSelect;
 export type InsertThread = typeof threads.$inferInsert;
 
-export const moments = mysqlTable("moments", {
+export const moments = pgTable("moments", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   threadId: varchar("threadId", { length: 36 }).notNull(),
   personId: varchar("personId", { length: 36 }).notNull(),
   source: text("source").notNull(),
-  type: mysqlEnum("type", [
-    "email_sent",
-    "email_received",
-    "reply_received",
-    "call_completed",
-    "meeting_held",
-    "note_added",
-    "signal_detected",
-    "lead_captured",
-    "deal_won",
-    "deal_lost"
-  ]).notNull(),
+  type: text("type").notNull(),
   timestamp: timestamp("timestamp").notNull(),
   metadata: json("metadata").$type<Record<string, any>>().default({}),
   externalId: varchar("externalId", { length: 255 }),
@@ -264,15 +253,15 @@ export const moments = mysqlTable("moments", {
 export type Moment = typeof moments.$inferSelect;
 export type InsertMoment = typeof moments.$inferInsert;
 
-export const nextActions = mysqlTable("nextActions", {
+export const nextActions = pgTable("nextActions", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   threadId: varchar("threadId", { length: 36 }).notNull(),
   actionType: text("actionType").notNull(),
   triggerType: text("triggerType").notNull(),
   triggerValue: text("triggerValue").notNull(),
-  status: mysqlEnum("status", ["open", "completed", "cancelled"]).default("open").notNull(),
-  assignedUserId: int("assignedUserId"),
+  status: text("status").default("open").notNull(),
+  assignedUserId: integer("assignedUserId"),
   dueAt: timestamp("dueAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
@@ -286,7 +275,7 @@ export const nextActions = mysqlTable("nextActions", {
 export type NextAction = typeof nextActions.$inferSelect;
 export type InsertNextAction = typeof nextActions.$inferInsert;
 
-export const events = mysqlTable("events", {
+export const events = pgTable("events", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: text("name").notNull(),
@@ -311,11 +300,11 @@ export const events = mysqlTable("events", {
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = typeof events.$inferInsert;
 
-export const integrations = mysqlTable("integrations", {
+export const integrations = pgTable("integrations", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
-  provider: mysqlEnum("provider", ["google", "amplemarket", "whatsapp", "apollo"]).notNull(),
-  status: mysqlEnum("status", ["connected", "disconnected", "error"]).default("disconnected").notNull(),
+  provider: text("provider").notNull(),
+  status: text("status").default("disconnected").notNull(),
   config: json("config").$type<Record<string, any>>().default({}),
   oauthTokens: json("oauthTokens").$type<Record<string, any>>(),
   lastSyncedAt: timestamp("lastSyncedAt"),
@@ -328,14 +317,14 @@ export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = typeof integrations.$inferInsert;
 
 // Sync History
-export const syncHistory = mysqlTable("syncHistory", {
+export const syncHistory = pgTable("syncHistory", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   provider: varchar("provider", { length: 50 }).notNull(),
   syncType: varchar("syncType", { length: 50 }).notNull(),
-  status: mysqlEnum("status", ["success", "partial", "failed"]).notNull(),
-  recordsSynced: int("recordsSynced").notNull().default(0),
-  conflictsResolved: int("conflictsResolved").notNull().default(0),
+  status: text("status").notNull(),
+  recordsSynced: integer("recordsSynced").notNull().default(0),
+  conflictsResolved: integer("conflictsResolved").notNull().default(0),
   errors: json("errors").$type<any[]>(),
   config: json("config").$type<Record<string, any>>(),
   startedAt: timestamp("startedAt").notNull(),
@@ -347,14 +336,14 @@ export type SyncHistory = typeof syncHistory.$inferSelect;
 export type InsertSyncHistory = typeof syncHistory.$inferInsert;
 
 // Email Sequences
-export const emailSequences = mysqlTable("emailSequences", {
+export const emailSequences = pgTable("emailSequences", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  status: mysqlEnum("status", ["active", "paused", "archived"]).default("active").notNull(),
+  status: text("status").default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
 }));
@@ -362,13 +351,13 @@ export const emailSequences = mysqlTable("emailSequences", {
 export type EmailSequence = typeof emailSequences.$inferSelect;
 export type InsertEmailSequence = typeof emailSequences.$inferInsert;
 
-export const emailSequenceSteps = mysqlTable("emailSequenceSteps", {
+export const emailSequenceSteps = pgTable("emailSequenceSteps", {
   id: varchar("id", { length: 36 }).primaryKey(),
   sequenceId: varchar("sequenceId", { length: 36 }).notNull(),
-  stepNumber: int("stepNumber").notNull(),
+  stepNumber: integer("stepNumber").notNull(),
   subject: text("subject").notNull(),
   body: text("body").notNull(),
-  delayDays: int("delayDays").notNull().default(0),
+  delayDays: integer("delayDays").notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   sequenceStepIdx: index("sequence_step_idx").on(table.sequenceId, table.stepNumber),
@@ -377,20 +366,20 @@ export const emailSequenceSteps = mysqlTable("emailSequenceSteps", {
 export type EmailSequenceStep = typeof emailSequenceSteps.$inferSelect;
 export type InsertEmailSequenceStep = typeof emailSequenceSteps.$inferInsert;
 
-export const emailSequenceEnrollments = mysqlTable("emailSequenceEnrollments", {
+export const emailSequenceEnrollments = pgTable("emailSequenceEnrollments", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   sequenceId: varchar("sequenceId", { length: 36 }).notNull(),
   personId: varchar("personId", { length: 36 }).notNull(),
   threadId: varchar("threadId", { length: 36 }),
-  currentStep: int("currentStep").notNull().default(0),
-  status: mysqlEnum("status", ["active", "completed", "paused", "unsubscribed"]).default("active").notNull(),
+  currentStep: integer("currentStep").notNull().default(0),
+  status: text("status").default("active").notNull(),
   enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
   lastEmailSentAt: timestamp("lastEmailSentAt"),
   nextEmailScheduledAt: timestamp("nextEmailScheduledAt"),
-  totalOpens: int("totalOpens").notNull().default(0),
-  totalReplies: int("totalReplies").notNull().default(0),
+  totalOpens: integer("totalOpens").notNull().default(0),
+  totalReplies: integer("totalReplies").notNull().default(0),
 }, (table) => ({
   tenantSequenceIdx: index("tenant_sequence_idx").on(table.tenantId, table.sequenceId),
   tenantPersonIdx: index("tenant_person_idx").on(table.tenantId, table.personId),
@@ -401,11 +390,11 @@ export const emailSequenceEnrollments = mysqlTable("emailSequenceEnrollments", {
 export type EmailSequenceEnrollment = typeof emailSequenceEnrollments.$inferSelect;
 export type InsertEmailSequenceEnrollment = typeof emailSequenceEnrollments.$inferInsert;
 
-export const emailSequenceEvents = mysqlTable("emailSequenceEvents", {
+export const emailSequenceEvents = pgTable("emailSequenceEvents", {
   id: varchar("id", { length: 36 }).primaryKey(),
   enrollmentId: varchar("enrollmentId", { length: 36 }).notNull(),
-  stepNumber: int("stepNumber").notNull(),
-  eventType: mysqlEnum("eventType", ["sent", "opened", "replied", "bounced", "unsubscribed"]).notNull(),
+  stepNumber: integer("stepNumber").notNull(),
+  eventType: text("eventType").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   metadata: json("metadata").$type<Record<string, any>>().default({}),
 }, (table) => ({
@@ -417,10 +406,10 @@ export type EmailSequenceEvent = typeof emailSequenceEvents.$inferSelect;
 export type InsertEmailSequenceEvent = typeof emailSequenceEvents.$inferInsert;
 
 // Conditional Sequence Nodes (for non-linear sequences)
-export const sequenceNodes = mysqlTable("sequenceNodes", {
+export const sequenceNodes = pgTable("sequenceNodes", {
   id: varchar("id", { length: 36 }).primaryKey(),
   sequenceId: varchar("sequenceId", { length: 36 }).notNull(),
-  nodeType: mysqlEnum("nodeType", ["email", "wait", "condition", "ab_split", "goal_check", "exit"]).notNull(),
+  nodeType: text("nodeType").notNull(),
   position: json("position").$type<{ x: number; y: number }>().notNull(), // For visual builder
   
   // Email node fields
@@ -428,28 +417,18 @@ export const sequenceNodes = mysqlTable("sequenceNodes", {
   body: text("body"),
   
   // Wait node fields
-  waitDays: int("waitDays"),
+  waitDays: integer("waitDays"),
   waitUntilTime: varchar("waitUntilTime", { length: 20 }), // e.g., "09:00" for wait until 9am
   
   // Condition node fields
-  conditionType: mysqlEnum("conditionType", [
-    "replied",
-    "not_replied",
-    "opened",
-    "not_opened",
-    "clicked_link",
-    "time_elapsed",
-    "custom_field",
-    "goal_achieved",
-    "negative_response"
-  ]),
+  conditionType: text("conditionType"),
   conditionConfig: json("conditionConfig").$type<Record<string, any>>(), // e.g., {field: "jobTitle", operator: "equals", value: "CEO"}
   
   // A/B split node fields
-  variantAPercentage: int("variantAPercentage"), // e.g., 50 for 50/50 split
+  variantAPercentage: integer("variantAPercentage"), // e.g., 50 for 50/50 split
   
   // Goal check node fields
-  goalType: mysqlEnum("goalType", ["meeting_booked", "demo_requested", "replied", "link_clicked", "custom"]),
+  goalType: text("goalType"),
   
   label: text("label"), // Display name for the node
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -461,14 +440,14 @@ export type SequenceNode = typeof sequenceNodes.$inferSelect;
 export type InsertSequenceNode = typeof sequenceNodes.$inferInsert;
 
 // Sequence Edges (connections between nodes)
-export const sequenceEdges = mysqlTable("sequenceEdges", {
+export const sequenceEdges = pgTable("sequenceEdges", {
   id: varchar("id", { length: 36 }).primaryKey(),
   sequenceId: varchar("sequenceId", { length: 36 }).notNull(),
   sourceNodeId: varchar("sourceNodeId", { length: 36 }).notNull(),
   targetNodeId: varchar("targetNodeId", { length: 36 }).notNull(),
   
   // Edge condition (for branching)
-  edgeType: mysqlEnum("edgeType", ["default", "yes", "no", "variant_a", "variant_b", "goal_met", "goal_not_met"]).notNull().default("default"),
+  edgeType: text("edgeType").notNull().default("default"),
   label: text("label"), // e.g., "If replied", "If not opened", "Variant A"
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -481,7 +460,7 @@ export type SequenceEdge = typeof sequenceEdges.$inferSelect;
 export type InsertSequenceEdge = typeof sequenceEdges.$inferInsert;
 
 // Enrollment Path Tracking (which nodes each prospect visited)
-export const enrollmentPathHistory = mysqlTable("enrollmentPathHistory", {
+export const enrollmentPathHistory = pgTable("enrollmentPathHistory", {
   id: varchar("id", { length: 36 }).primaryKey(),
   enrollmentId: varchar("enrollmentId", { length: 36 }).notNull(),
   nodeId: varchar("nodeId", { length: 36 }).notNull(),
@@ -498,28 +477,14 @@ export type EnrollmentPathHistory = typeof enrollmentPathHistory.$inferSelect;
 export type InsertEnrollmentPathHistory = typeof enrollmentPathHistory.$inferInsert;
 
 // Pipeline Automation
-export const automationRules = mysqlTable("automationRules", {
+export const automationRules = pgTable("automationRules", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  triggerType: mysqlEnum("triggerType", [
-    "email_opened",
-    "email_replied",
-    "no_reply_after_days",
-    "meeting_held",
-    "stage_entered",
-    "deal_value_threshold",
-    "scheduled"
-  ]).notNull(),
+  triggerType: text("triggerType").notNull(),
   triggerConfig: json("triggerConfig").$type<Record<string, any>>().default({}),
-  actionType: mysqlEnum("actionType", [
-    "move_stage",
-    "send_notification",
-    "create_task",
-    "enroll_sequence",
-    "update_field"
-  ]).notNull(),
+  actionType: text("actionType").notNull(),
   actionConfig: json("actionConfig").$type<Record<string, any>>().default({}),
   conditions: json("conditions").$type<{
     logic: 'AND' | 'OR';
@@ -529,13 +494,13 @@ export const automationRules = mysqlTable("automationRules", {
       value: any;
     }>;
   }>().default({ logic: 'AND', rules: [] }),
-  priority: int("priority").default(0).notNull(),
+  priority: integer("priority").default(0).notNull(),
   schedule: text("schedule"),
   timezone: text("timezone").default("UTC"),
   nextRunAt: timestamp("nextRunAt"),
-  status: mysqlEnum("status", ["active", "paused"]).default("active").notNull(),
+  status: text("status").default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
   tenantTriggerIdx: index("tenant_trigger_idx").on(table.tenantId, table.triggerType),
@@ -544,13 +509,13 @@ export const automationRules = mysqlTable("automationRules", {
 export type AutomationRule = typeof automationRules.$inferSelect;
 export type InsertAutomationRule = typeof automationRules.$inferInsert;
 
-export const automationExecutions = mysqlTable("automationExecutions", {
+export const automationExecutions = pgTable("automationExecutions", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   ruleId: varchar("ruleId", { length: 36 }).notNull(),
   threadId: varchar("threadId", { length: 36 }),
   personId: varchar("personId", { length: 36 }),
-  status: mysqlEnum("status", ["success", "failed", "skipped"]).notNull(),
+  status: text("status").notNull(),
   executedAt: timestamp("executedAt").defaultNow().notNull(),
   errorMessage: text("errorMessage"),
   metadata: json("metadata").$type<Record<string, any>>().default({}),
@@ -564,12 +529,12 @@ export type AutomationExecution = typeof automationExecutions.$inferSelect;
 export type InsertAutomationExecution = typeof automationExecutions.$inferInsert;
 
 // Template Reviews
-export const templateReviews = mysqlTable("templateReviews", {
+export const templateReviews = pgTable("templateReviews", {
   id: varchar("id", { length: 36 }).primaryKey(),
   templateId: varchar("templateId", { length: 100 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
-  rating: int("rating").notNull(), // 1-5
+  rating: integer("rating").notNull(), // 1-5
   review: text("review"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -581,14 +546,14 @@ export type TemplateReview = typeof templateReviews.$inferSelect;
 export type InsertTemplateReview = typeof templateReviews.$inferInsert;
 
 // Template Analytics
-export const templateAnalytics = mysqlTable("templateAnalytics", {
+export const templateAnalytics = pgTable("templateAnalytics", {
   id: varchar("id", { length: 36 }).primaryKey(),
   templateId: varchar("templateId", { length: 100 }).notNull().unique(),
-  installCount: int("installCount").default(0).notNull(),
-  successCount: int("successCount").default(0).notNull(),
-  failureCount: int("failureCount").default(0).notNull(),
+  installCount: integer("installCount").default(0).notNull(),
+  successCount: integer("successCount").default(0).notNull(),
+  failureCount: integer("failureCount").default(0).notNull(),
   lastInstalledAt: timestamp("lastInstalledAt"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   templateIdx: index("template_idx").on(table.templateId),
 }));
@@ -597,30 +562,16 @@ export type TemplateAnalytics = typeof templateAnalytics.$inferSelect;
 export type InsertTemplateAnalytics = typeof templateAnalytics.$inferInsert;
 
 // User Templates
-export const userTemplates = mysqlTable("userTemplates", {
+export const userTemplates = pgTable("userTemplates", {
   id: varchar("id", { length: 36 }).primaryKey(),
   userId: varchar("userId", { length: 36 }).notNull(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  category: mysqlEnum("category", ["lead_nurturing", "deal_management", "task_automation", "notifications"]).notNull(),
-  triggerType: mysqlEnum("triggerType", [
-    "email_opened",
-    "email_replied",
-    "no_reply_after_days",
-    "meeting_held",
-    "stage_entered",
-    "deal_value_threshold",
-    "scheduled"
-  ]).notNull(),
+  category: text("category").notNull(),
+  triggerType: text("triggerType").notNull(),
   triggerConfig: json("triggerConfig").$type<Record<string, any>>().default({}),
-  actionType: mysqlEnum("actionType", [
-    "move_stage",
-    "send_notification",
-    "create_task",
-    "enroll_sequence",
-    "update_field"
-  ]).notNull(),
+  actionType: text("actionType").notNull(),
   actionConfig: json("actionConfig").$type<Record<string, any>>().default({}),
   conditions: json("conditions").$type<{
     logic: 'AND' | 'OR';
@@ -630,13 +581,13 @@ export const userTemplates = mysqlTable("userTemplates", {
       value: any;
     }>;
   }>().default({ logic: 'AND', rules: [] }),
-  priority: int("priority").default(0).notNull(),
+  priority: integer("priority").default(0).notNull(),
   isPublic: boolean("isPublic").default(false).notNull(),
   baseTemplateId: varchar("baseTemplateId", { length: 100 }),
-  version: int("version").default(1).notNull(),
+  version: integer("version").default(1).notNull(),
   changelog: text("changelog"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   userIdx: index("user_idx").on(table.userId),
   tenantIdx: index("tenant_idx").on(table.tenantId),
@@ -647,30 +598,16 @@ export type UserTemplate = typeof userTemplates.$inferSelect;
 export type InsertUserTemplate = typeof userTemplates.$inferInsert;
 
 // Template Version History
-export const templateVersions = mysqlTable("templateVersions", {
+export const templateVersions = pgTable("templateVersions", {
   id: varchar("id", { length: 36 }).primaryKey(),
   templateId: varchar("templateId", { length: 36 }).notNull(),
-  version: int("version").notNull(),
+  version: integer("version").notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  category: mysqlEnum("category", ["lead_nurturing", "deal_management", "task_automation", "notifications"]).notNull(),
-  triggerType: mysqlEnum("triggerType", [
-    "email_opened",
-    "email_replied",
-    "no_reply_after_days",
-    "meeting_held",
-    "stage_entered",
-    "deal_value_threshold",
-    "scheduled"
-  ]).notNull(),
+  category: text("category").notNull(),
+  triggerType: text("triggerType").notNull(),
   triggerConfig: json("triggerConfig").$type<Record<string, any>>().default({}),
-  actionType: mysqlEnum("actionType", [
-    "move_stage",
-    "send_notification",
-    "create_task",
-    "enroll_sequence",
-    "update_field"
-  ]).notNull(),
+  actionType: text("actionType").notNull(),
   actionConfig: json("actionConfig").$type<Record<string, any>>().default({}),
   conditions: json("conditions").$type<{
     logic: 'AND' | 'OR';
@@ -680,7 +617,7 @@ export const templateVersions = mysqlTable("templateVersions", {
       value: any;
     }>;
   }>().default({ logic: 'AND', rules: [] }),
-  priority: int("priority").default(0).notNull(),
+  priority: integer("priority").default(0).notNull(),
   changelog: text("changelog"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -692,23 +629,12 @@ export type TemplateVersion = typeof templateVersions.$inferSelect;
 export type InsertTemplateVersion = typeof templateVersions.$inferInsert;
 
 // Tracking Events for Intent Scoring
-export const trackingEvents = mysqlTable("trackingEvents", {
+export const trackingEvents = pgTable("trackingEvents", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   personId: varchar("personId", { length: 36 }),
   accountId: varchar("accountId", { length: 36 }),
-  eventType: mysqlEnum("eventType", [
-    "email_sent",
-    "email_opened",
-    "email_clicked",
-    "email_replied",
-    "page_view",
-    "demo_request",
-    "pricing_view",
-    "content_download",
-    "webinar_registration",
-    "trial_started"
-  ]).notNull(),
+  eventType: text("eventType").notNull(),
   eventData: json("eventData").$type<Record<string, any>>().default({}),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 }, (table) => ({
@@ -723,12 +649,12 @@ export type InsertTrackingEvent = typeof trackingEvents.$inferInsert;
 
 
 // Team Chat System
-export const channels = mysqlTable("channels", {
+export const channels = pgTable("channels", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
-  type: mysqlEnum("type", ["public", "private"]).default("public").notNull(),
+  type: text("type").default("public").notNull(),
   createdBy: varchar("createdBy", { length: 36 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   archivedAt: timestamp("archivedAt"),
@@ -740,11 +666,11 @@ export const channels = mysqlTable("channels", {
 export type Channel = typeof channels.$inferSelect;
 export type InsertChannel = typeof channels.$inferInsert;
 
-export const channelMembers = mysqlTable("channelMembers", {
+export const channelMembers = pgTable("channelMembers", {
   id: varchar("id", { length: 36 }).primaryKey(),
   channelId: varchar("channelId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
-  role: mysqlEnum("role", ["admin", "member"]).default("member").notNull(),
+  role: text("role").default("member").notNull(),
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
   lastReadAt: timestamp("lastReadAt"),
 }, (table) => ({
@@ -755,7 +681,7 @@ export const channelMembers = mysqlTable("channelMembers", {
 export type ChannelMember = typeof channelMembers.$inferSelect;
 export type InsertChannelMember = typeof channelMembers.$inferInsert;
 
-export const messages = mysqlTable("messages", {
+export const messages = pgTable("messages", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   channelId: varchar("channelId", { length: 36 }),
@@ -765,7 +691,7 @@ export const messages = mysqlTable("messages", {
   fileUrl: text("fileUrl"),
   fileName: varchar("fileName", { length: 255 }),
   fileType: varchar("fileType", { length: 100 }),
-  fileSize: int("fileSize"),
+  fileSize: integer("fileSize"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt"),
   deletedAt: timestamp("deletedAt"),
@@ -778,7 +704,7 @@ export const messages = mysqlTable("messages", {
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
 
-export const directMessages = mysqlTable("directMessages", {
+export const directMessages = pgTable("directMessages", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   senderId: varchar("senderId", { length: 36 }).notNull(),
@@ -796,7 +722,7 @@ export const directMessages = mysqlTable("directMessages", {
 export type DirectMessage = typeof directMessages.$inferSelect;
 export type InsertDirectMessage = typeof directMessages.$inferInsert;
 
-export const messageReactions = mysqlTable("messageReactions", {
+export const messageReactions = pgTable("messageReactions", {
   id: varchar("id", { length: 36 }).primaryKey(),
   messageId: varchar("messageId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
@@ -810,7 +736,7 @@ export const messageReactions = mysqlTable("messageReactions", {
 export type MessageReaction = typeof messageReactions.$inferSelect;
 export type InsertMessageReaction = typeof messageReactions.$inferInsert;
 
-export const typingIndicators = mysqlTable("typingIndicators", {
+export const typingIndicators = pgTable("typingIndicators", {
   id: varchar("id", { length: 36 }).primaryKey(),
   channelId: varchar("channelId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
@@ -824,11 +750,11 @@ export const typingIndicators = mysqlTable("typingIndicators", {
 export type TypingIndicator = typeof typingIndicators.$inferSelect;
 export type InsertTypingIndicator = typeof typingIndicators.$inferInsert;
 
-export const notifications = mysqlTable("notifications", {
+export const notifications = pgTable("notifications", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
-  type: mysqlEnum("type", ["mention", "reply", "reaction"]).notNull(),
+  type: text("type").notNull(),
   messageId: varchar("messageId", { length: 36 }),
   channelId: varchar("channelId", { length: 36 }),
   content: text("content"),
@@ -842,14 +768,14 @@ export const notifications = mysqlTable("notifications", {
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
 
-export const aiConversations = mysqlTable("aiConversations", {
+export const aiConversations = pgTable("aiConversations", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   messages: json("messages").notNull(), // Array of {role, content}
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   userIdx: index("user_conversations_idx").on(table.userId),
   tenantIdx: index("tenant_conversations_idx").on(table.tenantId),
@@ -862,18 +788,18 @@ export type InsertAIConversation = typeof aiConversations.$inferInsert;
 
 // ============ EMAIL ACCOUNTS ============
 
-export const emailAccounts = mysqlTable("emailAccounts", {
+export const emailAccounts = pgTable("emailAccounts", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   provider: varchar("provider", { length: 50 }).notNull(), // gmail, outlook, custom
   smtpHost: text("smtpHost"),
-  smtpPort: int("smtpPort"),
+  smtpPort: integer("smtpPort"),
   smtpUser: text("smtpUser"),
   smtpPass: text("smtpPass"), // Encrypted
   imapHost: text("imapHost"),
-  imapPort: int("imapPort"),
+  imapPort: integer("imapPort"),
   isDefault: boolean("isDefault").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -886,19 +812,19 @@ export type InsertEmailAccount = typeof emailAccounts.$inferInsert;
 
 // ============ MARKETING CAMPAIGNS ============
 
-export const marketingCampaigns = mysqlTable("marketingCampaigns", {
+export const marketingCampaigns = pgTable("marketingCampaigns", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
   name: text("name").notNull(),
   subject: text("subject").notNull(),
   body: text("body").notNull(),
-  status: mysqlEnum("status", ["draft", "scheduled", "sending", "sent", "paused"]).default("draft").notNull(),
+  status: text("status").default("draft").notNull(),
   scheduledAt: timestamp("scheduledAt"),
   sentAt: timestamp("sentAt"),
-  recipientCount: int("recipientCount").default(0).notNull(),
-  openCount: int("openCount").default(0).notNull(),
-  clickCount: int("clickCount").default(0).notNull(),
+  recipientCount: integer("recipientCount").default(0).notNull(),
+  openCount: integer("openCount").default(0).notNull(),
+  clickCount: integer("clickCount").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
@@ -912,12 +838,12 @@ export type InsertMarketingCampaign = typeof marketingCampaigns.$inferInsert;
 
 // ============ CAMPAIGN RECIPIENTS ============
 
-export const campaignRecipients = mysqlTable("campaignRecipients", {
+export const campaignRecipients = pgTable("campaignRecipients", {
   id: varchar("id", { length: 36 }).primaryKey(),
   campaignId: varchar("campaignId", { length: 36 }).notNull(),
   personId: varchar("personId", { length: 36 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
-  status: mysqlEnum("status", ["pending", "sent", "failed", "bounced"]).default("pending").notNull(),
+  status: text("status").default("pending").notNull(),
   sentAt: timestamp("sentAt"),
   openedAt: timestamp("openedAt"),
   clickedAt: timestamp("clickedAt"),
@@ -932,11 +858,11 @@ export type InsertCampaignRecipient = typeof campaignRecipients.$inferInsert;
 
 // ============ DEAL STAGES ============
 
-export const dealStages = mysqlTable("dealStages", {
+export const dealStages = pgTable("dealStages", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 100 }).notNull(),
-  order: int("order").notNull(),
+  order: integer("order").notNull(),
   color: varchar("color", { length: 20 }).default("#3b82f6"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -949,7 +875,7 @@ export type InsertDealStage = typeof dealStages.$inferInsert;
 
 // ============ DEALS ============
 
-export const deals = mysqlTable("deals", {
+export const deals = pgTable("deals", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -960,10 +886,10 @@ export const deals = mysqlTable("deals", {
   contactId: varchar("contactId", { length: 36 }),
   ownerUserId: varchar("ownerUserId", { length: 36 }),
   expectedCloseDate: timestamp("expectedCloseDate"),
-  probability: int("probability").default(50),
+  probability: integer("probability").default(50),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("deals_tenant_idx").on(table.tenantId),
   stageIdx: index("deals_stage_idx").on(table.stageId),
@@ -976,21 +902,21 @@ export type InsertDeal = typeof deals.$inferInsert;
 
 
 // Tasks
-export const tasks = mysqlTable("tasks", {
+export const tasks = pgTable("tasks", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   title: text("title").notNull(),
   description: text("description"),
-  status: mysqlEnum("status", ["todo", "in_progress", "completed", "cancelled"]).default("todo").notNull(),
-  priority: mysqlEnum("priority", ["low", "medium", "high", "urgent"]).default("medium").notNull(),
+  status: text("status").default("todo").notNull(),
+  priority: text("priority").default("medium").notNull(),
   dueDate: timestamp("dueDate"),
   assignedToId: varchar("assignedToId", { length: 36 }),
   createdById: varchar("createdById", { length: 36 }).notNull(),
   // Link to entities
-  linkedEntityType: mysqlEnum("linkedEntityType", ["deal", "contact", "account"]),
+  linkedEntityType: text("linkedEntityType"),
   linkedEntityId: varchar("linkedEntityId", { length: 36 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
   reminderAt: timestamp("reminderAt"),
   reminderSent: boolean("reminderSent").default(false).notNull(),
@@ -1006,7 +932,7 @@ export type InsertTask = typeof tasks.$inferInsert;
 
 
 // Email Templates
-export const emailTemplates = mysqlTable("emailTemplates", {
+export const emailTemplates = pgTable("emailTemplates", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: text("name").notNull(),
@@ -1025,7 +951,7 @@ export const emailTemplates = mysqlTable("emailTemplates", {
   isPublic: boolean("isPublic").default(false).notNull(),
   createdById: varchar("createdById", { length: 36 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("email_templates_tenant_idx").on(table.tenantId),
   categoryIdx: index("email_templates_category_idx").on(table.category),
@@ -1036,25 +962,25 @@ export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
 
 
 // Lead Scoring
-export const leadScores = mysqlTable("leadScores", {
+export const leadScores = pgTable("leadScores", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   personId: varchar("personId", { length: 36 }).notNull(),
   // Score components
-  engagementScore: int("engagementScore").default(0).notNull(),
-  demographicScore: int("demographicScore").default(0).notNull(),
-  behaviorScore: int("behaviorScore").default(0).notNull(),
-  totalScore: int("totalScore").default(0).notNull(),
+  engagementScore: integer("engagementScore").default(0).notNull(),
+  demographicScore: integer("demographicScore").default(0).notNull(),
+  behaviorScore: integer("behaviorScore").default(0).notNull(),
+  totalScore: integer("totalScore").default(0).notNull(),
   // Score factors
-  emailOpens: int("emailOpens").default(0).notNull(),
-  emailClicks: int("emailClicks").default(0).notNull(),
-  emailReplies: int("emailReplies").default(0).notNull(),
-  websiteVisits: int("websiteVisits").default(0).notNull(),
-  formSubmissions: int("formSubmissions").default(0).notNull(),
+  emailOpens: integer("emailOpens").default(0).notNull(),
+  emailClicks: integer("emailClicks").default(0).notNull(),
+  emailReplies: integer("emailReplies").default(0).notNull(),
+  websiteVisits: integer("websiteVisits").default(0).notNull(),
+  formSubmissions: integer("formSubmissions").default(0).notNull(),
   // Metadata
   lastActivityAt: timestamp("lastActivityAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("lead_scores_tenant_idx").on(table.tenantId),
   personIdx: index("lead_scores_person_idx").on(table.personId),
@@ -1064,18 +990,18 @@ export const leadScores = mysqlTable("leadScores", {
 export type LeadScore = typeof leadScores.$inferSelect;
 export type InsertLeadScore = typeof leadScores.$inferInsert;
 
-export const leadScoringRules = mysqlTable("leadScoringRules", {
+export const leadScoringRules = pgTable("leadScoringRules", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  category: mysqlEnum("category", ["engagement", "demographic", "behavior"]).notNull(),
+  category: text("category").notNull(),
   // Rule definition
   eventType: varchar("eventType", { length: 100 }).notNull(), // email_open, email_click, etc.
-  points: int("points").notNull(),
+  points: integer("points").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("lead_scoring_rules_tenant_idx").on(table.tenantId),
   categoryIdx: index("lead_scoring_rules_category_idx").on(table.category),
@@ -1086,24 +1012,12 @@ export type InsertLeadScoringRule = typeof leadScoringRules.$inferInsert;
 
 
 // Activity Feed
-export const activityFeed = mysqlTable("activityFeed", {
+export const activityFeed = pgTable("activityFeed", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(), // Who performed the action
-  actionType: mysqlEnum("actionType", [
-    "created_deal",
-    "updated_deal",
-    "moved_deal_stage",
-    "created_contact",
-    "updated_contact",
-    "sent_email",
-    "created_task",
-    "completed_task",
-    "added_note",
-    "created_account",
-    "updated_account"
-  ]).notNull(),
-  entityType: mysqlEnum("entityType", ["deal", "contact", "account", "task", "email"]),
+  actionType: text("actionType").notNull(),
+  entityType: text("entityType"),
   entityId: varchar("entityId", { length: 36 }),
   entityName: text("entityName"), // Denormalized for quick display
   description: text("description"), // Human-readable description
@@ -1120,19 +1034,19 @@ export type ActivityFeedItem = typeof activityFeed.$inferSelect;
 export type InsertActivityFeedItem = typeof activityFeed.$inferInsert;
 
 // Shared Views
-export const sharedViews = mysqlTable("sharedViews", {
+export const sharedViews = pgTable("sharedViews", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  viewType: mysqlEnum("viewType", ["deals", "contacts", "accounts", "tasks"]).notNull(),
+  viewType: text("viewType").notNull(),
   filters: json("filters").$type<Record<string, any>>().default({}),
   sortBy: varchar("sortBy", { length: 100 }),
-  sortOrder: mysqlEnum("sortOrder", ["asc", "desc"]).default("asc"),
+  sortOrder: text("sortOrder").default("asc"),
   createdById: varchar("createdById", { length: 36 }).notNull(),
   isPublic: boolean("isPublic").default(false).notNull(), // If true, visible to all team members
   sharedWithUserIds: json("sharedWithUserIds").$type<string[]>().default([]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("shared_views_tenant_idx").on(table.tenantId),
   creatorIdx: index("shared_views_creator_idx").on(table.createdById),
@@ -1143,18 +1057,18 @@ export type SharedView = typeof sharedViews.$inferSelect;
 export type InsertSharedView = typeof sharedViews.$inferInsert;
 
 // Notes with full audit trail
-export const notes = mysqlTable("notes", {
+export const notes = pgTable("notes", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   content: text("content").notNull(),
-  entityType: mysqlEnum("entityType", ["contact", "account", "deal", "task", "thread"]).notNull(),
+  entityType: text("entityType").notNull(),
   entityId: varchar("entityId", { length: 36 }).notNull(),
   createdBy: varchar("createdBy", { length: 36 }).notNull(), // userId
   createdByName: varchar("createdByName", { length: 255 }).notNull(),
   updatedBy: varchar("updatedBy", { length: 36 }),
   updatedByName: varchar("updatedByName", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => ({
   tenantIdx: index("notes_tenant_idx").on(table.tenantId),
   entityIdx: index("notes_entity_idx").on(table.entityType, table.entityId),
@@ -1166,11 +1080,11 @@ export type Note = typeof notes.$inferSelect;
 export type InsertNote = typeof notes.$inferInsert;
 
 // Calendar Integration
-export const calendarIntegrations = mysqlTable("calendarIntegrations", {
+export const calendarIntegrations = pgTable("calendarIntegrations", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
-  provider: mysqlEnum("provider", ["google", "outlook"]).notNull(),
+  provider: text("provider").notNull(),
   accessToken: text("accessToken").notNull(), // Encrypted
   refreshToken: text("refreshToken"), // Encrypted
   expiresAt: timestamp("expiresAt"),
@@ -1178,7 +1092,7 @@ export const calendarIntegrations = mysqlTable("calendarIntegrations", {
   isActive: boolean("isActive").default(true).notNull(),
   lastSyncAt: timestamp("lastSyncAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("calendar_integrations_tenant_idx").on(table.tenantId),
   userIdx: index("calendar_integrations_user_idx").on(table.userId),
@@ -1187,7 +1101,7 @@ export const calendarIntegrations = mysqlTable("calendarIntegrations", {
 export type CalendarIntegration = typeof calendarIntegrations.$inferSelect;
 export type InsertCalendarIntegration = typeof calendarIntegrations.$inferInsert;
 
-export const calendarEvents = mysqlTable("calendarEvents", {
+export const calendarEvents = pgTable("calendarEvents", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   integrationId: varchar("integrationId", { length: 36 }).notNull(),
@@ -1199,13 +1113,13 @@ export const calendarEvents = mysqlTable("calendarEvents", {
   location: text("location"),
   attendees: json("attendees").$type<string[]>().default([]),
   isAllDay: boolean("isAllDay").default(false).notNull(),
-  status: mysqlEnum("status", ["confirmed", "tentative", "cancelled"]).default("confirmed").notNull(),
+  status: text("status").default("confirmed").notNull(),
   // Link to CRM entities
   linkedContactId: varchar("linkedContactId", { length: 36 }),
   linkedAccountId: varchar("linkedAccountId", { length: 36 }),
   linkedDealId: varchar("linkedDealId", { length: 36 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("calendar_events_tenant_idx").on(table.tenantId),
   integrationIdx: index("calendar_events_integration_idx").on(table.integrationId),
@@ -1219,7 +1133,7 @@ export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
 
 
 // Document Management
-export const documents = mysqlTable("documents", {
+export const documents = pgTable("documents", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 500 }).notNull(),
@@ -1227,17 +1141,17 @@ export const documents = mysqlTable("documents", {
   fileKey: varchar("fileKey", { length: 500 }).notNull(), // S3 key
   fileUrl: text("fileUrl").notNull(), // S3 URL
   mimeType: varchar("mimeType", { length: 100 }),
-  fileSize: int("fileSize"), // bytes
-  version: int("version").default(1).notNull(),
+  fileSize: integer("fileSize"), // bytes
+  version: integer("version").default(1).notNull(),
   // Link to CRM entities
-  linkedEntityType: mysqlEnum("linkedEntityType", ["contact", "account", "deal", "task"]),
+  linkedEntityType: text("linkedEntityType"),
   linkedEntityId: varchar("linkedEntityId", { length: 36 }),
   // Folder organization
   folderId: varchar("folderId", { length: 36 }),
   // Metadata
   uploadedById: varchar("uploadedById", { length: 36 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("documents_tenant_idx").on(table.tenantId),
   entityIdx: index("documents_entity_idx").on(table.linkedEntityType, table.linkedEntityId),
@@ -1248,13 +1162,13 @@ export const documents = mysqlTable("documents", {
 export type Document = typeof documents.$inferSelect;
 export type InsertDocument = typeof documents.$inferInsert;
 
-export const documentVersions = mysqlTable("documentVersions", {
+export const documentVersions = pgTable("documentVersions", {
   id: varchar("id", { length: 36 }).primaryKey(),
   documentId: varchar("documentId", { length: 36 }).notNull(),
-  version: int("version").notNull(),
+  version: integer("version").notNull(),
   fileKey: varchar("fileKey", { length: 500 }).notNull(),
   fileUrl: text("fileUrl").notNull(),
-  fileSize: int("fileSize"),
+  fileSize: integer("fileSize"),
   uploadedById: varchar("uploadedById", { length: 36 }).notNull(),
   changeNote: text("changeNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1266,14 +1180,14 @@ export const documentVersions = mysqlTable("documentVersions", {
 export type DocumentVersion = typeof documentVersions.$inferSelect;
 export type InsertDocumentVersion = typeof documentVersions.$inferInsert;
 
-export const documentFolders = mysqlTable("documentFolders", {
+export const documentFolders = pgTable("documentFolders", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   parentFolderId: varchar("parentFolderId", { length: 36 }),
   createdById: varchar("createdById", { length: 36 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("document_folders_tenant_idx").on(table.tenantId),
   parentIdx: index("document_folders_parent_idx").on(table.parentFolderId),
@@ -1283,7 +1197,7 @@ export type DocumentFolder = typeof documentFolders.$inferSelect;
 export type InsertDocumentFolder = typeof documentFolders.$inferInsert;
 
 // Email Examples for AI Learning
-export const emailExamples = mysqlTable("emailExamples", {
+export const emailExamples = pgTable("emailExamples", {
   id: varchar("id", { length: 36 }).primaryKey(),
   userId: varchar("userId", { length: 36 }).notNull(),
   subject: varchar("subject", { length: 500 }).notNull(),
@@ -1301,12 +1215,12 @@ export type InsertEmailExample = typeof emailExamples.$inferInsert;
 
 
 // Email Tracking Events
-export const emailTrackingEvents = mysqlTable("emailTrackingEvents", {
+export const emailTrackingEvents = pgTable("emailTrackingEvents", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   emailId: varchar("emailId", { length: 36 }).notNull(), // References sent email
   personId: varchar("personId", { length: 36 }), // Recipient
-  eventType: mysqlEnum("eventType", ["sent", "delivered", "opened", "clicked", "bounced", "unsubscribed"]).notNull(),
+  eventType: text("eventType").notNull(),
   clickedUrl: text("clickedUrl"), // For click events
   userAgent: text("userAgent"),
   ipAddress: varchar("ipAddress", { length: 45 }),
@@ -1322,13 +1236,13 @@ export type EmailTrackingEvent = typeof emailTrackingEvents.$inferSelect;
 export type InsertEmailTrackingEvent = typeof emailTrackingEvents.$inferInsert;
 
 // Activity Timeline (unified view of all interactions)
-export const activities = mysqlTable("activities", {
+export const activities = pgTable("activities", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   personId: varchar("personId", { length: 36 }),
   accountId: varchar("accountId", { length: 36 }),
   userId: varchar("userId", { length: 36 }), // Who performed the activity
-  activityType: mysqlEnum("activityType", ["email", "call", "meeting", "note", "task", "deal_stage_change", "tag_added", "assignment_changed"]).notNull(),
+  activityType: text("activityType").notNull(),
   title: varchar("title", { length: 500 }).notNull(),
   description: text("description"),
   metadata: json("metadata"), // Type-specific data
@@ -1345,7 +1259,7 @@ export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = typeof activities.$inferInsert;
 
 // Webhook Events (for audit and debugging)
-export const webhookEvents = mysqlTable("webhookEvents", {
+export const webhookEvents = pgTable("webhookEvents", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   provider: varchar("provider", { length: 50 }).notNull(), // amplemarket, apollo, etc.
@@ -1365,14 +1279,14 @@ export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
 
 // Amplemarket List Cache (for contact counts)
-export const amplemarketListCache = mysqlTable("amplemarketListCache", {
+export const amplemarketListCache = pgTable("amplemarketListCache", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   listId: varchar("listId", { length: 100 }).notNull(), // Amplemarket list ID
   listName: varchar("listName", { length: 500 }).notNull(),
   owner: varchar("owner", { length: 320 }), // Owner email
   shared: boolean("shared").default(false),
-  contactCount: int("contactCount").notNull(),
+  contactCount: integer("contactCount").notNull(),
   lastFetchedAt: timestamp("lastFetchedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -1384,35 +1298,35 @@ export type AmplemarketListCache = typeof amplemarketListCache.$inferSelect;
 export type InsertAmplemarketListCache = typeof amplemarketListCache.$inferInsert;
 
 // Amplemarket Sync Logs (for sync status tracking)
-export const amplemarketSyncLogs = mysqlTable("amplemarketSyncLogs", {
+export const amplemarketSyncLogs = pgTable("amplemarketSyncLogs", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
-  syncType: mysqlEnum("syncType", ["full", "incremental", "preview", "list_counts"]).notNull(),
-  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).default("pending").notNull(),
+  syncType: text("syncType").notNull(),
+  status: text("status").default("pending").notNull(),
   startedAt: timestamp("startedAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
-  contactsCreated: int("contactsCreated").default(0),
-  contactsUpdated: int("contactsUpdated").default(0),
-  contactsMerged: int("contactsMerged").default(0),
-  contactsSkipped: int("contactsSkipped").default(0),
-  contactsFetched: int("contactsFetched").default(0),
-  contactsKept: int("contactsKept").default(0),
-  contactsDiscarded: int("contactsDiscarded").default(0),
-  missingOwnerField: int("missingOwnerField").default(0),
-  conflictsDetected: int("conflictsDetected").default(0),
+  contactsCreated: integer("contactsCreated").default(0),
+  contactsUpdated: integer("contactsUpdated").default(0),
+  contactsMerged: integer("contactsMerged").default(0),
+  contactsSkipped: integer("contactsSkipped").default(0),
+  contactsFetched: integer("contactsFetched").default(0),
+  contactsKept: integer("contactsKept").default(0),
+  contactsDiscarded: integer("contactsDiscarded").default(0),
+  missingOwnerField: integer("missingOwnerField").default(0),
+  conflictsDetected: integer("conflictsDetected").default(0),
   
   // New diagnostic counters
   correlationId: varchar("correlationId", { length: 36 }),
-  listIdsScannedCount: int("listIdsScannedCount").default(0),
-  leadIdsFetchedTotal: int("leadIdsFetchedTotal").default(0),
-  leadIdsDedupedTotal: int("leadIdsDedupedTotal").default(0),
-  contactsHydratedTotal: int("contactsHydratedTotal").default(0),
-  contactsWithOwnerFieldCount: int("contactsWithOwnerFieldCount").default(0),
-  keptOwnerMatch: int("keptOwnerMatch").default(0),
-  discardedOwnerMismatch: int("discardedOwnerMismatch").default(0),
-  created: int("created").default(0),
-  updated: int("updated").default(0),
-  skipped: int("skipped").default(0),
+  listIdsScannedCount: integer("listIdsScannedCount").default(0),
+  leadIdsFetchedTotal: integer("leadIdsFetchedTotal").default(0),
+  leadIdsDedupedTotal: integer("leadIdsDedupedTotal").default(0),
+  contactsHydratedTotal: integer("contactsHydratedTotal").default(0),
+  contactsWithOwnerFieldCount: integer("contactsWithOwnerFieldCount").default(0),
+  keptOwnerMatch: integer("keptOwnerMatch").default(0),
+  discardedOwnerMismatch: integer("discardedOwnerMismatch").default(0),
+  created: integer("created").default(0),
+  updated: integer("updated").default(0),
+  skipped: integer("skipped").default(0),
   reason: varchar("reason", { length: 100 }),
   
   errors: json("errors").$type<string[]>(),
@@ -1434,7 +1348,7 @@ export type InsertAmplemarketSyncLog = typeof amplemarketSyncLogs.$inferInsert;
  * Leads table - Canonical entity for Amplemarket list leads
  * Separate from Contacts to reflect Amplemarket API reality
  */
-export const leads = mysqlTable("leads", {
+export const leads = pgTable("leads", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   
@@ -1461,7 +1375,7 @@ export const leads = mysqlTable("leads", {
   // Metadata
   syncedAt: timestamp("syncedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("tenant_idx").on(table.tenantId),
   emailIdx: index("email_idx").on(table.email),
@@ -1473,7 +1387,7 @@ export type Lead = typeof leads.$inferSelect;
 export type InsertLead = typeof leads.$inferInsert;
 
 // Demo Bookings - for SDRs to book demos with sales managers
-export const demoBookings = mysqlTable("demo_bookings", {
+export const demoBookings = pgTable("demo_bookings", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   salesManagerId: varchar("salesManagerId", { length: 36 }).notNull(), // Sales manager who the demo is booked with
@@ -1483,9 +1397,9 @@ export const demoBookings = mysqlTable("demo_bookings", {
   startTime: timestamp("startTime").notNull(),
   endTime: timestamp("endTime").notNull(),
   meetLink: varchar("meetLink", { length: 500 }).notNull(), // Google Meet link
-  status: mysqlEnum("status", ["scheduled", "completed", "cancelled"]).default("scheduled").notNull(),
+  status: text("status").default("scheduled").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantManagerIdx: index("demo_tenant_manager_idx").on(table.tenantId, table.salesManagerId),
   startTimeIdx: index("demo_start_time_idx").on(table.startTime),
