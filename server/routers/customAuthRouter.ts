@@ -80,6 +80,7 @@ export const customAuthRouter = router({
           userId: result.userId,
           tenantId: result.tenantId,
           email: result.email,
+          name: result.name,
           role: result.role,
         };
         

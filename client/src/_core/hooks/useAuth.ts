@@ -13,20 +13,9 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
   const utils = trpc.useUtils();
 
-  // Bypass authentication - return mock guest user
-  const mockGuestUser = {
-    id: 'guest-user-id',
-    email: 'demo@whitelabelcrm.com',
-    name: 'Demo User',
-    tenantId: 'default-tenant',
-    role: 'admin' as const,
-  };
-
   const meQuery = trpc.customAuth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
-    // Return mock user immediately
-    initialData: mockGuestUser,
   });
 
   const logoutMutation = trpc.customAuth.logout.useMutation({
