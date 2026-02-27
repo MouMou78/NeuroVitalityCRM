@@ -39,7 +39,7 @@ async function runMigrations() {
     const { migrate } = await import("drizzle-orm/postgres-js/migrator");
     const postgres = (await import("postgres")).default;
     const client = postgres(process.env.DATABASE_URL, {
-      ssl: { rejectUnauthorized: false },
+      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
       max: 1,
     });
     const db = drizzle(client);
@@ -54,9 +54,6 @@ async function runMigrations() {
 }
 
 async function startServer() {
-  // Run DB migrations before starting the server
-  await runMigrations();
-
   const app = express();
   const server = createServer(app);
   // Trust proxy to handle HTTPS behind load balancers
@@ -66,7 +63,7 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // Health check endpoint for Railway deployment
+  // Health check endpoint for Railway deployment — responds immediately
   app.get("/api/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 
   // OAuth callback under /api/oauth/callback
@@ -107,6 +104,9 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Run DB migrations in the background after server is already listening
+    // This ensures the healthcheck passes immediately while migrations complete
+    runMigrations().catch(console.error);
   });
 }
 
