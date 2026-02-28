@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { trpc } from "../_core/trpc";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Textarea } from "../components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Zap, AlertTriangle, TrendingUp, TrendingDown, Clock, CheckCircle,
