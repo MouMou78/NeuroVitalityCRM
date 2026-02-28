@@ -1327,23 +1327,21 @@ export const appRouter = router({
           }
         }
         
-        // Generate insights using AI
-        const { invokeLLM } = await import("./_core/llm");
-        const response = await invokeLLM({
-          messages: [
-            {
-              role: "system",
-              content: "You are a CRM insights analyst. Analyze the contact's engagement history and provide: 1) A brief engagement summary (2-3 sentences), 2) Key patterns or trends, 3) 3 specific next-action recommendations. Be concise and actionable."
-            },
-            {
-              role: "user",
-              content: `Analyze this contact and provide insights:\n\n${context}`
-            }
-          ],
+        // Generate insights using the shared AI brain (analyst persona)
+        const { askBrain } = await import("./sharedAIBrain");
+        const insightsText = await askBrain({
+          tenantId: ctx.user.tenantId,
+          userId: String(ctx.user.userId),
+          persona: "analyst",
+          prompt: `Analyze this contact and provide: 1) A brief engagement summary (2-3 sentences), 2) Key patterns or trends, 3) Three specific next-action recommendations. Be concise and actionable.\n\n${context}`,
+          entityContext: {
+            type: "contact",
+            name: contact.fullName,
+            company: contact.companyName || undefined,
+            title: contact.roleTitle || undefined,
+          },
+          lightweightMode: false,
         });
-        
-        const content = response.choices[0].message.content;
-        const insightsText = typeof content === 'string' ? content : JSON.stringify(content);
         
         return {
           insights: insightsText,
@@ -1542,29 +1540,29 @@ export const appRouter = router({
         
         // Check if AI assistant was mentioned
         if (input.content.includes("@ai") || input.content.includes("@assistant")) {
-          // Get recent messages for context
+          // Get recent messages for conversation context
           const recentMessages = await db.getMessagesByChannel(input.channelId, 10);
-          const context = recentMessages
-            .map(m => `${m.user?.name || "User"}: ${m.content}`)
+          const conversationContext = recentMessages
+            .map((m: any) => `${m.user?.name || "User"}: ${m.content}`)
             .join("\n");
           
-          // Invoke LLM
-          const { invokeLLM } = await import("./_core/llm");
-          const response = await invokeLLM({
+          // Use the shared brain with the chat persona
+          const { callBrain } = await import("./sharedAIBrain");
+          const brainResult = await callBrain({
+            tenantId: ctx.user.tenantId,
+            userId: String(ctx.user.userId),
+            persona: "chat",
             messages: [
               {
-                role: "system",
-                content: "You are an AI assistant integrated into a team chat. You help team members with questions about their CRM data, provide insights, and assist with tasks. Be concise and helpful. Recent conversation context:\n\n" + context,
-              },
-              {
                 role: "user",
-                content: input.content,
+                content: `Recent conversation:\n${conversationContext}\n\nMessage: ${input.content}`,
               },
             ],
+            extractMemories: true,
+            lightweightMode: false,
           });
           
-          const aiContent = response.choices[0]?.message?.content;
-          const aiResponse = typeof aiContent === "string" ? aiContent : "I'm here to help! How can I assist you?";
+          const aiResponse = brainResult.response;
           
           // Post AI assistant response
           await db.createMessage({
@@ -4040,6 +4038,7 @@ export const appRouter = router({
         const { generateEmail } = await import("./ai-email");
         return generateEmail({
           tenantId: ctx.user.tenantId,
+          userId: String(ctx.user.userId),
           ...input,
         });
       }),
@@ -4051,9 +4050,13 @@ export const appRouter = router({
         improvementType: z.enum(["clarity", "tone", "length", "cta", "personalization"]),
         targetTone: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { improveEmail } = await import("./ai-email");
-        return improveEmail(input);
+        return improveEmail({
+          ...input,
+          tenantId: ctx.user.tenantId,
+          userId: String(ctx.user.userId),
+        });
       }),
   }),
 
