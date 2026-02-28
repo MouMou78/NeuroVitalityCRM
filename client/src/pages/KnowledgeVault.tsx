@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,8 @@ export default function KnowledgeVault() {
   const [tagsInput, setTagsInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<{ name: string; progress: number; done: boolean; error?: string }[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
@@ -114,36 +116,71 @@ export default function KnowledgeVault() {
     setTagsInput("");
   }
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
+  async function uploadSingleFile(file: File, index: number) {
+    setUploadQueue(prev => prev.map((q, i) => i === index ? { ...q, progress: 10 } : q));
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("category", categoryInput);
+      if (tagsInput) formData.append("tags", tagsInput);
 
-      const response = await fetch("/api/upload", {
+      const response = await fetch("/api/vault/upload", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Upload failed");
+      setUploadQueue(prev => prev.map((q, i) => i === index ? { ...q, progress: 60 } : q));
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Upload failed");
+      }
       const { url } = await response.json();
 
-      // Ingest the uploaded file URL
       await ingestUrl.mutateAsync({
         url,
         title: titleInput || file.name,
         category: categoryInput,
         tags: tagsInput ? tagsInput.split(",").map(t => t.trim()).filter(Boolean) : undefined,
       });
+
+      setUploadQueue(prev => prev.map((q, i) => i === index ? { ...q, progress: 100, done: true } : q));
     } catch (err: any) {
-      toast.error(`Upload failed: ${err.message}`);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setUploadQueue(prev => prev.map((q, i) => i === index ? { ...q, error: err.message, done: true } : q));
+      toast.error(`Failed to upload ${file.name}: ${err.message}`);
     }
+  }
+
+  async function handleFiles(files: File[]) {
+    if (!files.length) return;
+    setIsUploading(true);
+    setUploadQueue(files.map(f => ({ name: f.name, progress: 0, done: false })));
+    await Promise.all(files.map((f, i) => uploadSingleFile(f, i)));
+    setIsUploading(false);
+    refetch();
+    // Auto-close dialog after a moment if all succeeded
+    const allOk = files.length > 0;
+    if (allOk) {
+      setTimeout(() => {
+        setShowAddDialog(false);
+        resetForm();
+        setUploadQueue([]);
+      }, 1200);
+    }
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    await handleFiles(files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
   }
 
   async function handleSubmit() {
@@ -391,8 +428,15 @@ export default function KnowledgeVault() {
                   className="mb-3"
                 />
                 <div
-                  className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-violet-300 hover:bg-violet-50 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                    isDragOver
+                      ? "border-violet-400 bg-violet-50"
+                      : "border-gray-200 hover:border-violet-300 hover:bg-violet-50"
+                  }`}
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
                 >
                   {isUploading ? (
                     <Loader2 className="w-8 h-8 text-violet-500 animate-spin mx-auto mb-2" />
@@ -400,19 +444,51 @@ export default function KnowledgeVault() {
                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                   )}
                   <p className="text-sm font-medium text-gray-700">
-                    {isUploading ? "Uploading..." : "Click to upload or drag & drop"}
+                    {isUploading ? "Uploading files..." : "Click to upload or drag & drop"}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    PDF, Word, TXT, CSV, MP3, MP4, MOV, JPG, PNG — up to 16MB
+                    PDF, Word, Excel, PowerPoint, TXT, CSV, MP3, MP4, MOV, AVI, JPG, PNG, WebP — up to 500MB
                   </p>
+                  <p className="text-xs text-violet-500 mt-1 font-medium">Multiple files supported</p>
                   <input
                     ref={fileInputRef}
                     type="file"
                     className="hidden"
-                    accept=".pdf,.doc,.docx,.txt,.csv,.mp3,.wav,.mp4,.mov,.avi,.jpg,.jpeg,.png,.webp"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.ppt,.pptx,.mp3,.wav,.mp4,.mov,.avi,.wmv,.jpg,.jpeg,.png,.webp,.gif,.svg"
                     onChange={handleFileUpload}
                   />
                 </div>
+
+                {/* Upload progress queue */}
+                {uploadQueue.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    {uploadQueue.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs text-gray-600 truncate max-w-[200px]">{item.name}</span>
+                            {item.error ? (
+                              <span className="text-xs text-red-500">Failed</span>
+                            ) : item.done ? (
+                              <span className="text-xs text-green-500">Done</span>
+                            ) : (
+                              <span className="text-xs text-gray-400">{item.progress}%</span>
+                            )}
+                          </div>
+                          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                item.error ? "bg-red-400" : item.done ? "bg-green-400" : "bg-violet-500"
+                              }`}
+                              style={{ width: `${item.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -85,6 +85,9 @@ async function startServer() {
   // Meeting Co-pilot endpoints
   const meetingRouter = (await import("../meetingRouter")).default;
   app.use("/api", meetingRouter);
+  // Notification endpoints
+  const notificationRouter = (await import("../notificationRouter")).default;
+  app.use("/api", notificationRouter);
   // tRPC API
   app.use(
     "/api/trpc",
@@ -112,6 +115,10 @@ async function startServer() {
     // Run DB migrations in the background after server is already listening
     // This ensures the healthcheck passes immediately while migrations complete
     runMigrations().catch(console.error);
+    // Start the proactive deal alert scheduler (runs every 6 hours)
+    import("../dealAlertScheduler").then(({ startDealAlertScheduler }) => {
+      startDealAlertScheduler();
+    }).catch(console.error);
   });
 }
 

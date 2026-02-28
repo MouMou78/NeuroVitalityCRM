@@ -1571,3 +1571,28 @@ export const meetingCopilotSuggestions = pgTable("meetingCopilotSuggestions", {
 }));
 export type MeetingCopilotSuggestion = typeof meetingCopilotSuggestions.$inferSelect;
 export type InsertMeetingCopilotSuggestion = typeof meetingCopilotSuggestions.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// In-app notifications
+// ─────────────────────────────────────────────────────────────────────────────
+export const notifications = pgTable("notifications", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  severity: text("severity").default("medium"),
+  entityType: text("entityType"),
+  entityId: varchar("entityId", { length: 36 }),
+  entityName: text("entityName"),
+  actionUrl: text("actionUrl"),
+  read: boolean("read").default(false).notNull(),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  notifTenantUserIdx: index("notif_tenant_user_idx").on(table.tenantId, table.userId),
+  notifUnreadIdx: index("notif_unread_idx").on(table.tenantId, table.userId, table.read),
+}));
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

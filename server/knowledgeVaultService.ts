@@ -144,6 +144,64 @@ async function extractFromUrl(url: string): Promise<{ title: string; content: st
   }
 }
 
+async function extractFromSpreadsheet(buffer: Buffer, fileName: string): Promise<string> {
+  try {
+    // Try to parse as CSV first (works for .csv and simple .xls)
+    const text = buffer.toString("utf-8");
+    if (text.includes(",") || text.includes("\t")) {
+      // Looks like CSV/TSV — return as-is (AI will parse it)
+      return text.slice(0, 100000);
+    }
+    // For binary Excel files, use AI to describe the content
+    const base64 = buffer.toString("base64");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [{
+        role: "user",
+        content: `This is an Excel spreadsheet file (${fileName}). The file is encoded in base64 below. Please extract and describe all the data, tables, column headers, and key values you can identify from this file. Return the data in a structured text format.\n\nNote: If you cannot parse the binary data directly, describe what you can infer from the file name and any readable text strings.\n\nFile (base64, first 50KB): ${base64.slice(0, 68000)}`,
+      }],
+      max_tokens: 3000,
+    });
+    return response.choices[0]?.message?.content || `Spreadsheet file: ${fileName}`;
+  } catch (err) {
+    console.error("Spreadsheet extraction error:", err);
+    // Fallback: extract readable strings
+    const text = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ").trim();
+    return text.length > 50 ? text.slice(0, 50000) : `Spreadsheet file: ${fileName}`;
+  }
+}
+
+async function extractFromPresentation(buffer: Buffer, fileName: string): Promise<string> {
+  try {
+    // Try to extract readable text from PPTX (which is a ZIP file containing XML)
+    const text = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ").trim();
+    // PPTX files contain XML with slide text — extract readable portions
+    const xmlMatches = text.match(/<a:t>[^<]{2,}<\/a:t>/g) || [];
+    if (xmlMatches.length > 0) {
+      const slideText = xmlMatches
+        .map(m => m.replace(/<[^>]+>/g, "").trim())
+        .filter(t => t.length > 1)
+        .join("\n");
+      if (slideText.length > 50) return slideText.slice(0, 100000);
+    }
+    // Fallback: use AI to describe
+    const base64 = buffer.toString("base64");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [{
+        role: "user",
+        content: `This is a PowerPoint presentation file (${fileName}). Please extract all slide text, titles, bullet points, and key content you can identify. Return the content slide by slide in plain text format.\n\nFile (base64, first 50KB): ${base64.slice(0, 68000)}`,
+      }],
+      max_tokens: 3000,
+    });
+    return response.choices[0]?.message?.content || `Presentation file: ${fileName}`;
+  } catch (err) {
+    console.error("Presentation extraction error:", err);
+    const text = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ").trim();
+    return text.length > 50 ? text.slice(0, 50000) : `Presentation file: ${fileName}`;
+  }
+}
+
 async function extractFromAudioVideo(buffer: Buffer, mimeType: string, fileName: string): Promise<string> {
   try {
     // Use OpenAI Whisper for transcription
@@ -372,8 +430,12 @@ export async function ingestFile(options: IngestFileOptions): Promise<{ vaultId:
         extractedContent = await extractFromAudioVideo(fileBuffer, mimeType, fileName);
       } else if (sourceType === "image") {
         extractedContent = await extractFromImage(fileBuffer, mimeType);
+      } else if (sourceType === "spreadsheet") {
+        extractedContent = await extractFromSpreadsheet(fileBuffer, fileName);
+      } else if (sourceType === "presentation") {
+        extractedContent = await extractFromPresentation(fileBuffer, fileName);
       } else if (sourceType === "text" || sourceType === "doc") {
-        // Plain text or CSV
+        // Plain text, CSV, DOCX (try as text first, AI will handle structure)
         extractedContent = fileBuffer.toString("utf-8").slice(0, 100000);
       } else {
         // Try as text
@@ -537,9 +599,11 @@ function getSourceType(mimeType: string, fileName: string): string {
 
   if (mimeType === "application/pdf" || ext === "pdf") return "pdf";
   if (mimeType.startsWith("audio/") || ["mp3", "wav", "m4a", "ogg", "flac", "aac"].includes(ext)) return "audio";
-  if (mimeType.startsWith("video/") || ["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) return "video";
-  if (mimeType.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext)) return "image";
-  if (["doc", "docx"].includes(ext)) return "doc";
+  if (mimeType.startsWith("video/") || ["mp4", "mov", "avi", "mkv", "webm", "wmv"].includes(ext)) return "video";
+  if (mimeType.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"].includes(ext)) return "image";
+  if (["doc", "docx"].includes(ext) || mimeType.includes("wordprocessingml") || mimeType === "application/msword") return "doc";
+  if (["xls", "xlsx"].includes(ext) || mimeType.includes("spreadsheet") || mimeType.includes("excel")) return "spreadsheet";
+  if (["ppt", "pptx"].includes(ext) || mimeType.includes("presentationml") || mimeType.includes("powerpoint")) return "presentation";
   if (["txt", "md", "csv", "json", "xml"].includes(ext)) return "text";
   return "text";
 }

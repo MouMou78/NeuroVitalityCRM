@@ -67,6 +67,7 @@ const settingsItems = [
   { icon: Brain, label: "AI Memory", path: "/admin/ai-memory", engineeringOnly: true },
   { icon: BookOpen, label: "Knowledge Vault", path: "/admin/knowledge-vault", engineeringOnly: true },
   { icon: Shield, label: "Deal Intelligence", path: "/admin/deal-intelligence" },
+  { icon: Bell, label: "Notification Preferences", path: "/admin/notification-preferences" },
   { icon: Settings, label: "Security & Preferences", path: "/settings" },
 ];
 

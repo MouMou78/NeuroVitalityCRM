@@ -127,3 +127,17 @@ export async function sendEmail(
   const transport = getTransporter();
   await transport.sendMail(mailOptions);
 }
+
+
+/**
+ * Send deal intelligence alert email
+ */
+export async function sendDealAlertEmail(opts) {
+  const severityColor = { critical: '#dc2626', high: '#ea580c', medium: '#d97706', low: '#2563eb' };
+  const color = severityColor[opts.severity] || '#6b7280';
+  const severityLabel = opts.severity.charAt(0).toUpperCase() + opts.severity.slice(1);
+  const html = `<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;'><div style='background:white;border-radius:8px;padding:24px;border-left:4px solid ${color};'><h2 style='color:#111827'>${opts.title}</h2><p style='color:#374151'>${opts.body}</p></div></div>`;
+  const mailOptions = { from: process.env.SMTP_USER, to: opts.to, subject: '[' + severityLabel + '] ' + opts.title, html };
+  const transport = getTransporter();
+  await transport.sendMail(mailOptions);
+}
