@@ -56,22 +56,42 @@ export interface IngestTextOptions extends IngestOptions {
 
 async function extractFromPdf(buffer: Buffer): Promise<string> {
   try {
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
-    const pdf = await loadingTask.promise;
-    const textParts: string[] = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item: any) => ("str" in item ? item.str : ""))
-        .join(" ");
-      textParts.push(pageText);
-    }
-    return textParts.join("\n").trim();
+    // Use OpenAI to extract text from PDF (no native deps required)
+    const { OpenAI } = await import("openai");
+    const openai = new OpenAI();
+    const base64 = buffer.toString("base64");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract all text content from this PDF document. Return only the extracted text, preserving structure where possible. Do not add any commentary.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:application/pdf;base64,${base64}`,
+                detail: "high",
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 4000,
+    });
+    return response.choices[0]?.message?.content?.trim() || "";
   } catch (err) {
     console.error("PDF extraction error:", err);
-    return "";
+    // Fallback: try to extract raw text from buffer
+    try {
+      const text = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ").trim();
+      return text.length > 50 ? text.substring(0, 8000) : "";
+    } catch {
+      return "";
+    }
   }
 }
 
