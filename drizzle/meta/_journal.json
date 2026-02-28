@@ -36,6 +36,13 @@
       "when": 1772700000000,
       "tag": "0004_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772800000000,
+      "tag": "0005_sequencing_engine",
+      "breakpoints": true
     }
   ]
 }

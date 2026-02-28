@@ -1596,3 +1596,123 @@ export const dealNotifications = pgTable("dealNotifications", {
 }));
 export type DealNotification = typeof dealNotifications.$inferSelect;
 export type InsertDealNotification = typeof dealNotifications.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sequencing Engine — Event Ingestion
+// ─────────────────────────────────────────────────────────────────────────────
+export const crmEvents = pgTable("crmEvents", {
+  event_id: varchar("event_id", { length: 36 }).primaryKey(),
+  tenant_id: varchar("tenant_id", { length: 36 }).notNull(),
+  event_type: text("event_type").notNull(),
+  entity_type: text("entity_type").notNull(),
+  entity_id: varchar("entity_id", { length: 36 }).notNull(),
+  source: text("source").notNull(),
+  occurred_at: timestamp("occurred_at").notNull(),
+  received_at: timestamp("received_at").defaultNow().notNull(),
+  payload: json("payload").$type<Record<string, any>>(),
+  dedupe_key: text("dedupe_key").notNull(),
+  processed: boolean("processed").default(false).notNull(),
+}, (table) => ({
+  crmEventsTenantIdx: index("crm_events_tenant_idx").on(table.tenant_id),
+  crmEventsEntityIdx: index("crm_events_entity_idx").on(table.entity_id, table.event_type),
+  crmEventsOccurredIdx: index("crm_events_occurred_idx").on(table.occurred_at),
+  crmEventsDedupeIdx: unique("crm_events_dedupe_unique").on(table.dedupe_key),
+}));
+export type CrmEventRow = typeof crmEvents.$inferSelect;
+export type InsertCrmEventRow = typeof crmEvents.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sequencing Engine — Engine Lead Scores (separate from existing leadScores)
+// ─────────────────────────────────────────────────────────────────────────────
+export const engineLeadScores = pgTable("engineLeadScores", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenant_id: varchar("tenant_id", { length: 36 }).notNull(),
+  entity_id: varchar("entity_id", { length: 36 }).notNull(),
+  score: integer("score").default(0).notNull(),
+  tier: text("tier").default("cold").notNull(),
+  last_activity_at: timestamp("last_activity_at"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  engineLeadScoresTenantEntityIdx: index("engine_lead_scores_tenant_entity_idx").on(table.tenant_id, table.entity_id),
+}));
+export type EngineLeadScore = typeof engineLeadScores.$inferSelect;
+export type InsertEngineLeadScore = typeof engineLeadScores.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sequencing Engine — Suppression List
+// ─────────────────────────────────────────────────────────────────────────────
+export const suppressionList = pgTable("suppressionList", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenant_id: varchar("tenant_id", { length: 36 }).notNull(),
+  email: text("email").notNull(),
+  reason: text("reason").notNull(),
+  expires_at: timestamp("expires_at"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  suppressionTenantEmailIdx: index("suppression_tenant_email_idx").on(table.tenant_id, table.email),
+}));
+export type SuppressionEntry = typeof suppressionList.$inferSelect;
+export type InsertSuppressionEntry = typeof suppressionList.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sequencing Engine — Workflow Definitions
+// ─────────────────────────────────────────────────────────────────────────────
+export const workflowDefinitions = pgTable("workflowDefinitions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  workflow_id: varchar("workflow_id", { length: 36 }).notNull(),
+  tenant_id: varchar("tenant_id", { length: 36 }).notNull(),
+  name: text("name").notNull(),
+  version: integer("version").default(1).notNull(),
+  status: text("status").default("draft").notNull(),
+  definition: json("definition").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  workflowDefTenantIdx: index("workflow_def_tenant_idx").on(table.tenant_id),
+  workflowDefWorkflowIdx: index("workflow_def_workflow_idx").on(table.workflow_id),
+}));
+export type WorkflowDefinitionRow = typeof workflowDefinitions.$inferSelect;
+export type InsertWorkflowDefinitionRow = typeof workflowDefinitions.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sequencing Engine — Workflow Enrollments
+// ─────────────────────────────────────────────────────────────────────────────
+export const workflowEnrollments = pgTable("workflowEnrollments", {
+  enrollment_id: varchar("enrollment_id", { length: 36 }).primaryKey(),
+  workflow_id: varchar("workflow_id", { length: 36 }).notNull(),
+  tenant_id: varchar("tenant_id", { length: 36 }).notNull(),
+  entity_id: varchar("entity_id", { length: 36 }).notNull(),
+  current_node_id: varchar("current_node_id", { length: 36 }).notNull(),
+  status: text("status").default("active").notNull(),
+  outcome: text("outcome"),
+  entered_at: timestamp("entered_at").defaultNow().notNull(),
+  last_transition_at: timestamp("last_transition_at").defaultNow().notNull(),
+  next_check_at: timestamp("next_check_at"),
+  state_snapshot: json("state_snapshot").$type<Record<string, any>>(),
+}, (table) => ({
+  enrollmentTenantEntityIdx: index("enrollment_tenant_entity_idx").on(table.tenant_id, table.entity_id),
+  enrollmentStatusIdx: index("enrollment_status_idx").on(table.status, table.next_check_at),
+}));
+export type WorkflowEnrollment = typeof workflowEnrollments.$inferSelect;
+export type InsertWorkflowEnrollment = typeof workflowEnrollments.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sequencing Engine — Nurture Enrollments
+// ─────────────────────────────────────────────────────────────────────────────
+export const nurtureEnrollments = pgTable("nurtureEnrollments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenant_id: varchar("tenant_id", { length: 36 }).notNull(),
+  entity_id: varchar("entity_id", { length: 36 }).notNull(),
+  nurture_workflow_id: varchar("nurture_workflow_id", { length: 36 }).notNull(),
+  status: text("status").default("active").notNull(),
+  next_send_at: timestamp("next_send_at"),
+  content_index: integer("content_index").default(0).notNull(),
+  enrolled_at: timestamp("enrolled_at").defaultNow().notNull(),
+  last_activity_at: timestamp("last_activity_at"),
+}, (table) => ({
+  nurtureEnrollmentTenantEntityIdx: index("nurture_enrollment_tenant_entity_idx").on(table.tenant_id, table.entity_id),
+}));
+export type NurtureEnrollment = typeof nurtureEnrollments.$inferSelect;
+export type InsertNurtureEnrollment = typeof nurtureEnrollments.$inferInsert;
