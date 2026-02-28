@@ -52,6 +52,8 @@ import EmailAccounts from "./pages/EmailAccounts";
 import Campaigns from "./pages/Campaigns";
 import UserManagement from "./pages/UserManagement";
 import AIMemoryManager from "./pages/AIMemoryManager";
+import KnowledgeVault from "./pages/KnowledgeVault";
+import DealIntelligence from "./pages/DealIntelligence";
 import Accounts from "./pages/Accounts";
 import AccountMerge from "./pages/AccountMerge";
 import AccountImport from "./pages/AccountImport";
@@ -105,6 +107,16 @@ function Router() {
       <Route path="/admin/ai-memory">
         <DashboardLayout>
           <AIMemoryManager />
+        </DashboardLayout>
+      </Route>
+      <Route path="/admin/knowledge-vault">
+        <DashboardLayout>
+          <KnowledgeVault />
+        </DashboardLayout>
+      </Route>
+      <Route path="/admin/deal-intelligence">
+        <DashboardLayout>
+          <DealIntelligence />
         </DashboardLayout>
       </Route>
       

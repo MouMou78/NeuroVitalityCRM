@@ -1441,3 +1441,65 @@ export const aiMemory = pgTable("aiMemory", {
 }));
 export type AIMemory = typeof aiMemory.$inferSelect;
 export type InsertAIMemory = typeof aiMemory.$inferInsert;
+
+// ============ KNOWLEDGE VAULT ============
+// Stores uploaded files, URLs, and other knowledge sources ingested into AI memory
+export const knowledgeVault = pgTable("knowledgeVault", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  uploadedByUserId: varchar("uploadedByUserId", { length: 36 }).notNull(),
+  sourceType: varchar("sourceType", { length: 50 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  sourceUrl: text("sourceUrl"),
+  storageKey: text("storageKey"),
+  fileName: varchar("fileName", { length: 500 }),
+  fileSize: integer("fileSize"),
+  mimeType: varchar("mimeType", { length: 100 }),
+  category: varchar("category", { length: 100 }),
+  tags: text("tags"),
+  extractedContent: text("extractedContent"),
+  aiSummary: text("aiSummary"),
+  extractedMemories: text("extractedMemories"),
+  status: varchar("status", { length: 50 }).default("processing").notNull(),
+  processingError: text("processingError"),
+  memoryInjected: boolean("memoryInjected").default(false).notNull(),
+  linkedEntityType: varchar("linkedEntityType", { length: 50 }),
+  linkedEntityId: varchar("linkedEntityId", { length: 36 }),
+  linkedEntityName: varchar("linkedEntityName", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  kvTenantIdx: index("kv_tenant_idx").on(table.tenantId),
+  kvCategoryIdx: index("kv_category_idx").on(table.tenantId, table.category),
+  kvStatusIdx: index("kv_status_idx").on(table.tenantId, table.status),
+}));
+export type KnowledgeVault = typeof knowledgeVault.$inferSelect;
+export type InsertKnowledgeVault = typeof knowledgeVault.$inferInsert;
+
+// ============ DEAL INTELLIGENCE ALERTS ============
+// Proactive AI-generated alerts for deal drift, momentum, and risk patterns
+export const dealIntelligenceAlerts = pgTable("dealIntelligenceAlerts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  dealId: varchar("dealId", { length: 36 }).notNull(),
+  dealName: varchar("dealName", { length: 500 }).notNull(),
+  alertType: varchar("alertType", { length: 50 }).notNull(),
+  severity: varchar("severity", { length: 20 }).notNull(),
+  message: text("message").notNull(),
+  recommendation: text("recommendation"),
+  confidence: integer("confidence").default(70).notNull(),
+  patternData: text("patternData"),
+  isRead: boolean("isRead").default(false).notNull(),
+  isDismissed: boolean("isDismissed").default(false).notNull(),
+  actionTaken: boolean("actionTaken").default(false).notNull(),
+  actionNote: text("actionNote"),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  diaTenantIdx: index("dia_tenant_idx").on(table.tenantId),
+  diaDealIdx: index("dia_deal_idx").on(table.dealId),
+  diaUnreadIdx: index("dia_unread_idx").on(table.tenantId, table.isRead, table.isDismissed),
+}));
+export type DealIntelligenceAlert = typeof dealIntelligenceAlerts.$inferSelect;
+export type InsertDealIntelligenceAlert = typeof dealIntelligenceAlerts.$inferInsert;

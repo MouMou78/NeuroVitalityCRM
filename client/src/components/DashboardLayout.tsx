@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor, Brain } from "lucide-react";
+import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor, Brain, BookOpen, Shield } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -64,6 +64,8 @@ const settingsItems = [
   { icon: Target, label: "Lead Scoring", path: "/scoring-settings" },
   { icon: Users, label: "Team & Users", path: "/admin/users" },
   { icon: Brain, label: "AI Memory", path: "/admin/ai-memory", engineeringOnly: true },
+  { icon: BookOpen, label: "Knowledge Vault", path: "/admin/knowledge-vault", engineeringOnly: true },
+  { icon: Shield, label: "Deal Intelligence", path: "/admin/deal-intelligence" },
   { icon: Settings, label: "Security & Preferences", path: "/settings" },
 ];
 

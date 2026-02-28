@@ -4112,5 +4112,119 @@ export const appRouter = router({
       }),
   }),
 
+  // ─────────────────────────────────────────────
+  // Knowledge Vault
+  // ─────────────────────────────────────────────
+  knowledgeVault: router({
+    list: protectedProcedure
+      .input(z.object({
+        category: z.string().optional(),
+        status: z.string().optional(),
+        search: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const { getVaultEntries } = await import('./knowledgeVaultService');
+        return getVaultEntries(ctx.user!.tenantId, input || {});
+      }),
+
+    ingestUrl: protectedProcedure
+      .input(z.object({
+        url: z.string().url(),
+        title: z.string().optional(),
+        category: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        linkedEntityType: z.string().optional(),
+        linkedEntityId: z.string().optional(),
+        linkedEntityName: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { ingestUrl } = await import('./knowledgeVaultService');
+        return ingestUrl({
+          tenantId: ctx.user!.tenantId,
+          userId: ctx.user!.userId,
+          url: input.url,
+          title: input.title || input.url,
+          category: input.category,
+          tags: input.tags,
+          linkedEntityType: input.linkedEntityType,
+          linkedEntityId: input.linkedEntityId,
+          linkedEntityName: input.linkedEntityName,
+        });
+      }),
+
+    ingestText: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        text: z.string().min(10),
+        category: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        linkedEntityType: z.string().optional(),
+        linkedEntityId: z.string().optional(),
+        linkedEntityName: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { ingestText } = await import('./knowledgeVaultService');
+        return ingestText({
+          tenantId: ctx.user!.tenantId,
+          userId: ctx.user!.userId,
+          ...input,
+        });
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ vaultId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const { deleteVaultEntry } = await import('./knowledgeVaultService');
+        await deleteVaultEntry(input.vaultId, ctx.user!.tenantId);
+        return { success: true };
+      }),
+  }),
+
+  // ─────────────────────────────────────────────
+  // Deal Intelligence
+  // ─────────────────────────────────────────────
+  dealIntelligence: router({
+    runAnalysis: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const { runDealIntelligence } = await import('./dealIntelligenceEngine');
+        return runDealIntelligence(ctx.user!.tenantId);
+      }),
+
+    getAlerts: protectedProcedure
+      .input(z.object({
+        unreadOnly: z.boolean().optional(),
+        dealId: z.string().optional(),
+        severity: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const { getDealAlerts } = await import('./dealIntelligenceEngine');
+        return getDealAlerts(ctx.user!.tenantId, input || {});
+      }),
+
+    markRead: protectedProcedure
+      .input(z.object({ alertId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const { markAlertRead } = await import('./dealIntelligenceEngine');
+        await markAlertRead(input.alertId, ctx.user!.tenantId);
+        return { success: true };
+      }),
+
+    dismiss: protectedProcedure
+      .input(z.object({ alertId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const { dismissAlert } = await import('./dealIntelligenceEngine');
+        await dismissAlert(input.alertId, ctx.user!.tenantId);
+        return { success: true };
+      }),
+
+    markActioned: protectedProcedure
+      .input(z.object({ alertId: z.string(), note: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const { markAlertActioned } = await import('./dealIntelligenceEngine');
+        await markAlertActioned(input.alertId, ctx.user!.tenantId, input.note);
+        return { success: true };
+      }),
+  }),
+
 });
 export type AppRouter = typeof appRouter;
