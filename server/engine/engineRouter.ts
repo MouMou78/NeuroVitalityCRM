@@ -467,3 +467,28 @@ engineRouter.get("/events", async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ─── Scoring Config ───────────────────────────────────────────────────────────
+
+// In-memory store for scoring config (persists across requests for the process lifetime).
+// In production this would be stored in a DB table or key-value store.
+const scoringConfigStore: Record<string, object> = {};
+
+// GET /api/engine/scoring-config
+engineRouter.get("/scoring-config", (req: Request, res: Response) => {
+  const tenant_id = getTenantId(req);
+  const config = scoringConfigStore[tenant_id];
+  if (!config) return res.status(404).json({ error: "No config saved yet" });
+  res.json(config);
+});
+
+// PUT /api/engine/scoring-config
+engineRouter.put("/scoring-config", (req: Request, res: Response) => {
+  const tenant_id = getTenantId(req);
+  const body = req.body;
+  if (!body || typeof body !== "object") {
+    return res.status(400).json({ error: "Invalid config body" });
+  }
+  scoringConfigStore[tenant_id] = body;
+  res.json({ ok: true });
+});

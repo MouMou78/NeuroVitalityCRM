@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -36,10 +37,8 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   Search,
   TrendingUp,
-  TrendingDown,
   Minus,
   Flame,
   Snowflake,
@@ -48,8 +47,14 @@ import {
   RefreshCw,
   ChevronUp,
   ChevronDown,
+  Plus,
+  X,
+  Save,
+  Settings2,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface LeadScoreRow {
   id: string;
@@ -72,12 +77,96 @@ interface ScoreStats {
   distribution: { range: string; count: number }[];
 }
 
+interface ScoringConfig {
+  fit: {
+    industries: { name: string; points: number }[];
+    companySizes: { range: string; points: number; label: string }[];
+    seniorities: { level: string; points: number }[];
+    regions: { name: string; points: number }[];
+    tiers: {
+      A: { min: number; label: string };
+      B: { min: number; max: number; label: string };
+      C: { max: number; label: string };
+    };
+  };
+  intent: {
+    events: { type: string; points: number }[];
+    decayHalfLife: number;
+    tiers: {
+      Hot: { min: number; label: string };
+      Warm: { min: number; max: number; label: string };
+      Cold: { max: number; label: string };
+    };
+  };
+  combined: {
+    fitWeight: number;
+    intentWeight: number;
+  };
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const TIER_CONFIG = {
   cold: { label: "Cold", color: "#6b7280", bg: "bg-gray-100 text-gray-700", icon: Snowflake },
   warm: { label: "Warm", color: "#f59e0b", bg: "bg-amber-100 text-amber-700", icon: Minus },
   hot: { label: "Hot", color: "#ef4444", bg: "bg-red-100 text-red-700", icon: Flame },
   sales_ready: { label: "Sales Ready", color: "#10b981", bg: "bg-emerald-100 text-emerald-700", icon: Target },
 };
+
+const DEFAULT_CONFIG: ScoringConfig = {
+  fit: {
+    industries: [
+      { name: "SaaS", points: 25 },
+      { name: "Technology", points: 25 },
+      { name: "B2B Software", points: 25 },
+      { name: "Enterprise Software", points: 25 },
+    ],
+    companySizes: [
+      { range: "51-200", points: 20, label: "Ideal (51–200)" },
+      { range: "201-500", points: 20, label: "Ideal (201–500)" },
+      { range: "501-1000", points: 20, label: "Good (501–1000)" },
+      { range: "1001-5000", points: 15, label: "Acceptable (1001–5000)" },
+    ],
+    seniorities: [
+      { level: "C-Level", points: 15 },
+      { level: "VP", points: 15 },
+      { level: "Director", points: 15 },
+      { level: "Manager", points: 10 },
+    ],
+    regions: [
+      { name: "UK&I", points: 10 },
+      { name: "Western Europe", points: 10 },
+      { name: "North America", points: 10 },
+    ],
+    tiers: {
+      A: { min: 70, label: "Tier A (70+)" },
+      B: { min: 40, max: 69, label: "Tier B (40–69)" },
+      C: { max: 39, label: "Tier C (0–39)" },
+    },
+  },
+  intent: {
+    events: [
+      { type: "sales.meeting_booked", points: 20 },
+      { type: "sales.demo_attended", points: 15 },
+      { type: "website.pricing_view", points: 8 },
+      { type: "website.demo_view", points: 6 },
+      { type: "marketing.email_click", points: 5 },
+      { type: "marketing.content_download", points: 4 },
+    ],
+    decayHalfLife: 21,
+    tiers: {
+      Hot: { min: 60, label: "Hot (60+)" },
+      Warm: { min: 25, max: 59, label: "Warm (25–59)" },
+      Cold: { max: 24, label: "Cold (0–24)" },
+    },
+  },
+  combined: {
+    fitWeight: 60,
+    intentWeight: 40,
+  },
+};
+
+// ─── API helpers ──────────────────────────────────────────────────────────────
 
 async function fetchScores(tier: string, search: string): Promise<LeadScoreRow[]> {
   const params = new URLSearchParams();
@@ -94,8 +183,63 @@ async function fetchStats(): Promise<ScoreStats> {
   return res.json();
 }
 
+async function fetchScoringConfig(): Promise<ScoringConfig> {
+  const res = await fetch("/api/engine/scoring-config");
+  if (!res.ok) return DEFAULT_CONFIG;
+  return res.json();
+}
+
+async function saveScoringConfig(config: ScoringConfig): Promise<void> {
+  const res = await fetch("/api/engine/scoring-config", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config),
+  });
+  if (!res.ok) throw new Error("Failed to save config");
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function EngineLeadScoring() {
-  const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState("scores");
+
+  return (
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Lead Scoring</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Real-time engagement scores with time-decay, and the rules that drive them.
+        </p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-2">
+          <TabsTrigger value="scores" className="flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5" />
+            Live Scores
+          </TabsTrigger>
+          <TabsTrigger value="rules" className="flex items-center gap-1.5">
+            <Settings2 className="h-3.5 w-3.5" />
+            Scoring Rules
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="scores">
+          <LiveScoresTab />
+        </TabsContent>
+
+        <TabsContent value="rules">
+          <ScoringRulesTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ─── Live Scores Tab ──────────────────────────────────────────────────────────
+
+function LiveScoresTab() {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [selectedLead, setSelectedLead] = useState<LeadScoreRow | null>(null);
@@ -176,19 +320,10 @@ export default function EngineLeadScoring() {
   const s = stats || defaultStats;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/engine/workflows")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Lead Scoring</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Real-time engagement scores with time-decay across all leads.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" className="ml-auto" onClick={() => { refetch(); qc.invalidateQueries({ queryKey: ["engine-scores-stats"] }); }}>
+    <div className="space-y-6">
+      {/* Refresh */}
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => { refetch(); qc.invalidateQueries({ queryKey: ["engine-scores-stats"] }); }}>
           <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
         </Button>
       </div>
@@ -276,17 +411,11 @@ export default function EngineLeadScoring() {
             <TableRow>
               <TableHead>Lead</TableHead>
               <TableHead>Tier</TableHead>
-              <TableHead
-                className="cursor-pointer select-none"
-                onClick={() => toggleSort("score")}
-              >
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("score")}>
                 Score <SortIcon field="score" />
               </TableHead>
               <TableHead>Last Activity</TableHead>
-              <TableHead
-                className="cursor-pointer select-none"
-                onClick={() => toggleSort("updated_at")}
-              >
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("updated_at")}>
                 Updated <SortIcon field="updated_at" />
               </TableHead>
               <TableHead className="w-20"></TableHead>
@@ -398,6 +527,364 @@ export default function EngineLeadScoring() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Scoring Rules Tab ────────────────────────────────────────────────────────
+
+function ScoringRulesTab() {
+  const qc = useQueryClient();
+
+  const { data: savedConfig } = useQuery({
+    queryKey: ["engine-scoring-config"],
+    queryFn: fetchScoringConfig,
+    staleTime: 60000,
+  });
+
+  const [config, setConfig] = useState<ScoringConfig>(DEFAULT_CONFIG);
+  const [newIndustry, setNewIndustry] = useState({ name: "", points: 25 });
+  const [newRegion, setNewRegion] = useState({ name: "", points: 10 });
+  const [newEvent, setNewEvent] = useState({ type: "", points: 5 });
+  const [fitWeight, setFitWeight] = useState(60);
+  const [decayHalfLife, setDecayHalfLife] = useState(21);
+
+  // Sync local state when remote config loads
+  const effectiveConfig = savedConfig || config;
+
+  const saveMutation = useMutation({
+    mutationFn: () => saveScoringConfig({
+      ...effectiveConfig,
+      combined: { fitWeight, intentWeight: 100 - fitWeight },
+      intent: { ...effectiveConfig.intent, decayHalfLife },
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["engine-scoring-config"] });
+      toast.success("Scoring rules saved successfully");
+    },
+    onError: () => toast.error("Failed to save scoring rules"),
+  });
+
+  const handleReset = () => {
+    setConfig(DEFAULT_CONFIG);
+    setFitWeight(60);
+    setDecayHalfLife(21);
+    toast.info("Reset to default configuration");
+  };
+
+  // Industry helpers
+  const addIndustry = () => {
+    if (!newIndustry.name.trim()) { toast.error("Industry name cannot be empty"); return; }
+    setConfig(c => ({ ...c, fit: { ...c.fit, industries: [...c.fit.industries, newIndustry] } }));
+    setNewIndustry({ name: "", points: 25 });
+  };
+  const removeIndustry = (i: number) =>
+    setConfig(c => ({ ...c, fit: { ...c.fit, industries: c.fit.industries.filter((_, idx) => idx !== i) } }));
+
+  // Region helpers
+  const addRegion = () => {
+    if (!newRegion.name.trim()) { toast.error("Region name cannot be empty"); return; }
+    setConfig(c => ({ ...c, fit: { ...c.fit, regions: [...c.fit.regions, newRegion] } }));
+    setNewRegion({ name: "", points: 10 });
+  };
+  const removeRegion = (i: number) =>
+    setConfig(c => ({ ...c, fit: { ...c.fit, regions: c.fit.regions.filter((_, idx) => idx !== i) } }));
+
+  // Intent event helpers
+  const addEvent = () => {
+    if (!newEvent.type.trim()) { toast.error("Event type cannot be empty"); return; }
+    setConfig(c => ({ ...c, intent: { ...c.intent, events: [...c.intent.events, newEvent] } }));
+    setNewEvent({ type: "", points: 5 });
+  };
+  const removeEvent = (i: number) =>
+    setConfig(c => ({ ...c, intent: { ...c.intent, events: c.intent.events.filter((_, idx) => idx !== i) } }));
+
+  const displayConfig = savedConfig ? { ...savedConfig, fit: { ...savedConfig.fit, industries: config.fit.industries, regions: config.fit.regions }, intent: { ...savedConfig.intent, events: config.intent.events } } : config;
+
+  return (
+    <div className="space-y-6">
+      {/* Actions */}
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={handleReset}>Reset to Defaults</Button>
+        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          <Save className="h-4 w-4 mr-2" />
+          {saveMutation.isPending ? "Saving..." : "Save Rules"}
+        </Button>
+      </div>
+
+      {/* Fit Scoring */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Fit Scoring Rules
+          </CardTitle>
+          <CardDescription>
+            Criteria that determine how well a lead matches your ideal customer profile
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Industries */}
+          <div>
+            <Label className="text-base font-semibold">Target Industries</Label>
+            <p className="text-sm text-muted-foreground mb-3">Industries that match your ICP</p>
+            <div className="space-y-2">
+              {config.fit.industries.map((ind, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{ind.name}</span>
+                    <Badge variant="secondary">+{ind.points} pts</Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => removeIndustry(i)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex gap-2 mt-3">
+                <Input
+                  placeholder="Industry name"
+                  value={newIndustry.name}
+                  onChange={(e) => setNewIndustry({ ...newIndustry, name: e.target.value })}
+                />
+                <Input
+                  type="number"
+                  placeholder="Points"
+                  className="w-24"
+                  value={newIndustry.points}
+                  onChange={(e) => setNewIndustry({ ...newIndustry, points: parseInt(e.target.value) || 0 })}
+                />
+                <Button onClick={addIndustry}><Plus className="h-4 w-4 mr-1" />Add</Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Sizes (read-only display) */}
+          <div>
+            <Label className="text-base font-semibold">Company Size Preferences</Label>
+            <p className="text-sm text-muted-foreground mb-3">Employee count ranges that match your target market</p>
+            <div className="space-y-2">
+              {effectiveConfig.fit.companySizes.map((s, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <span className="font-medium">{s.label}</span>
+                  <Badge variant="secondary">+{s.points} pts</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Seniorities (read-only display) */}
+          <div>
+            <Label className="text-base font-semibold">Decision Maker Seniority</Label>
+            <p className="text-sm text-muted-foreground mb-3">Job seniority levels that indicate decision-making authority</p>
+            <div className="space-y-2">
+              {effectiveConfig.fit.seniorities.map((s, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <span className="font-medium">{s.level}</span>
+                  <Badge variant="secondary">+{s.points} pts</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Regions */}
+          <div>
+            <Label className="text-base font-semibold">Priority Regions</Label>
+            <p className="text-sm text-muted-foreground mb-3">Geographic regions you actively target</p>
+            <div className="space-y-2">
+              {config.fit.regions.map((r, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{r.name}</span>
+                    <Badge variant="secondary">+{r.points} pts</Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => removeRegion(i)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex gap-2 mt-3">
+                <Input
+                  placeholder="Region name"
+                  value={newRegion.name}
+                  onChange={(e) => setNewRegion({ ...newRegion, name: e.target.value })}
+                />
+                <Input
+                  type="number"
+                  placeholder="Points"
+                  className="w-24"
+                  value={newRegion.points}
+                  onChange={(e) => setNewRegion({ ...newRegion, points: parseInt(e.target.value) || 0 })}
+                />
+                <Button onClick={addRegion}><Plus className="h-4 w-4 mr-1" />Add</Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Fit Tier Thresholds */}
+          <div>
+            <Label className="text-base font-semibold">Fit Tier Thresholds</Label>
+            <p className="text-sm text-muted-foreground mb-3">Score ranges that determine fit tier classification</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="p-3 border rounded-lg">
+                <Badge className="mb-2">Tier A</Badge>
+                <p className="text-sm text-muted-foreground">{effectiveConfig.fit.tiers.A.label}</p>
+              </div>
+              <div className="p-3 border rounded-lg">
+                <Badge variant="secondary" className="mb-2">Tier B</Badge>
+                <p className="text-sm text-muted-foreground">{effectiveConfig.fit.tiers.B.label}</p>
+              </div>
+              <div className="p-3 border rounded-lg">
+                <Badge variant="outline" className="mb-2">Tier C</Badge>
+                <p className="text-sm text-muted-foreground">{effectiveConfig.fit.tiers.C.label}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Intent Scoring */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Flame className="h-5 w-5" />
+            Intent Scoring Rules
+          </CardTitle>
+          <CardDescription>
+            Event-based signals that indicate buying intent
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Intent Events */}
+          <div>
+            <Label className="text-base font-semibold">Intent Signals</Label>
+            <p className="text-sm text-muted-foreground mb-3">Actions that indicate interest and buying intent</p>
+            <div className="space-y-2">
+              {config.intent.events.map((ev, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <span className="font-medium text-sm">{ev.type.replace(/_/g, " ").replace(/\./g, " › ")}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">+{ev.points} pts</Badge>
+                    <Button variant="ghost" size="sm" onClick={() => removeEvent(i)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <div className="flex gap-2 mt-3">
+                <Input
+                  placeholder="e.g. website.pricing_view"
+                  value={newEvent.type}
+                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
+                />
+                <Input
+                  type="number"
+                  placeholder="Points"
+                  className="w-24"
+                  value={newEvent.points}
+                  onChange={(e) => setNewEvent({ ...newEvent, points: parseInt(e.target.value) || 0 })}
+                />
+                <Button onClick={addEvent}><Plus className="h-4 w-4 mr-1" />Add</Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Decay Model */}
+          <div>
+            <Label className="text-base font-semibold">Score Decay Model</Label>
+            <p className="text-sm text-muted-foreground mb-3">
+              Intent signals decay over time using exponential half-life
+            </p>
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-medium">Half-life Period</span>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    className="w-20 h-8 text-sm"
+                    value={decayHalfLife}
+                    min={1}
+                    max={365}
+                    onChange={(e) => setDecayHalfLife(parseInt(e.target.value) || 21)}
+                  />
+                  <span className="text-sm text-muted-foreground">days</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Intent scores are reduced by 50% every {decayHalfLife} day{decayHalfLife !== 1 ? "s" : ""} to prioritise recent activity
+              </p>
+            </div>
+          </div>
+
+          {/* Intent Tier Thresholds */}
+          <div>
+            <Label className="text-base font-semibold">Intent Tier Thresholds</Label>
+            <p className="text-sm text-muted-foreground mb-3">Score ranges that determine intent tier classification</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="p-3 border rounded-lg">
+                <Badge variant="destructive" className="mb-2">Hot</Badge>
+                <p className="text-sm text-muted-foreground">{effectiveConfig.intent.tiers.Hot.label}</p>
+              </div>
+              <div className="p-3 border rounded-lg">
+                <Badge className="mb-2">Warm</Badge>
+                <p className="text-sm text-muted-foreground">{effectiveConfig.intent.tiers.Warm.label}</p>
+              </div>
+              <div className="p-3 border rounded-lg">
+                <Badge variant="secondary" className="mb-2">Cold</Badge>
+                <p className="text-sm text-muted-foreground">{effectiveConfig.intent.tiers.Cold.label}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Combined Weighting */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Combined Score Weighting
+          </CardTitle>
+          <CardDescription>
+            How fit and intent scores are combined to calculate the overall lead score
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Fit Weight</p>
+                <p className="text-xs text-muted-foreground">ICP match contribution</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  className="w-20 h-8 text-sm"
+                  value={fitWeight}
+                  min={0}
+                  max={100}
+                  onChange={(e) => setFitWeight(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Intent Weight</p>
+                <p className="text-xs text-muted-foreground">Behavioural signal contribution</p>
+              </div>
+              <Badge variant="outline" className="text-sm px-3">{100 - fitWeight}%</Badge>
+            </div>
+            {/* Visual weight bar */}
+            <div className="h-3 rounded-full overflow-hidden flex">
+              <div className="h-full bg-primary transition-all" style={{ width: `${fitWeight}%` }} />
+              <div className="h-full bg-amber-400 flex-1" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Combined Score = (Fit Score × {fitWeight}%) + (Intent Score × {100 - fitWeight}%)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

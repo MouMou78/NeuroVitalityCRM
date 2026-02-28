@@ -39,7 +39,6 @@ import SequenceTemplates from "./pages/SequenceTemplates";
 import CustomFields from "./pages/CustomFields";
 import ActivityFeed from "./pages/ActivityFeed";
 import EmailGenerator from "./pages/EmailGenerator";
-import ScoringSettings from "./pages/ScoringSettings";
 import Chat from "./pages/Chat";
 import DashboardLayout from "./components/DashboardLayout";
 import FloatingAIChat from "./components/FloatingAIChat";
@@ -362,12 +361,6 @@ function Router() {
             <DealDetail />
           </DashboardLayout>
         )}
-      </Route>
-      
-      <Route path="/scoring-settings">
-        <DashboardLayout>
-          <ScoringSettings />
-        </DashboardLayout>
       </Route>
       
       <Route path="/activity">

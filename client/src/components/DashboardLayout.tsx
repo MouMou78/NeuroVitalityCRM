@@ -70,7 +70,6 @@ const insightsItems = [
 
 const settingsItems = [
   { icon: Zap, label: "Integrations", path: "/integrations" },
-  { icon: Target, label: "Lead Scoring", path: "/scoring-settings" },
   { icon: Users, label: "Team & Users", path: "/admin/users" },
   { icon: Brain, label: "AI Memory", path: "/admin/ai-memory", engineeringOnly: true },
   { icon: BookOpen, label: "Knowledge Vault", path: "/admin/knowledge-vault", engineeringOnly: true },
