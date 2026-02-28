@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor, Brain, BookOpen, Shield } from "lucide-react";
+import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor, Brain, BookOpen, Shield, Video } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -40,6 +40,7 @@ const menuItems = [
   { icon: MessageSquare, label: "Team Chat", path: "/chat" },
   { icon: CalendarDays, label: "Calendar", path: "/calendar" },
   { icon: Calendar, label: "Events", path: "/events" },
+  { icon: Video, label: "Meeting Co-pilot", path: "/meetings" },
   { icon: Sparkles, label: "AI Assistant", path: "/ai-assistant" },
 ];
 

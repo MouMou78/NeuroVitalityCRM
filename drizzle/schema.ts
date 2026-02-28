@@ -1503,3 +1503,71 @@ export const dealIntelligenceAlerts = pgTable("dealIntelligenceAlerts", {
 }));
 export type DealIntelligenceAlert = typeof dealIntelligenceAlerts.$inferSelect;
 export type InsertDealIntelligenceAlert = typeof dealIntelligenceAlerts.$inferInsert;
+
+// ============ MEETING CO-PILOT ============
+// Stores meeting sessions initiated via the AI co-pilot feature
+export const meetingSessions = pgTable("meetingSessions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  dealId: varchar("dealId", { length: 36 }),
+  personId: varchar("personId", { length: 36 }),
+  accountId: varchar("accountId", { length: 36 }),
+  initiatedByUserId: varchar("initiatedByUserId", { length: 36 }).notNull(),
+  title: text("title"),
+  meetingUrl: text("meetingUrl").notNull(),
+  platform: varchar("platform", { length: 50 }).default("google_meet").notNull(),
+  recallBotId: text("recallBotId"),
+  status: varchar("status", { length: 50 }).default("pending").notNull(),
+  startedAt: timestamp("startedAt"),
+  endedAt: timestamp("endedAt"),
+  durationSeconds: integer("durationSeconds"),
+  summaryMarkdown: text("summaryMarkdown"),
+  actionItems: json("actionItems").$type<string[]>(),
+  dealStageRecommendation: text("dealStageRecommendation"),
+  sentimentScore: real("sentimentScore"),
+  talkRatio: json("talkRatio").$type<Record<string, number>>(),
+  keyTopics: json("keyTopics").$type<string[]>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  msSessionTenantIdx: index("ms_session_tenant_idx").on(table.tenantId),
+  msSessionDealIdx: index("ms_session_deal_idx").on(table.dealId),
+}));
+export type MeetingSession = typeof meetingSessions.$inferSelect;
+export type InsertMeetingSession = typeof meetingSessions.$inferInsert;
+
+// Stores real-time transcript utterances for each meeting session
+export const meetingTranscripts = pgTable("meetingTranscripts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  sessionId: varchar("sessionId", { length: 36 }).notNull(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  speaker: text("speaker"),
+  speakerType: varchar("speakerType", { length: 20 }).default("unknown"),
+  text: text("text").notNull(),
+  confidence: real("confidence"),
+  startMs: integer("startMs"),
+  endMs: integer("endMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  mtTranscriptSessionIdx: index("mt_transcript_session_idx").on(table.sessionId),
+}));
+export type MeetingTranscript = typeof meetingTranscripts.$inferSelect;
+export type InsertMeetingTranscript = typeof meetingTranscripts.$inferInsert;
+
+// Stores real-time AI co-pilot suggestions generated during a meeting
+export const meetingCopilotSuggestions = pgTable("meetingCopilotSuggestions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  sessionId: varchar("sessionId", { length: 36 }).notNull(),
+  tenantId: varchar("tenantId", { length: 36 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  triggerText: text("triggerText"),
+  confidence: real("confidence"),
+  dismissed: boolean("dismissed").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  mcsSuggestionSessionIdx: index("mcs_suggestion_session_idx").on(table.sessionId),
+}));
+export type MeetingCopilotSuggestion = typeof meetingCopilotSuggestions.$inferSelect;
+export type InsertMeetingCopilotSuggestion = typeof meetingCopilotSuggestions.$inferInsert;

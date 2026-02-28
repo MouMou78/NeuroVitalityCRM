@@ -54,6 +54,7 @@ import UserManagement from "./pages/UserManagement";
 import AIMemoryManager from "./pages/AIMemoryManager";
 import KnowledgeVault from "./pages/KnowledgeVault";
 import DealIntelligence from "./pages/DealIntelligence";
+import MeetingCopilot from "./pages/MeetingCopilot";
 import Accounts from "./pages/Accounts";
 import AccountMerge from "./pages/AccountMerge";
 import AccountImport from "./pages/AccountImport";
@@ -117,6 +118,11 @@ function Router() {
       <Route path="/admin/deal-intelligence">
         <DashboardLayout>
           <DealIntelligence />
+        </DashboardLayout>
+      </Route>
+      <Route path="/meetings">
+        <DashboardLayout>
+          <MeetingCopilot />
         </DashboardLayout>
       </Route>
       

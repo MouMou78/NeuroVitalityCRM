@@ -82,6 +82,9 @@ async function startServer() {
   // Webhook endpoints
   const { handleAmplemarketWebhook } = await import("../webhooks/amplemarket");
   app.post("/api/webhooks/amplemarket", handleAmplemarketWebhook);
+  // Meeting Co-pilot endpoints
+  const meetingRouter = (await import("../meetingRouter")).default;
+  app.use("/api", meetingRouter);
   // tRPC API
   app.use(
     "/api/trpc",
