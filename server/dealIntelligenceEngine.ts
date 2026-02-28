@@ -17,7 +17,7 @@
  * and on individual deal pages.
  */
 
-import { db } from "./db";
+import { getDb } from "./db";
 import { deals, dealStages, dealIntelligenceAlerts, aiMemory } from "../drizzle/schema";
 import { eq, and, isNull, not, lt, gt, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -236,6 +236,8 @@ If no meaningful AI insights beyond the rules, return an empty array [].`;
 // ─────────────────────────────────────────────
 
 async function getExistingAlertKeys(tenantId: string): Promise<Set<string>> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const existing = await db.select({
     dealId: dealIntelligenceAlerts.dealId,
     alertType: dealIntelligenceAlerts.alertType,
@@ -258,6 +260,8 @@ export async function runDealIntelligence(tenantId: string): Promise<{
   alertsCreated: number;
   alertsFound: number;
 }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const now = new Date();
 
   // 1. Load all open deals
@@ -395,6 +399,8 @@ export async function getDealAlerts(tenantId: string, filters?: {
   dealId?: string;
   severity?: string;
 }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const allAlerts = await db.select()
     .from(dealIntelligenceAlerts)
     .where(and(
@@ -422,6 +428,8 @@ export async function getDealAlerts(tenantId: string, filters?: {
 }
 
 export async function markAlertRead(alertId: string, tenantId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   await db.update(dealIntelligenceAlerts)
     .set({ isRead: true, updatedAt: new Date() })
     .where(and(
@@ -431,6 +439,8 @@ export async function markAlertRead(alertId: string, tenantId: string): Promise<
 }
 
 export async function dismissAlert(alertId: string, tenantId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   await db.update(dealIntelligenceAlerts)
     .set({ isDismissed: true, updatedAt: new Date() })
     .where(and(
@@ -440,6 +450,8 @@ export async function dismissAlert(alertId: string, tenantId: string): Promise<v
 }
 
 export async function markAlertActioned(alertId: string, tenantId: string, note?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   await db.update(dealIntelligenceAlerts)
     .set({ actionTaken: true, actionNote: note || null, isRead: true, updatedAt: new Date() })
     .where(and(
@@ -449,6 +461,8 @@ export async function markAlertActioned(alertId: string, tenantId: string, note?
 }
 
 export async function getAlertSummaryForAI(tenantId: string): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   try {
     const alerts = await getDealAlerts(tenantId, { unreadOnly: true });
     if (alerts.length === 0) return "";

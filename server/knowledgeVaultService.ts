@@ -11,7 +11,7 @@
  * 3. Key memories extracted and injected into aiMemory
  */
 
-import { db } from "./db";
+import { getDb } from "./db";
 import { knowledgeVault, aiMemory } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -230,8 +230,9 @@ async function finaliseIngestion(params: {
   category?: string;
   linkedEntityName?: string;
 }): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const { vaultId, tenantId, userId, title, extractedContent, category, linkedEntityName } = params;
-
   if (!extractedContent || extractedContent.length < 10) {
     await db.update(knowledgeVault)
       .set({ status: "failed", processingError: "No content could be extracted.", updatedAt: new Date() })
@@ -285,6 +286,8 @@ async function finaliseIngestion(params: {
 // ─────────────────────────────────────────────
 
 export async function ingestFile(options: IngestFileOptions): Promise<{ vaultId: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const { tenantId, userId, title, category, tags, linkedEntityType, linkedEntityId, linkedEntityName,
     fileBuffer, fileName, mimeType, fileSize } = options;
 
@@ -353,6 +356,8 @@ export async function ingestFile(options: IngestFileOptions): Promise<{ vaultId:
 }
 
 export async function ingestUrl(options: IngestUrlOptions): Promise<{ vaultId: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const { tenantId, userId, url, category, tags, linkedEntityType, linkedEntityId, linkedEntityName } = options;
 
   const vaultId = randomUUID();
@@ -404,6 +409,8 @@ export async function ingestUrl(options: IngestUrlOptions): Promise<{ vaultId: s
 }
 
 export async function ingestText(options: IngestTextOptions): Promise<{ vaultId: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const { tenantId, userId, title, text, category, tags, linkedEntityType, linkedEntityId, linkedEntityName } = options;
 
   const vaultId = randomUUID();
@@ -436,6 +443,8 @@ export async function ingestText(options: IngestTextOptions): Promise<{ vaultId:
 }
 
 export async function deleteVaultEntry(vaultId: string, tenantId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   // Remove associated memories
   await db.delete(aiMemory)
     .where(and(eq(aiMemory.entityType, "knowledge_vault"), eq(aiMemory.entityId, vaultId)));
@@ -450,6 +459,8 @@ export async function getVaultEntries(tenantId: string, filters?: {
   status?: string;
   search?: string;
 }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const entries = await db.select().from(knowledgeVault)
     .where(eq(knowledgeVault.tenantId, tenantId))
     .orderBy(knowledgeVault.createdAt);
@@ -501,6 +512,8 @@ function getSourceType(mimeType: string, fileName: string): string {
 // ─────────────────────────────────────────────
 
 export async function getVaultContextForAI(tenantId: string): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   try {
     const entries = await db.select({
       title: knowledgeVault.title,
