@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
 import { Streamdown } from "streamdown";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface FloatingAIChatProps {
   contextData?: {
@@ -44,6 +45,7 @@ const getQuickActionsForPage = (page: string) => {
 };
 
 export default function FloatingAIChat({ contextData }: FloatingAIChatProps) {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
@@ -200,6 +202,9 @@ export default function FloatingAIChat({ contextData }: FloatingAIChatProps) {
   }, [isDragging, dragOffset]);
 
   const quickActions = getQuickActionsForPage(location);
+
+  // Do not render AI chat for unauthenticated users — prevents data exposure
+  if (authLoading || !isAuthenticated) return null;
 
   return (
     <>
