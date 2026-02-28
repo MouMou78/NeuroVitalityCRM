@@ -172,6 +172,16 @@ function DashboardLayoutContent({
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
+  // React-controlled accordion state for Insights and Settings
+  const insightsActive = insightsItems.some(i => location === i.path);
+  const settingsActive = settingsItems.some(i => location === i.path);
+  const [insightsOpen, setInsightsOpen] = useState(() => insightsItems.some(i => location === i.path));
+  const [settingsOpen, setSettingsOpen] = useState(() => settingsItems.some(i => location === i.path));
+
+  // Auto-expand accordion when navigating into a sub-route
+  useEffect(() => { if (insightsActive) setInsightsOpen(true); }, [location]);
+  useEffect(() => { if (settingsActive) setSettingsOpen(true); }, [location]);
+
   // Global search keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -274,12 +284,16 @@ function DashboardLayoutContent({
 
               {/* Insights Submenu */}
               <SidebarMenuItem>
-                <details className="group/insights">
-                  <summary className="flex items-center gap-2 h-10 px-2 rounded-md hover:bg-accent transition-colors cursor-pointer list-none">
-                    <LineChart className="h-4 w-4" />
-                    <span className="flex-1 font-normal">Insights</span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-open/insights:rotate-180" />
-                  </summary>
+                <SidebarMenuButton
+                  onClick={() => setInsightsOpen(o => !o)}
+                  tooltip="Insights"
+                  className="h-10 font-normal"
+                >
+                  <LineChart className="h-4 w-4" />
+                  <span className="flex-1">Insights</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${insightsOpen ? "rotate-180" : ""}`} />
+                </SidebarMenuButton>
+                {insightsOpen && (
                   <SidebarMenuSub className="ml-4 mt-1">
                     {insightsItems.map(item => {
                       const isActive = location === item.path;
@@ -287,10 +301,7 @@ function DashboardLayoutContent({
                         <SidebarMenuSubItem key={item.path}>
                           <SidebarMenuSubButton
                             isActive={isActive}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setLocation(item.path);
-                            }}
+                            onClick={() => setLocation(item.path)}
                             className="h-9"
                           >
                             <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
@@ -300,44 +311,45 @@ function DashboardLayoutContent({
                       );
                     })}
                   </SidebarMenuSub>
-                </details>
+                )}
               </SidebarMenuItem>
               {/* Amplemarket removed per user request */}
 
               {/* Settings Submenu */}
               <SidebarMenuItem>
-                <details className="group/settings">
-                  <summary className="flex items-center gap-2 h-10 px-2 rounded-md hover:bg-accent transition-colors cursor-pointer list-none">
-                    <Settings className="h-4 w-4" />
-                    <span className="flex-1 font-normal">Settings</span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-open/settings:rotate-180" />
-                  </summary>
+                <SidebarMenuButton
+                  onClick={() => setSettingsOpen(o => !o)}
+                  tooltip="Settings"
+                  className="h-10 font-normal"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="flex-1">Settings</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${settingsOpen ? "rotate-180" : ""}`} />
+                </SidebarMenuButton>
+                {settingsOpen && (
                   <SidebarMenuSub className="ml-4 mt-1">
                     {settingsItems
                       .filter(item => !(item as any).engineeringOnly || user?.role === 'engineering')
                       .map(item => {
-                      const isActive = location === item.path;
-                      return (
-                        <SidebarMenuSubItem key={item.path}>
-                          <SidebarMenuSubButton
-                            isActive={isActive}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setLocation(item.path);
-                            }}
-                            className="h-9"
-                          >
-                            <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
-                            <span>{item.label}</span>
-                            {(item as any).engineeringOnly && (
-                              <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">ENG</span>
-                            )}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      );
-                    })}
+                        const isActive = location === item.path;
+                        return (
+                          <SidebarMenuSubItem key={item.path}>
+                            <SidebarMenuSubButton
+                              isActive={isActive}
+                              onClick={() => setLocation(item.path)}
+                              className="h-9"
+                            >
+                              <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                              <span>{item.label}</span>
+                              {(item as any).engineeringOnly && (
+                                <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">ENG</span>
+                              )}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
                   </SidebarMenuSub>
-                </details>
+                )}
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
