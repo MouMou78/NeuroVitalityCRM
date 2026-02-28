@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp, varchar, json, index, unique, boolean, decimal, serial } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, varchar, json, index, unique, boolean, decimal, serial, real } from "drizzle-orm/pg-core";
 
 /**
  * Multi-tenant CRM schema for KompassCRM
