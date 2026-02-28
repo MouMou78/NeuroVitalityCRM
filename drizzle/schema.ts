@@ -1575,7 +1575,7 @@ export type InsertMeetingCopilotSuggestion = typeof meetingCopilotSuggestions.$i
 // ─────────────────────────────────────────────────────────────────────────────
 // In-app notifications
 // ─────────────────────────────────────────────────────────────────────────────
-export const notifications = pgTable("notifications", {
+export const dealNotifications = pgTable("dealNotifications", {
   id: varchar("id", { length: 36 }).primaryKey(),
   tenantId: varchar("tenantId", { length: 36 }).notNull(),
   userId: varchar("userId", { length: 36 }).notNull(),
@@ -1594,5 +1594,5 @@ export const notifications = pgTable("notifications", {
   notifTenantUserIdx: index("notif_tenant_user_idx").on(table.tenantId, table.userId),
   notifUnreadIdx: index("notif_unread_idx").on(table.tenantId, table.userId, table.read),
 }));
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
+export type DealNotification = typeof dealNotifications.$inferSelect;
+export type InsertDealNotification = typeof dealNotifications.$inferInsert;

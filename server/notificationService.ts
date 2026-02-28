@@ -5,8 +5,8 @@
 
 import { randomUUID } from "crypto";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { getDb } from "./_core/db";
-import { notifications, users } from "../drizzle/schema";
+import { getDb } from "./db";
+import { dealNotifications, users } from "../drizzle/schema";
 import { sendDealAlertEmail } from "./email";
 
 export interface CreateNotificationOptions {
@@ -31,7 +31,7 @@ export async function createNotification(opts: CreateNotificationOptions): Promi
 
   const id = randomUUID();
 
-  await db.insert(notifications).values({
+  await db.insert(dealNotifications).values({
     id,
     tenantId: opts.tenantId,
     userId: opts.userId,
@@ -72,18 +72,18 @@ export async function getNotifications(tenantId: string, userId: string, unreadO
   if (!db) throw new Error("Database not available");
 
   const conditions = [
-    eq(notifications.tenantId, tenantId),
-    eq(notifications.userId, userId),
+    eq(dealNotifications.tenantId, tenantId),
+    eq(dealNotifications.userId, userId),
   ];
 
   if (unreadOnly) {
-    conditions.push(eq(notifications.read, false));
+    conditions.push(eq(dealNotifications.read, false));
   }
 
   return db.select()
-    .from(notifications)
+    .from(dealNotifications)
     .where(and(...conditions))
-    .orderBy(desc(notifications.createdAt))
+    .orderBy(desc(dealNotifications.createdAt))
     .limit(50);
 }
 
@@ -92,11 +92,11 @@ export async function getUnreadCount(tenantId: string, userId: string): Promise<
   if (!db) return 0;
 
   const result = await db.select({ count: sql<number>`count(*)` })
-    .from(notifications)
+    .from(dealNotifications)
     .where(and(
-      eq(notifications.tenantId, tenantId),
-      eq(notifications.userId, userId),
-      eq(notifications.read, false),
+      eq(dealNotifications.tenantId, tenantId),
+      eq(dealNotifications.userId, userId),
+      eq(dealNotifications.read, false),
     ));
 
   return Number(result[0]?.count || 0);
@@ -107,18 +107,18 @@ export async function markAsRead(tenantId: string, userId: string, notificationI
   if (!db) throw new Error("Database not available");
 
   const conditions = [
-    eq(notifications.tenantId, tenantId),
-    eq(notifications.userId, userId),
+    eq(dealNotifications.tenantId, tenantId),
+    eq(dealNotifications.userId, userId),
   ];
 
   if (notificationId) {
-    conditions.push(eq(notifications.id, notificationId));
+    conditions.push(eq(dealNotifications.id, notificationId));
   } else {
     // Mark all as read
-    conditions.push(eq(notifications.read, false));
+    conditions.push(eq(dealNotifications.read, false));
   }
 
-  await db.update(notifications)
+  await db.update(dealNotifications)
     .set({ read: true, readAt: new Date() })
     .where(and(...conditions));
 }
@@ -127,11 +127,11 @@ export async function deleteNotification(tenantId: string, userId: string, notif
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(notifications)
+  await db.delete(dealNotifications)
     .where(and(
-      eq(notifications.id, notificationId),
-      eq(notifications.tenantId, tenantId),
-      eq(notifications.userId, userId),
+      eq(dealNotifications.id, notificationId),
+      eq(dealNotifications.tenantId, tenantId),
+      eq(dealNotifications.userId, userId),
     ));
 }
 

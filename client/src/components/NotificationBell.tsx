@@ -262,7 +262,7 @@ export function NotificationBell() {
           <div className="border-t px-4 py-2.5 flex items-center justify-between">
             <button
               className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-              onClick={() => { setLocation("/settings/notifications"); setOpen(false); }}
+              onClick={() => { setLocation("/admin/notification-preferences"); setOpen(false); }}
             >
               Notification preferences
             </button>

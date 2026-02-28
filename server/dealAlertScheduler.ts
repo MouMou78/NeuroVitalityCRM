@@ -6,7 +6,7 @@
  * sends email alerts based on user preferences.
  */
 
-import { getDb } from "./_core/db";
+import { getDb } from "./db";
 import { tenants, users, dealIntelligenceAlerts } from "../drizzle/schema";
 import { eq, and, gt, isNull } from "drizzle-orm";
 import { runDealIntelligence } from "./dealIntelligenceEngine";

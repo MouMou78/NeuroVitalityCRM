@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface Prefs {
   dealAlertEmailEnabled: boolean;
@@ -25,7 +25,6 @@ export default function NotificationPreferences() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [triggering, setTriggering] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetch("/api/notifications/preferences", { credentials: "include" })
@@ -47,12 +46,12 @@ export default function NotificationPreferences() {
         body: JSON.stringify(prefs),
       });
       if (res.ok) {
-        toast({ title: "Preferences saved", description: "Your notification settings have been updated." });
+        toast.success("Preferences saved — your notification settings have been updated.");
       } else {
         throw new Error("Failed to save");
       }
     } catch {
-      toast({ title: "Save failed", description: "Could not save preferences. Please try again.", variant: "destructive" });
+      toast.error("Could not save preferences. Please try again.");
     }
     setSaving(false);
   }
@@ -66,15 +65,12 @@ export default function NotificationPreferences() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast({
-          title: "Analysis complete",
-          description: `${data.alertsCreated} new alert(s) generated, ${data.notificationsCreated} notification(s) created.`,
-        });
+        toast.success(`Analysis complete — ${data.alertsCreated ?? 0} alert(s) generated, ${data.notificationsCreated ?? 0} notification(s) created.`);
       } else {
         throw new Error("Failed");
       }
     } catch {
-      toast({ title: "Analysis failed", description: "Could not run deal intelligence analysis.", variant: "destructive" });
+      toast.error("Could not run deal intelligence analysis.");
     }
     setTriggering(false);
   }

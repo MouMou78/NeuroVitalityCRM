@@ -5,7 +5,7 @@
 
 import { Router } from "express";
 import { eq } from "drizzle-orm";
-import { getDb } from "./_core/db";
+import { getDb } from "./db";
 import { users } from "../drizzle/schema";
 import {
   getNotifications,
