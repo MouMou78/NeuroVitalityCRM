@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor, Brain, BookOpen, Shield, Video } from "lucide-react";
+import { Home, LogOut, PanelLeft, Users, Calendar, CalendarDays, Settings, BarChart3, TrendingUp, Sparkles, Building2, UserCircle, Zap, Mail, Sliders, Activity, Wand2, ChevronDown, Target, Send, LineChart, MessageSquare, Bell, Workflow, History, Store, Moon, Sun, Monitor, Brain, BookOpen, Shield, Video, Cpu, ListChecks, Flame, Ban, ScrollText } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -52,6 +52,14 @@ const engagementItems: typeof menuItems = [
   // { icon: Workflow, label: "Workflow Automation", path: "/workflow-automation" },
   // { icon: Store, label: "Templates Marketplace", path: "/templates-marketplace" },
   // { icon: History, label: "Execution History", path: "/rule-execution-history" },
+];
+
+const engineItems = [
+  { icon: Workflow, label: "Workflows", path: "/engine/workflows" },
+  { icon: ListChecks, label: "Enrollments", path: "/engine/enrollments" },
+  { icon: Flame, label: "Lead Scoring", path: "/engine/scoring" },
+  { icon: Ban, label: "Suppression", path: "/engine/suppression" },
+  { icon: ScrollText, label: "Event Log", path: "/engine/events" },
 ];
 
 const insightsItems = [
@@ -174,15 +182,18 @@ function DashboardLayoutContent({
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
-  // React-controlled accordion state for Insights and Settings
+  // React-controlled accordion state for Insights, Settings, and Engine
   const insightsActive = insightsItems.some(i => location === i.path);
   const settingsActive = settingsItems.some(i => location === i.path);
+  const engineActive = engineItems.some(i => location.startsWith(i.path));
   const [insightsOpen, setInsightsOpen] = useState(() => insightsItems.some(i => location === i.path));
   const [settingsOpen, setSettingsOpen] = useState(() => settingsItems.some(i => location === i.path));
+  const [engineOpen, setEngineOpen] = useState(() => engineItems.some(i => location.startsWith(i.path)));
 
   // Auto-expand accordion when navigating into a sub-route
   useEffect(() => { if (insightsActive) setInsightsOpen(true); }, [location]);
   useEffect(() => { if (settingsActive) setSettingsOpen(true); }, [location]);
+  useEffect(() => { if (engineActive) setEngineOpen(true); }, [location]);
 
   // Global search keyboard shortcut
   useEffect(() => {
@@ -316,6 +327,38 @@ function DashboardLayoutContent({
                 )}
               </SidebarMenuItem>
               {/* Amplemarket removed per user request */}
+
+              {/* Engine Submenu */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setEngineOpen(o => !o)}
+                  tooltip="Engine"
+                  className="h-10 font-normal"
+                >
+                  <Cpu className="h-4 w-4" />
+                  <span className="flex-1">Engine</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${engineOpen ? "rotate-180" : ""}`} />
+                </SidebarMenuButton>
+                {engineOpen && (
+                  <SidebarMenuSub className="ml-4 mt-1">
+                    {engineItems.map(item => {
+                      const isActive = location.startsWith(item.path);
+                      return (
+                        <SidebarMenuSubItem key={item.path}>
+                          <SidebarMenuSubButton
+                            isActive={isActive}
+                            onClick={() => { setLocation(item.path); setOpenMobile(false); }}
+                            className="h-9"
+                          >
+                            <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                            <span>{item.label}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
 
               {/* Settings Submenu */}
               <SidebarMenuItem>

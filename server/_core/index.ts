@@ -88,6 +88,9 @@ async function startServer() {
   // Notification endpoints
   const notificationRouter = (await import("../notificationRouter")).default;
   app.use("/api", notificationRouter);
+  // Sequencing Engine REST API
+  const { engineRouter } = await import("../engine/engineRouter");
+  app.use("/api/engine", engineRouter);
   // tRPC API
   app.use(
     "/api/trpc",

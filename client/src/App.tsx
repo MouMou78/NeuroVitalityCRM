@@ -56,6 +56,12 @@ import KnowledgeVault from "./pages/KnowledgeVault";
 import DealIntelligence from "./pages/DealIntelligence";
 import MeetingCopilot from "./pages/MeetingCopilot";
 import NotificationPreferences from "./pages/NotificationPreferences";
+import WorkflowsList from "./pages/WorkflowsList";
+import WorkflowBuilder from "./pages/WorkflowBuilder";
+import EnrollmentManager from "./pages/EnrollmentManager";
+import EngineLeadScoring from "./pages/EngineLeadScoring";
+import SuppressionManager from "./pages/SuppressionManager";
+import EngineEventLog from "./pages/EngineEventLog";
 import Accounts from "./pages/Accounts";
 import AccountMerge from "./pages/AccountMerge";
 import AccountImport from "./pages/AccountImport";
@@ -410,6 +416,45 @@ function Router() {
         </DashboardLayout>
       </Route>
       
+      {/* Engine routes */}
+      <Route path="/engine/workflows">
+        <DashboardLayout>
+          <WorkflowsList />
+        </DashboardLayout>
+      </Route>
+      <Route path="/engine/workflows/new">
+        <DashboardLayout>
+          <WorkflowBuilder />
+        </DashboardLayout>
+      </Route>
+      <Route path="/engine/workflows/:id/edit">
+        {(params) => (
+          <DashboardLayout>
+            <WorkflowBuilder workflowId={params.id} />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/engine/enrollments">
+        <DashboardLayout>
+          <EnrollmentManager />
+        </DashboardLayout>
+      </Route>
+      <Route path="/engine/scoring">
+        <DashboardLayout>
+          <EngineLeadScoring />
+        </DashboardLayout>
+      </Route>
+      <Route path="/engine/suppression">
+        <DashboardLayout>
+          <SuppressionManager />
+        </DashboardLayout>
+      </Route>
+      <Route path="/engine/events">
+        <DashboardLayout>
+          <EngineEventLog />
+        </DashboardLayout>
+      </Route>
+
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
