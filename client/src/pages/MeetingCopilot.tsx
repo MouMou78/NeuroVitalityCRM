@@ -262,6 +262,10 @@ export default function MeetingCopilot() {
   const [preBrief, setPreBrief] = useState<{ calEvent: any; brief: PreBrief } | null>(null);
   const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(false);
+  const [competitorIntel, setCompetitorIntel] = useState<any[]>([]);
+  const [loadingCompetitor, setLoadingCompetitor] = useState(false);
+  const [creatingTask, setCreatingTask] = useState<string | null>(null);
+  const [healthScores, setHealthScores] = useState<Record<string, number>>({});
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -321,6 +325,72 @@ export default function MeetingCopilot() {
       loadUpcoming();
     }
   }, [activeTab]);
+
+  // ─── Load competitor intelligence ─────────────────────────────────────────
+  const loadCompetitorIntel = useCallback(async (sessionId: string, competitor: string) => {
+    setLoadingCompetitor(true);
+    try {
+      const res = await fetch(`/api/meetings/${sessionId}/competitor-intel?competitor=${encodeURIComponent(competitor)}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCompetitorIntel(data.intel ?? []);
+      }
+    } catch {}
+    setLoadingCompetitor(false);
+  }, []);
+
+  // ─── Create task from action item ────────────────────────────────────────
+  const createTaskFromActionItem = useCallback(async (sessionId: string, item: string, dealId?: string | null) => {
+    setCreatingTask(item);
+    try {
+      const res = await fetch(`/api/meetings/${sessionId}/create-task`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ actionItem: item, dealId }),
+      });
+      if (res.ok) {
+        toast.success("Task created successfully");
+      } else {
+        toast.error("Failed to create task");
+      }
+    } catch {
+      toast.error("Failed to create task");
+    }
+    setCreatingTask(null);
+  }, []);
+
+  // ─── Compute health score ─────────────────────────────────────────────────
+  const computeHealthScore = useCallback((session: MeetingSession): number => {
+    let score = 0;
+    // Sentiment (40%)
+    if (session.sentimentScore !== null) {
+      score += session.sentimentScore * 40;
+    } else {
+      score += 20; // neutral default
+    }
+    // Talk ratio balance (30%) — ideal is 40-60% for the rep
+    if (session.talkRatio && Object.keys(session.talkRatio).length >= 2) {
+      const values = Object.values(session.talkRatio);
+      const total = values.reduce((a, b) => a + b, 0);
+      if (total > 0) {
+        const repRatio = values[0] / total;
+        const balance = 1 - Math.abs(repRatio - 0.5) * 2;
+        score += balance * 30;
+      } else {
+        score += 15;
+      }
+    } else {
+      score += 15;
+    }
+    // Action items agreed (30%)
+    const actionCount = session.actionItems?.length ?? 0;
+    const actionScore = Math.min(actionCount / 3, 1) * 30;
+    score += actionScore;
+    return Math.round(score);
+  }, []);
 
   // ─── SSE stream for active session ───────────────────────────────────────
   useEffect(() => {
@@ -807,11 +877,25 @@ export default function MeetingCopilot() {
                   {activeSession.actionItems && activeSession.actionItems.length > 0 && (
                     <div>
                       <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Action Items</h4>
-                      <ul className="space-y-1">
+                      <ul className="space-y-1.5">
                         {activeSession.actionItems.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 group">
                             <CheckCircle className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                            {item}
+                            <span className="flex-1">{item}</span>
+                            <button
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-violet-600 hover:text-violet-800 flex items-center gap-0.5 flex-shrink-0 bg-violet-50 hover:bg-violet-100 px-1.5 py-0.5 rounded"
+                              onClick={() => createTaskFromActionItem(activeSession.id, item, activeSession.dealId)}
+                              disabled={creatingTask === item}
+                            >
+                              {creatingTask === item ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-3 h-3" />
+                                  Create Task
+                                </>
+                              )}
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -935,6 +1019,18 @@ export default function MeetingCopilot() {
                                     Deal
                                   </span>
                                 )}
+                                {session.status === "done" && (() => {
+                                  const hs = computeHealthScore(session);
+                                  return (
+                                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
+                                      hs >= 70 ? "bg-green-100 text-green-700" :
+                                      hs >= 45 ? "bg-yellow-100 text-yellow-700" :
+                                      "bg-red-100 text-red-700"
+                                    }`}>
+                                      {hs}/100
+                                    </span>
+                                  );
+                                })()}
                                 <span className="text-xs text-gray-400">
                                   {new Date(session.createdAt).toLocaleDateString()}
                                 </span>
@@ -1070,11 +1166,25 @@ export default function MeetingCopilot() {
                               {sessionDetail.session.actionItems && sessionDetail.session.actionItems.length > 0 && (
                                 <div>
                                   <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Action Items</h4>
-                                  <ul className="space-y-1">
+                                  <ul className="space-y-1.5">
                                     {sessionDetail.session.actionItems.map((item, i) => (
-                                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700 group">
                                         <CheckCircle className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                                        {item}
+                                        <span className="flex-1">{item}</span>
+                                        <button
+                                          className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-violet-600 hover:text-violet-800 flex items-center gap-0.5 flex-shrink-0 bg-violet-50 hover:bg-violet-100 px-1.5 py-0.5 rounded"
+                                          onClick={() => createTaskFromActionItem(session.id, item, sessionDetail.linkedDeal?.id)}
+                                          disabled={creatingTask === item}
+                                        >
+                                          {creatingTask === item ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                          ) : (
+                                            <>
+                                              <CheckCircle className="w-3 h-3" />
+                                              Create Task
+                                            </>
+                                          )}
+                                        </button>
                                       </li>
                                     ))}
                                   </ul>
@@ -1084,6 +1194,63 @@ export default function MeetingCopilot() {
                               {/* Talk Ratio */}
                               {sessionDetail.session.talkRatio && Object.keys(sessionDetail.session.talkRatio).length > 0 && (
                                 <TalkRatioBar talkRatio={sessionDetail.session.talkRatio} />
+                              )}
+
+                              {/* Health Score */}
+                              {sessionDetail.session.status === "done" && (() => {
+                                const hs = computeHealthScore(sessionDetail.session);
+                                return (
+                                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                    <div className="text-sm font-semibold text-gray-700">Meeting Health Score</div>
+                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className={`h-2 rounded-full transition-all ${
+                                          hs >= 70 ? "bg-green-500" : hs >= 45 ? "bg-yellow-500" : "bg-red-500"
+                                        }`}
+                                        style={{ width: `${hs}%` }}
+                                      />
+                                    </div>
+                                    <span className={`text-sm font-bold ${
+                                      hs >= 70 ? "text-green-600" : hs >= 45 ? "text-yellow-600" : "text-red-600"
+                                    }`}>{hs}/100</span>
+                                    <span className="text-xs text-gray-500">
+                                      {hs >= 70 ? "Strong" : hs >= 45 ? "Average" : "Needs attention"}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Competitor Intelligence */}
+                              {sessionDetail.suggestions.some(s => s.type === "competitor_mention") && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                  <h4 className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                    <Target className="w-3.5 h-3.5" />
+                                    Competitor Intelligence
+                                  </h4>
+                                  {sessionDetail.suggestions
+                                    .filter(s => s.type === "competitor_mention")
+                                    .map((s, i) => (
+                                      <div key={i} className="mb-2">
+                                        <p className="text-xs font-medium text-red-800">{s.title}</p>
+                                        <p className="text-xs text-red-700 mt-0.5">{s.body}</p>
+                                        {s.triggerText && (
+                                          <p className="text-xs text-red-500 mt-1 italic">Triggered by: "{s.triggerText}"</p>
+                                        )}
+                                      </div>
+                                    ))
+                                  }
+                                  {competitorIntel.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-red-200">
+                                      <p className="text-xs font-semibold text-red-700 mb-1">From Knowledge Vault:</p>
+                                      {competitorIntel.slice(0, 2).map((item: any, i: number) => (
+                                        <div key={i} className="text-xs text-red-700 mb-1">
+                                          <span className="font-medium">{item.title}: </span>
+                                          {item.summary}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               )}
 
                               {/* Key Topics + Sentiment */}

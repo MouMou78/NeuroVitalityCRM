@@ -25,8 +25,10 @@ import {
   calendarEvents,
   people,
   accounts,
+  knowledgeVault,
+  tasks as tasksTable,
 } from "../drizzle/schema";
-import { eq, desc, and, gte, lte } from "drizzle-orm";
+import { eq, desc, and, gte, lte, like, or } from "drizzle-orm";
 import {
   createMeetingSession,
   launchRecallBot,
@@ -527,6 +529,200 @@ meetingRouter.post("/meetings/:id/dismiss-suggestion", async (req: Request, res:
     );
 
   return res.json({ success: true });
+});
+
+// ─── GET /api/meetings/deal/:dealId ─────────────────────────────────────────
+// Returns all meeting sessions linked to a specific deal (for DealDetail page)
+meetingRouter.get("/meetings/deal/:dealId", async (req: Request, res: Response) => {
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = await getDb();
+  if (!db) return res.json([]);
+
+  const sessions = await db
+    .select()
+    .from(meetingSessions)
+    .where(and(eq(meetingSessions.dealId, req.params.dealId), eq(meetingSessions.tenantId, user.tenantId)))
+    .orderBy(desc(meetingSessions.createdAt))
+    .limit(10);
+
+  return res.json(sessions);
+});
+
+// ─── GET /api/meetings/:id/competitor-intel ──────────────────────────────────
+// Queries the Knowledge Vault for competitor intelligence cards
+meetingRouter.get("/meetings/:id/competitor-intel", async (req: Request, res: Response) => {
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = await getDb();
+  if (!db) return res.json([]);
+
+  // Get the session to find recent transcript for competitor mentions
+  const sessions = await db
+    .select()
+    .from(meetingSessions)
+    .where(and(eq(meetingSessions.id, req.params.id), eq(meetingSessions.tenantId, user.tenantId)))
+    .limit(1);
+
+  if (!sessions.length) return res.status(404).json({ error: "Session not found" });
+
+  // Get recent transcript to detect competitor mentions
+  const recentTranscripts = await db
+    .select()
+    .from(meetingTranscripts)
+    .where(eq(meetingTranscripts.sessionId, req.params.id))
+    .orderBy(desc(meetingTranscripts.createdAt))
+    .limit(30);
+
+  const transcriptText = recentTranscripts.map(t => t.text).join(" ").toLowerCase();
+
+  // Query knowledge vault for competitor_intel entries
+  const competitorEntries = await db
+    .select()
+    .from(knowledgeVault)
+    .where(
+      and(
+        eq(knowledgeVault.tenantId, user.tenantId),
+        eq(knowledgeVault.category, "competitor_intel")
+      )
+    )
+    .limit(20);
+
+  // Filter to entries that are relevant to what's being discussed
+  const relevant = competitorEntries.filter(entry => {
+    const entryText = `${entry.title} ${entry.extractedContent ?? ""}`.toLowerCase();
+    // Check if competitor name appears in transcript
+    const words = entry.title.toLowerCase().split(/\s+/);
+    return words.some(w => w.length > 3 && transcriptText.includes(w));
+  });
+
+  return res.json(relevant.map(e => ({
+    id: e.id,
+    title: e.title,
+    summary: e.summary,
+    extractedContent: e.extractedContent,
+    category: e.category,
+    createdAt: e.createdAt,
+  })));
+});
+
+// ─── POST /api/meetings/:id/create-tasks ─────────────────────────────────────
+// Creates CRM tasks from meeting action items
+meetingRouter.post("/meetings/:id/create-tasks", async (req: Request, res: Response) => {
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = await getDb();
+  if (!db) return res.status(503).json({ error: "Database unavailable" });
+
+  const sessions = await db
+    .select()
+    .from(meetingSessions)
+    .where(and(eq(meetingSessions.id, req.params.id), eq(meetingSessions.tenantId, user.tenantId)))
+    .limit(1);
+
+  if (!sessions.length) return res.status(404).json({ error: "Session not found" });
+  const session = sessions[0];
+
+  const { actionItems, dueDate } = req.body;
+  if (!actionItems || !Array.isArray(actionItems) || actionItems.length === 0) {
+    return res.status(400).json({ error: "actionItems array is required" });
+  }
+
+  const { v4: uuidv4 } = await import("uuid");
+  const createdTaskIds: string[] = [];
+
+  for (const item of actionItems) {
+    const taskId = uuidv4();
+    await db.insert(tasksTable).values({
+      id: taskId,
+      tenantId: user.tenantId,
+      title: item,
+      description: `Action item from meeting: ${session.title ?? session.meetingUrl}`,
+      status: "todo",
+      priority: "medium",
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      assignedToId: user.id,
+      createdById: user.id,
+      linkedEntityType: session.dealId ? "deal" : undefined,
+      linkedEntityId: session.dealId ?? undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    createdTaskIds.push(taskId);
+  }
+
+  return res.json({ success: true, createdCount: createdTaskIds.length, taskIds: createdTaskIds });
+});
+
+// ─── GET /api/meetings/:id/health-score ──────────────────────────────────────
+// Computes or returns the meeting health score
+meetingRouter.get("/meetings/:id/health-score", async (req: Request, res: Response) => {
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = await getDb();
+  if (!db) return res.status(503).json({ error: "Database unavailable" });
+
+  const sessions = await db
+    .select()
+    .from(meetingSessions)
+    .where(and(eq(meetingSessions.id, req.params.id), eq(meetingSessions.tenantId, user.tenantId)))
+    .limit(1);
+
+  if (!sessions.length) return res.status(404).json({ error: "Session not found" });
+  const session = sessions[0];
+
+  // Sentiment score: 0-1 range (40% weight)
+  const sentimentScore = session.sentimentScore ?? 0.5;
+  const sentimentComponent = sentimentScore * 40;
+
+  // Talk ratio balance: ideal is 40-60% rep vs prospect (30% weight)
+  // Score 100 if balanced, 0 if one person spoke 100%
+  let talkRatioComponent = 15; // default middle
+  const talkRatio = session.talkRatio as Record<string, number> | null;
+  if (talkRatio) {
+    const values = Object.values(talkRatio);
+    if (values.length >= 2) {
+      const sorted = values.sort((a, b) => b - a);
+      const dominance = sorted[0]; // highest speaker percentage
+      // Perfect balance = 50%, worst = 100% (one person)
+      const balanceScore = 1 - Math.max(0, (dominance - 50) / 50);
+      talkRatioComponent = balanceScore * 30;
+    }
+  }
+
+  // Action items agreed (30% weight) — presence of action items = good sign
+  const actionItems = session.actionItems as string[] | null;
+  const hasActionItems = actionItems && actionItems.length > 0;
+  const actionItemScore = hasActionItems ? Math.min(actionItems!.length / 3, 1) : 0;
+  const actionItemComponent = actionItemScore * 30;
+
+  const totalScore = Math.round(sentimentComponent + talkRatioComponent + actionItemComponent);
+
+  let grade: string;
+  let label: string;
+  let color: string;
+  if (totalScore >= 80) { grade = "A"; label = "Excellent"; color = "green"; }
+  else if (totalScore >= 65) { grade = "B"; label = "Good"; color = "blue"; }
+  else if (totalScore >= 50) { grade = "C"; label = "Fair"; color = "yellow"; }
+  else if (totalScore >= 35) { grade = "D"; label = "Needs Improvement"; color = "orange"; }
+  else { grade = "F"; label = "Poor"; color = "red"; }
+
+  return res.json({
+    sessionId: session.id,
+    score: totalScore,
+    grade,
+    label,
+    color,
+    breakdown: {
+      sentiment: { score: Math.round(sentimentComponent), weight: 40, raw: sentimentScore },
+      talkRatio: { score: Math.round(talkRatioComponent), weight: 30 },
+      actionItems: { score: Math.round(actionItemComponent), weight: 30, count: actionItems?.length ?? 0 },
+    },
+  });
 });
 
 export default meetingRouter;
