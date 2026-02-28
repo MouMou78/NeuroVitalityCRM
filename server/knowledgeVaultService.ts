@@ -17,8 +17,16 @@ import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { OpenAI } from "openai";
 import { storagePut, storageGet } from "./storage";
+import { ENV } from "./_core/env";
 
-const openai = new OpenAI();
+function createOpenAIClient() {
+  const opts: ConstructorParameters<typeof OpenAI>[0] = {};
+  if (ENV.forgeApiKey) opts.apiKey = ENV.forgeApiKey;
+  if (ENV.forgeApiUrl) opts.baseURL = `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1`;
+  return new OpenAI(opts);
+}
+
+const openai = createOpenAIClient();
 
 // ─────────────────────────────────────────────
 // Types
@@ -57,8 +65,7 @@ export interface IngestTextOptions extends IngestOptions {
 async function extractFromPdf(buffer: Buffer): Promise<string> {
   try {
     // Use OpenAI to extract text from PDF (no native deps required)
-    const { OpenAI } = await import("openai");
-    const openai = new OpenAI();
+    const openai = createOpenAIClient();
     const base64 = buffer.toString("base64");
     const response = await openai.chat.completions.create({
       model: "gpt-4.1-mini",

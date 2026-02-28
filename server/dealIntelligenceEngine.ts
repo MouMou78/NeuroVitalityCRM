@@ -23,8 +23,16 @@ import { eq, and, isNull, not, lt, gt, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { OpenAI } from "openai";
 import { getDealsByTenant, getDealStagesByTenant } from "./db-deals";
+import { ENV } from "./_core/env";
 
-const openai = new OpenAI();
+function createOpenAIClient() {
+  const opts: ConstructorParameters<typeof OpenAI>[0] = {};
+  if (ENV.forgeApiKey) opts.apiKey = ENV.forgeApiKey;
+  if (ENV.forgeApiUrl) opts.baseURL = `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1`;
+  return new OpenAI(opts);
+}
+
+const openai = createOpenAIClient();
 
 // ─────────────────────────────────────────────
 // Types
