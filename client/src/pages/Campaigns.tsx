@@ -72,18 +72,18 @@ export default function Campaigns() {
   }
 
   return (
-    <div className="container py-8">
+    <div className="container py-6 px-4 sm:px-6 sm:py-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Marketing Campaigns</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold">Marketing Campaigns</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
               Create and manage email marketing campaigns
             </p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm" className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 New Campaign
               </Button>

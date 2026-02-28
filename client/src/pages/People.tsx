@@ -117,16 +117,16 @@ export default function People() {
             Manage your contacts and relationships
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link href="/people/merge">
-            <Button variant="outline">
-              <GitMerge className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm">
+              <GitMerge className="w-4 h-4 mr-1.5" />
               Merge
             </Button>
           </Link>
           <Link href="/people/import">
-            <Button variant="outline">
-              <Upload className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm">
+              <Upload className="w-4 h-4 mr-1.5" />
               Import
             </Button>
           </Link>

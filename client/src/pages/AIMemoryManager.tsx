@@ -110,25 +110,27 @@ export default function AIMemoryManager() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-violet-100 rounded-lg">
-            <Brain className="h-6 w-6 text-violet-600" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-violet-100 rounded-lg flex-shrink-0 mt-0.5">
+            <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-violet-600" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">AI Memory Manager</h1>
-            <p className="text-sm text-gray-500">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">AI Memory Manager</h1>
+              <Badge className="bg-violet-100 text-violet-800 border-violet-200">
+                <Shield className="h-3 w-3 mr-1" />
+                Engineering
+              </Badge>
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5">
               Govern what the AI knows and remembers across all sessions
             </p>
           </div>
-          <Badge className="bg-violet-100 text-violet-800 border-violet-200 ml-2">
-            <Shield className="h-3 w-3 mr-1" />
-            Engineering
-          </Badge>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -195,11 +197,11 @@ export default function AIMemoryManager() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAddMemory} className="space-y-3">
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <select
                   value={newMemoryCategory}
                   onChange={(e) => setNewMemoryCategory(e.target.value)}
-                  className="border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 w-full sm:w-auto"
                 >
                   {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (
                     <option key={key} value={key}>
@@ -217,7 +219,7 @@ export default function AIMemoryManager() {
                 <Button
                   type="submit"
                   disabled={addMemoryMutation.isPending || !newMemoryContent.trim()}
-                  className="bg-violet-600 hover:bg-violet-700 text-white"
+                  className="bg-violet-600 hover:bg-violet-700 text-white w-full sm:w-auto"
                 >
                   {addMemoryMutation.isPending ? "Saving..." : "Save Memory"}
                 </Button>

@@ -90,14 +90,14 @@ export default function Integrations() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Integrations</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Connect external services to sync data automatically
           </p>
         </div>
-        <Button variant="outline" asChild>
+        <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
           <a href="/sync-history">View Sync History</a>
         </Button>
       </div>

@@ -76,13 +76,13 @@ export default function DealIntelligence() {
   const criticalCount = alerts.filter(a => a.severity === "critical" || a.severity === "high").length;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Zap className="w-7 h-7 text-amber-500" />
-            <h1 className="text-2xl font-bold text-gray-900">Deal Intelligence</h1>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <Zap className="w-6 h-6 text-amber-500 flex-shrink-0" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Deal Intelligence</h1>
             {unreadCount > 0 && (
               <Badge className="bg-red-500 text-white border-0">{unreadCount} new</Badge>
             )}
@@ -91,16 +91,17 @@ export default function DealIntelligence() {
             Proactive AI alerts for deal drift, momentum, and risk patterns — no prompting required.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="w-4 h-4 mr-2" />Refresh
+            <RefreshCw className="w-4 h-4 mr-1.5" />Refresh
           </Button>
           <Button
+            size="sm"
             onClick={handleRunAnalysis}
             disabled={isRunning}
             className="bg-amber-500 hover:bg-amber-600 text-white"
           >
-            {isRunning ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
+            {isRunning ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Zap className="w-4 h-4 mr-1.5" />}
             Run Analysis
           </Button>
         </div>

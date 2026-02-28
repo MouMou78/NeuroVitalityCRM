@@ -27,10 +27,10 @@ export default function Dashboard() {
   const avgDealSize = totalDeals > 0 ? totalDealValue / totalDeals : 0;
 
   return (
-    <div className="container py-8 space-y-6">
+    <div className="container py-6 px-4 sm:px-6 sm:py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-2xl sm:text-3xl font-bold">Analytics Dashboard</h1>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
           Track your pipeline health, conversion rates, and team performance
         </p>
       </div>

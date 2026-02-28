@@ -177,24 +177,24 @@ export default function KnowledgeVault() {
   const readyCount = entries.filter(e => e.status === "ready").length;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Brain className="w-7 h-7 text-violet-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Knowledge Vault</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <Brain className="w-6 h-6 text-violet-600 flex-shrink-0" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Knowledge Vault</h1>
           </div>
           <p className="text-gray-500 text-sm">
             Feed the AI with files, URLs, videos, and notes. Everything ingested becomes permanent brain memory.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="w-4 h-4 mr-2" />Refresh
+            <RefreshCw className="w-4 h-4 mr-1.5" />Refresh
           </Button>
-          <Button onClick={() => setShowAddDialog(true)} className="bg-violet-600 hover:bg-violet-700 text-white">
-            <Plus className="w-4 h-4 mr-2" />Add Knowledge
+          <Button size="sm" onClick={() => setShowAddDialog(true)} className="bg-violet-600 hover:bg-violet-700 text-white">
+            <Plus className="w-4 h-4 mr-1.5" />Add Knowledge
           </Button>
         </div>
       </div>

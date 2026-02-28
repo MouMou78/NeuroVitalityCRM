@@ -101,31 +101,31 @@ export default function Accounts() {
   };
 
   return (
-    <div className="container py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container py-6 px-4 sm:px-6 sm:py-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Accounts</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Accounts</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Manage your company accounts and organizations
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link href="/accounts/merge">
-            <Button variant="outline">
-              <GitMerge className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm">
+              <GitMerge className="w-4 h-4 mr-1.5" />
               Merge
             </Button>
           </Link>
           <Link href="/accounts/import">
-            <Button variant="outline">
-              <Upload className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm">
+              <Upload className="w-4 h-4 mr-1.5" />
               Import
             </Button>
           </Link>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
                 New Account
               </Button>
             </DialogTrigger>

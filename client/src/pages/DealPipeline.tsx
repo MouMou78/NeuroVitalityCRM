@@ -91,15 +91,15 @@ export function DealPipeline() {
   }
 
   return (
-    <div className="container py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container py-6 px-4 sm:px-6 sm:py-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Deal Pipeline</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Deal Pipeline</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Manage your deals through each stage
           </p>
         </div>
-        <Button>
+        <Button size="sm" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           New Deal
         </Button>
