@@ -250,6 +250,59 @@ export async function processBotStatusWebhook(payload: {
   }
 }
 
+// ─── Keyword alert patterns ─────────────────────────────────────────────────
+const KEYWORD_ALERTS: Array<{
+  keywords: string[];
+  type: string;
+  title: string;
+  body: string;
+}> = [
+  {
+    keywords: ["budget", "budget freeze", "no budget", "cost", "too expensive", "price", "pricing"],
+    type: "risk_flag",
+    title: "Budget concern detected",
+    body: "The prospect mentioned budget. Acknowledge the concern, quantify the ROI, and ask about their budget cycle timeline.",
+  },
+  {
+    keywords: ["competitor", "alternative", "hubspot", "salesforce", "pipedrive", "zoho", "monday", "notion"],
+    type: "competitor_mention",
+    title: "Competitor mentioned",
+    body: "A competitor has come up. Focus on your unique differentiators and ask what's most important to them in a solution.",
+  },
+  {
+    keywords: ["not sure", "need to think", "let me check", "get back to you", "speak to my team", "need approval"],
+    type: "risk_flag",
+    title: "Stall signal detected",
+    body: "The prospect is stalling. Try to understand the specific blocker — is it timing, budget, authority, or need?",
+  },
+  {
+    keywords: ["timeline", "when can you", "how soon", "go live", "implementation", "onboarding"],
+    type: "next_step",
+    title: "Timeline interest — propose next step",
+    body: "The prospect is asking about timelines — a strong buying signal. Propose a specific next step or trial start date.",
+  },
+  {
+    keywords: ["contract", "sign", "agreement", "legal", "procurement", "purchase order"],
+    type: "next_step",
+    title: "Closing signal — move to agreement",
+    body: "The prospect is discussing contracts. Offer to send a draft agreement and confirm the decision-maker who needs to sign.",
+  },
+];
+
+/**
+ * Check for keyword-based alerts in the latest utterance.
+ * Returns a suggestion if a keyword match is found.
+ */
+function checkKeywordAlerts(text: string): typeof KEYWORD_ALERTS[0] | null {
+  const lower = text.toLowerCase();
+  for (const alert of KEYWORD_ALERTS) {
+    if (alert.keywords.some(kw => lower.includes(kw))) {
+      return alert;
+    }
+  }
+  return null;
+}
+
 /**
  * Analyse the latest transcript text and generate real-time co-pilot suggestions.
  * Runs asynchronously — suggestions are broadcast via WebSocket separately.
@@ -262,6 +315,36 @@ async function analyzeTranscriptForSuggestions(
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
+
+  // ── Fast-path: keyword-based instant alerts (no LLM latency) ──────────────
+  const keywordAlert = checkKeywordAlerts(latestText);
+  if (keywordAlert) {
+    const kwSuggestionId = nanoid();
+    await db.insert(meetingCopilotSuggestions).values({
+      id: kwSuggestionId,
+      sessionId,
+      tenantId,
+      type: keywordAlert.type,
+      title: keywordAlert.title,
+      body: keywordAlert.body,
+      triggerText: latestText.substring(0, 200),
+      confidence: 0.85,
+    });
+    broadcastToSession(sessionId, {
+      event: "copilot_suggestion",
+      suggestion: {
+        id: kwSuggestionId,
+        type: keywordAlert.type,
+        title: keywordAlert.title,
+        body: keywordAlert.body,
+        triggerText: latestText.substring(0, 200),
+        confidence: 0.85,
+        source: "keyword",
+        createdAt: new Date().toISOString(),
+      },
+    });
+    // Still run the LLM analysis for deeper context
+  }
 
   // Retrieve recent transcript context (last 10 utterances)
   const recent = await db
