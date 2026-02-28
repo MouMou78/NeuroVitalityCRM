@@ -164,7 +164,7 @@ function DashboardLayoutContent({
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   // Logo error state removed - using simple text logo
@@ -267,7 +267,7 @@ function DashboardLayoutContent({
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => { setLocation(item.path); setOpenMobile(false); }}
                       tooltip={item.label}
                       className={`h-10 transition-all font-normal`}
                     >
@@ -301,7 +301,7 @@ function DashboardLayoutContent({
                         <SidebarMenuSubItem key={item.path}>
                           <SidebarMenuSubButton
                             isActive={isActive}
-                            onClick={() => setLocation(item.path)}
+                            onClick={() => { setLocation(item.path); setOpenMobile(false); }}
                             className="h-9"
                           >
                             <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
@@ -336,7 +336,7 @@ function DashboardLayoutContent({
                           <SidebarMenuSubItem key={item.path}>
                             <SidebarMenuSubButton
                               isActive={isActive}
-                              onClick={() => setLocation(item.path)}
+                              onClick={() => { setLocation(item.path); setOpenMobile(false); }}
                               className="h-9"
                             >
                               <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
