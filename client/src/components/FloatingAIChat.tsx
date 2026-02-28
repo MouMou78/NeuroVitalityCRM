@@ -203,8 +203,10 @@ export default function FloatingAIChat({ contextData }: FloatingAIChatProps) {
 
   const quickActions = getQuickActionsForPage(location);
 
-  // Do not render AI chat for unauthenticated users — prevents data exposure
-  if (authLoading || !isAuthenticated) return null;
+  // Do not render AI chat on public pages or for unauthenticated users — prevents data exposure
+  const publicPaths = ['/login', '/signup', '/forgot-password', '/reset-password', '/lead-capture'];
+  const isPublicPage = publicPaths.some(p => location.startsWith(p));
+  if (isPublicPage || authLoading || !isAuthenticated) return null;
 
   return (
     <>
