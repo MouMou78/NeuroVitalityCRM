@@ -18,7 +18,6 @@ export function serveStatic(app: Express) {
 
   if (!fs.existsSync(distPath)) {
     console.error(`Could not find static files at: ${distPath}`);
-    // List what IS in __dirname for debugging
     try {
       const files = fs.readdirSync(__dirname);
       console.log(`Contents of ${__dirname}:`, files);
@@ -28,10 +27,30 @@ export function serveStatic(app: Express) {
     throw new Error(`Build directory not found: ${distPath}`);
   }
 
-  app.use(express.static(distPath));
+  // Serve static assets with long-term caching for hashed files
+  app.use(express.static(distPath, {
+    maxAge: '1y',        // Long cache for hashed assets (JS/CSS bundles)
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      // HTML files: no caching (always fetch fresh)
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // Prevent browsers from sniffing MIME types
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      // Prevent clickjacking
+      res.setHeader('X-Frame-Options', 'DENY');
+    },
+  }));
 
   // Fall through to index.html for client-side routing
   app.use("*", (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

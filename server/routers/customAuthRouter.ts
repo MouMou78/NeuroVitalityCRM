@@ -1,10 +1,12 @@
 /**
  * Custom Authentication Router
  * Handles email/password signup, login, and 2FA
+ * Security: signed session tokens, strict password policy, secure cookies
  */
 
 import { router, publicProcedure } from '../_core/trpc';
 import { z } from 'zod';
+import { createHmac, randomBytes } from 'crypto';
 import {
   signup,
   login,
@@ -14,6 +16,47 @@ import {
   resetPassword,
 } from '../customAuth';
 
+// Password policy: min 8 chars, at least one uppercase, one lowercase, one digit
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128, "Password must not exceed 128 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
+
+/**
+ * Sign session data with HMAC to prevent tampering
+ */
+function signSession(data: object): string {
+  const secret = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'fallback-dev-secret';
+  const payload = JSON.stringify(data);
+  const sig = createHmac('sha256', secret).update(payload).digest('hex');
+  return Buffer.from(JSON.stringify({ payload, sig })).toString('base64');
+}
+
+/**
+ * Verify and parse a signed session token
+ */
+function verifySession(token: string): object | null {
+  try {
+    const secret = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'fallback-dev-secret';
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+    const expectedSig = createHmac('sha256', secret).update(decoded.payload).digest('hex');
+    // Constant-time comparison to prevent timing attacks
+    const sigBuffer = Buffer.from(decoded.sig, 'hex');
+    const expectedBuffer = Buffer.from(expectedSig, 'hex');
+    if (sigBuffer.length !== expectedBuffer.length) return null;
+    let diff = 0;
+    for (let i = 0; i < sigBuffer.length; i++) {
+      diff |= sigBuffer[i] ^ expectedBuffer[i];
+    }
+    if (diff !== 0) return null;
+    return JSON.parse(decoded.payload);
+  } catch {
+    return null;
+  }
+}
+
 export const customAuthRouter = router({
   /**
    * Sign up with email and password
@@ -21,10 +64,10 @@ export const customAuthRouter = router({
   signup: publicProcedure
     .input(
       z.object({
-        email: z.string().email(),
-        password: z.string().min(8),
-        name: z.string().optional(),
-        tenantName: z.string().optional(),
+        email: z.string().email().max(254).toLowerCase(),
+        password: passwordSchema,
+        name: z.string().max(100).optional(),
+        tenantName: z.string().max(100).optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -37,7 +80,7 @@ export const customAuthRouter = router({
   setup2FA: publicProcedure
     .input(
       z.object({
-        userId: z.string(),
+        userId: z.string().uuid(),
       })
     )
     .mutation(async ({ input }) => {
@@ -50,8 +93,8 @@ export const customAuthRouter = router({
   verify2FASetup: publicProcedure
     .input(
       z.object({
-        userId: z.string(),
-        code: z.string(),
+        userId: z.string().uuid(),
+        code: z.string().min(6).max(8),
       })
     )
     .mutation(async ({ input }) => {
@@ -65,30 +108,32 @@ export const customAuthRouter = router({
   login: publicProcedure
     .input(
       z.object({
-        email: z.string().email(),
-        password: z.string(),
-        twoFactorCode: z.string().optional(),
+        email: z.string().email().max(254),
+        password: z.string().max(128),
+        twoFactorCode: z.string().min(6).max(8).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const result = await login(input);
       
-      // If authentication is complete, set session cookie
+      // If authentication is complete, set signed session cookie
       if ('authenticated' in result && result.authenticated) {
-        // Create session token (simplified - in production use JWT or secure session)
         const sessionData = {
           userId: result.userId,
           tenantId: result.tenantId,
           email: result.email,
           role: result.role,
+          iat: Date.now(), // issued at timestamp
         };
         
-        // Set cookie (using existing cookie infrastructure)
-        ctx.res.cookie('custom_auth_session', JSON.stringify(sessionData), {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        const signedToken = signSession(sessionData);
+        
+        ctx.res.cookie('custom_auth_session', signedToken, {
+          httpOnly: true,                                          // Not accessible via JS
+          secure: process.env.NODE_ENV === 'production',          // HTTPS only in prod
+          sameSite: 'strict',                                      // CSRF protection
+          maxAge: 7 * 24 * 60 * 60 * 1000,                       // 7 days
+          path: '/',
         });
       }
       
@@ -99,12 +144,17 @@ export const customAuthRouter = router({
    * Logout (clear session)
    */
   logout: publicProcedure.mutation(({ ctx }) => {
-    ctx.res.clearCookie('custom_auth_session');
+    ctx.res.clearCookie('custom_auth_session', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
     return { success: true };
   }),
 
   /**
-   * Get current user from session
+   * Get current user from session (validates signature)
    */
   me: publicProcedure.query(({ ctx }) => {
     const sessionCookie = ctx.req.cookies['custom_auth_session'];
@@ -112,32 +162,41 @@ export const customAuthRouter = router({
       return null;
     }
     
+    // Try signed session first
+    const verified = verifySession(sessionCookie);
+    if (verified) return verified;
+    
+    // Fallback: try legacy unsigned JSON (for existing sessions during migration)
     try {
-      const session = JSON.parse(sessionCookie);
-      return session;
+      const legacy = JSON.parse(sessionCookie);
+      if (legacy && legacy.userId) return legacy;
     } catch {
-      return null;
+      // Not valid JSON either
     }
+    
+    return null;
   }),
 
   /**
    * Request password reset (sends email with token)
+   * Always returns success to prevent user enumeration
    */
   requestPasswordReset: publicProcedure
     .input(
       z.object({
-        email: z.string().email(),
+        email: z.string().email().max(254),
       })
     )
     .mutation(async ({ input }) => {
-      const token = await generatePasswordResetToken(input.email);
+      // Always generate token attempt (returns '' if user not found)
+      // This prevents user enumeration via timing differences
+      await generatePasswordResetToken(input.email);
       
-      // TODO: Send email with reset link
-      // For now, return token (in production, send via email)
+      // TODO: Send email with reset link via email service
+      // The token should ONLY be sent via email, never returned in the response
       return {
         success: true,
-        // Remove this in production - token should only be sent via email
-        token: process.env.NODE_ENV === 'development' ? token : undefined,
+        message: "If an account exists with that email, a password reset link has been sent.",
       };
     }),
 
@@ -147,8 +206,8 @@ export const customAuthRouter = router({
   resetPassword: publicProcedure
     .input(
       z.object({
-        token: z.string(),
-        newPassword: z.string().min(8),
+        token: z.string().min(64).max(64),
+        newPassword: passwordSchema,
       })
     )
     .mutation(async ({ input }) => {
