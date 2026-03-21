@@ -16,7 +16,7 @@ export default function Onboarding() {
 
   const steps = [
     {
-      title: "Welcome to CRM Template",
+      title: "Welcome to NeuroVitality CRM",
       content: "Your relationships are the foundation of your business. Let's help you nurture them.",
     },
     {

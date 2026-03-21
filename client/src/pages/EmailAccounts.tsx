@@ -104,7 +104,7 @@ export default function EmailAccounts() {
           <div>
             <h1 className="text-3xl font-bold">Email Accounts</h1>
             <p className="text-muted-foreground mt-1">
-              Connect your email accounts to send emails from CRM Template
+              Connect your email accounts to send emails from NeuroVitality CRM
             </p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
@@ -242,7 +242,7 @@ export default function EmailAccounts() {
               <Mail className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No email accounts connected</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Connect your email account to send emails from CRM Template
+                Connect your email account to send emails from NeuroVitality CRM
               </p>
               <Button onClick={() => setOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />

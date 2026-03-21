@@ -21,7 +21,7 @@ export default function Home() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-          Welcome to CRM Template. Here's your overview for today.
+          Welcome to NeuroVitality CRM. Here's your overview for today.
         </p>
       </div>
 

@@ -73,13 +73,13 @@ export default function Signup() {
   };
 
   const downloadBackupCodes = () => {
-    const blob = new Blob([`CRM Template Backup Codes\n\n${backupCodes.join("\n")}\n\nKeep these codes in a safe place.`], {
+    const blob = new Blob([`NeuroVitality CRM Backup Codes\n\n${backupCodes.join("\n")}\n\nKeep these codes in a safe place.`], {
       type: "text/plain",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "White Label-crm-backup-codes.txt";
+    a.download = "neurovitality-crm-backup-codes.txt";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -175,7 +175,7 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Create your account</CardTitle>
-          <CardDescription>Sign up for CRM Template</CardDescription>
+          <CardDescription>Sign up for NeuroVitality CRM</CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup}>
           <CardContent className="space-y-4">
