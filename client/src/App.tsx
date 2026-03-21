@@ -89,6 +89,7 @@ const ContactMerge = lazy(() => import("./pages/ContactMerge"));
 const DealPipeline = lazy(() => import("./pages/DealPipeline").then(m => ({ default: m.DealPipeline })));
 const DealDetail = lazy(() => import("./pages/DealDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const SecurityCompliance = lazy(() => import("./pages/SecurityCompliance"));
 
 function Router() {
   return (
@@ -375,6 +376,13 @@ function Router() {
         <Route path="/">
           <DashboardLayout>
             <Home />
+          </DashboardLayout>
+        </Route>
+
+        {/* Security & Compliance */}
+        <Route path="/security-compliance">
+          <DashboardLayout>
+            <SecurityCompliance />
           </DashboardLayout>
         </Route>
 
