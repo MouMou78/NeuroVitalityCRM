@@ -1,12 +1,27 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/theme-provider";
 import DashboardLayout from "./components/DashboardLayout";
 import FloatingAIChat from "./components/FloatingAIChat";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
+
+// Routes where the AI assistant should NOT appear (unauthenticated/public pages)
+const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password", "/onboarding"];
+
+function AuthenticatedExtras() {
+  const [location] = useLocation();
+  const isPublicRoute = PUBLIC_ROUTES.includes(location) || location.startsWith("/public/");
+  if (isPublicRoute) return null;
+  return (
+    <>
+      <FloatingAIChat />
+      <KeyboardShortcuts />
+    </>
+  );
+}
 
 // Loading component for lazy-loaded pages
 const PageLoader = () => (
@@ -377,8 +392,7 @@ function App() {
         <ErrorBoundary>
           <Toaster />
           <Router />
-          <FloatingAIChat />
-          <KeyboardShortcuts />
+          <AuthenticatedExtras />
         </ErrorBoundary>
       </TooltipProvider>
     </ThemeProvider>
