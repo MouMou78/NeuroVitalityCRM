@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { MessageSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { ActivityTimeline } from "@/components/ActivityTimeline";
 import Notes from "@/components/Notes";
 import { AIEmailAssistant } from "@/components/AIEmailAssistant";
 import { EnrichmentButton } from "@/components/EnrichmentButton";
+import { LogMessageDialog } from "@/components/LogMessageDialog";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -41,6 +43,7 @@ export default function PersonDetail({ personId }: PersonDetailProps) {
   const [isNewThreadOpen, setIsNewThreadOpen] = useState(false);
   const [threadTitle, setThreadTitle] = useState("");
   const [threadNotes, setThreadNotes] = useState("");
+  const [isLogMessageOpen, setIsLogMessageOpen] = useState(false);
   const generateInsightsMutation = trpc.assistant.generateContactInsights.useMutation();
   const sendEmailMutation = trpc.email.send.useMutation();
   const createThreadMutation = trpc.threads.create.useMutation();
@@ -197,6 +200,20 @@ export default function PersonDetail({ personId }: PersonDetailProps) {
               </div>
             </DialogContent>
           </Dialog>
+          <LogMessageDialog
+            personId={personId}
+            open={isLogMessageOpen}
+            onOpenChange={setIsLogMessageOpen}
+          />
+          <Button
+            variant="outline"
+            onClick={() => setIsLogMessageOpen(true)}
+            className="flex-1 md:flex-none"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Log Message</span>
+            <span className="sm:hidden">Message</span>
+          </Button>
         </div>
       </div>
 

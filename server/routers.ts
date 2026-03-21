@@ -736,20 +736,53 @@ export const appRouter = router({
     
     create: protectedProcedure
       .input(z.object({
-        threadId: z.string(),
+        threadId: z.string().optional(),
         personId: z.string(),
-        type: z.enum(["note_added"]),
+        type: z.enum(["note_added", "email_sent", "email_received", "linkedin_message_sent", "linkedin_message_received"]),
         content: z.string(),
+        metadata: z.record(z.any()).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        const tenantId = ctx.user.tenantId;
+        
+        // Determine thread source and intent based on message type
+        let threadSource = "manual";
+        let threadIntent = "general";
+        
+        if (input.type.includes("email")) {
+          threadSource = "email";
+          threadIntent = input.type === "email_sent" ? "outbound" : "inbound";
+        } else if (input.type.includes("linkedin")) {
+          threadSource = "linkedin_messages";
+          threadIntent = input.type === "linkedin_message_sent" ? "outbound" : "inbound";
+        }
+        
+        // Create or find thread
+        let threadId = input.threadId;
+        if (!threadId) {
+          const thread = await db.createThread({
+            tenantId,
+            personId: input.personId,
+            source: threadSource,
+            intent: threadIntent,
+            title: input.metadata?.subject || `${threadSource} conversation`,
+          });
+          threadId = thread.id;
+        }
+        
+        // Parse timestamp from metadata if provided, otherwise use current time
+        const timestamp = input.metadata?.timestamp 
+          ? new Date(input.metadata.timestamp)
+          : new Date();
+        
         const moment = await db.createMoment({
-          tenantId: ctx.user.tenantId,
-          threadId: input.threadId,
+          tenantId,
+          threadId,
           personId: input.personId,
           source: "manual",
-          type: input.type,
-          timestamp: new Date(),
-          metadata: { content: input.content },
+          type: input.type as any,
+          timestamp,
+          metadata: input.metadata || { content: input.content },
         });
         
         // Process through rules engine
