@@ -86,7 +86,7 @@ export default function FloatingAIChat({ contextData }: FloatingAIChatProps) {
   // Initialize with context-aware greeting
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      let greeting = "Hi! I'm Avery, your AI assistant. ";
+      let greeting = "Hi! I'm your AI assistant. ";
       if (contextData?.contactName) {
         greeting += `I can see you're viewing ${contextData.contactName}'s profile. `;
       } else if (contextData?.page) {
@@ -383,7 +383,7 @@ export default function FloatingAIChat({ contextData }: FloatingAIChatProps) {
             <div className="flex items-center justify-between p-3 border-b bg-primary/5">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm">Avery</h3>
+                <h3 className="font-semibold text-sm">AI Assistant</h3>
               </div>
               <div className="flex gap-1">
                 <Button
@@ -441,7 +441,7 @@ export default function FloatingAIChat({ contextData }: FloatingAIChatProps) {
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-3">
                 <Sparkles className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold">Avery</h1>
+                <h1 className="text-2xl font-bold">AI Assistant</h1>
                 <Badge variant="secondary" className="text-xs">AI Assistant</Badge>
               </div>
               <div className="flex gap-2">

@@ -7,7 +7,7 @@ import { Target, Flame, Plus, X, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-// KLIQ-specific scoring configuration for coaches and creators
+// NeuroVitality CRM - scoring configuration for health and wellness professionals
 const defaultConfig = {
   fit: {
     creatorTypes: [
@@ -79,7 +79,7 @@ export default function ScoringSettings() {
 
   const handleReset = () => {
     setConfig(defaultConfig);
-    toast.info("Scoring configuration reset to KLIQ defaults");
+    toast.info("Scoring configuration reset to defaults");
   };
 
   const addCreatorType = () => {
@@ -247,7 +247,7 @@ export default function ScoringSettings() {
           <div>
             <Label className="text-base font-semibold">Platform Commitment Level</Label>
             <p className="text-sm text-muted-foreground mb-3">
-              How deeply the creator is using KLIQ features
+              How deeply the contact is using CRM features
             </p>
             <div className="space-y-2">
               {config.fit.platformCommitment.map((level, index) => (

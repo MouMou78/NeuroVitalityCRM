@@ -372,7 +372,7 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="kliq-crm-theme">
+    <ThemeProvider defaultTheme="light" storageKey="neurovitality-crm-theme">
       <TooltipProvider>
         <ErrorBoundary>
           <Toaster />

@@ -19,21 +19,21 @@ async function seedDemoData() {
   
   const demoUsers = await db.insert(users).values([
     {
-      email: "sarah.manager@kliq.io",
+      email: "sarah.manager@neurovitalityltd.com",
       password: hashedPassword,
       fullName: "Sarah Johnson",
       role: "Sales Manager",
       tenantId,
     },
     {
-      email: "mike.manager@kliq.io",
+      email: "mike.manager@neurovitalityltd.com",
       password: hashedPassword,
       fullName: "Mike Chen",
       role: "Sales Manager",
       tenantId,
     },
     {
-      email: "lisa.rep@kliq.io",
+      email: "lisa.rep@neurovitalityltd.com",
       password: hashedPassword,
       fullName: "Lisa Martinez",
       role: "Sales Representative",
@@ -148,7 +148,7 @@ async function seedDemoData() {
   console.log("Creating demo deals...");
   const demoDeals = await db.insert(deals).values([
     {
-      title: "KLIQ Platform - Wellness Warriors",
+      title: "NeuroVitality - Wellness Warriors",
       value: 2500,
       stage: "Proposal",
       probability: 60,
@@ -159,7 +159,7 @@ async function seedDemoData() {
       tenantId,
     },
     {
-      title: "KLIQ Platform - Business Growth",
+      title: "NeuroVitality - Business Growth",
       value: 5000,
       stage: "Negotiation",
       probability: 75,
@@ -170,7 +170,7 @@ async function seedDemoData() {
       tenantId,
     },
     {
-      title: "KLIQ Platform - Fitness First",
+      title: "NeuroVitality - Fitness First",
       value: 1500,
       stage: "Discovery",
       probability: 30,
@@ -222,7 +222,7 @@ async function seedDemoData() {
   // Create demo sequence
   console.log("Creating demo sequence...");
   const demoSequence = await db.insert(emailSequences).values({
-    name: "KLIQ Platform Outreach",
+    name: "NeuroVitality Outreach",
     description: "Initial outreach sequence for coaches and creators",
     status: "active",
     createdBy: demoUsers[0].id,
@@ -253,9 +253,9 @@ async function seedDemoData() {
 
   console.log("\n✅ Demo data seeding complete!");
   console.log("\nDemo Users:");
-  console.log("  - sarah.manager@kliq.io / password123 (Sales Manager)");
-  console.log("  - mike.manager@kliq.io / password123 (Sales Manager)");
-  console.log("  - lisa.rep@kliq.io / password123 (Sales Representative)");
+  console.log("  - sarah.manager@neurovitalityltd.com / password123 (Sales Manager)");
+  console.log("  - mike.manager@neurovitalityltd.com / password123 (Sales Manager)");
+  console.log("  - lisa.rep@neurovitalityltd.com / password123 (Sales Representative)");
   console.log("\nYou can now log in with any of these accounts.");
 }
 

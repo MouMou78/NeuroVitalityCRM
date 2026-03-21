@@ -119,7 +119,7 @@ export default function RoleManagement() {
                         setSelectedUser(user.id);
                         setSelectedRole(user.role);
                       }}
-                      className="text-[rgb(var(--kliq-green))] hover:text-[rgb(var(--kliq-green-hover))] font-medium"
+                      className="text-primary hover:text-primary/80 font-medium"
                     >
                       Change Role
                     </button>
@@ -144,7 +144,7 @@ export default function RoleManagement() {
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--kliq-green))] bg-background"
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background"
               >
                 {roles.map((role) => (
                   <option key={role.value} value={role.value}>
@@ -170,7 +170,7 @@ export default function RoleManagement() {
               <button
                 onClick={handleRoleUpdate}
                 disabled={updateRoleMutation.isPending}
-                className="px-4 py-2 text-white bg-[rgb(var(--kliq-green))] rounded-md hover:bg-[rgb(var(--kliq-green-hover))] disabled:opacity-50"
+                className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
               >
                 {updateRoleMutation.isPending ? "Updating..." : "Update Role"}
               </button>

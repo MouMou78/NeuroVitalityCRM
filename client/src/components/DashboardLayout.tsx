@@ -65,7 +65,7 @@ const settingsItems = [
 ];
 
 const adminItems = [
-  { icon: Brain, label: "Avery Insights", path: "/ai/insights" },
+  { icon: Brain, label: "AI Insights", path: "/ai/insights" },
   { icon: Shield, label: "Role Management", path: "/admin/roles" },
   { icon: Users, label: "User Management", path: "/admin/users" },
 ];
@@ -266,7 +266,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center justify-center min-w-0 flex-1">
-                  <img src="/kliq_logo.png" alt="KLIQ" className="h-8 w-auto object-contain" />
+                  <img src="/neurovitality-logo.png" alt="NeuroVitality CRM" className="h-8 w-auto object-contain" />
                 </div>
               ) : null}
             </div>
@@ -436,7 +436,7 @@ function DashboardLayoutContent({
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
                       {user?.email || "-"}
                     </p>
-                    <p className="text-xs text-[rgb(var(--kliq-green))] font-medium mt-1">
+                    <p className="text-xs text-primary font-medium mt-1">
                       {user?.role || 'Owner'}
                     </p>
                   </div>

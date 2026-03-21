@@ -16,8 +16,8 @@ export function useAuth(options?: UseAuthOptions) {
   // BYPASS AUTH: Return mock user for development
   const mockUser = {
     id: 1,
-    email: "demo@kliq.io",
-    name: "Demo User",
+    email: "ian@neurovitalityltd.com",
+    name: "Ian",
     role: "owner",
   };
 
