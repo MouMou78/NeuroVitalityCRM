@@ -169,12 +169,15 @@ async function startServer() {
     try {
       const { drizzle } = await import('drizzle-orm/node-postgres');
       const { migrate } = await import('drizzle-orm/node-postgres/migrator');
+      const { Pool } = await import('pg');
       const path = await import('path');
       const { fileURLToPath } = await import('url');
       const __dirname = path.dirname(fileURLToPath(import.meta.url));
       const migrationsFolder = path.resolve(__dirname, '../../drizzle');
-      const db = drizzle(process.env.DATABASE_URL);
+      const migPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+      const db = drizzle(migPool);
       await migrate(db, { migrationsFolder });
+      await migPool.end();
       console.log('[Database] Migrations applied successfully');
     } catch (err) {
       console.warn('[Database] Migration warning (non-fatal):', err instanceof Error ? err.message : err);

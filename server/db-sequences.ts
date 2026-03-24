@@ -1,6 +1,8 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
-const db = drizzle(process.env.DATABASE_URL!);
+const _seqPool = new Pool({ connectionString: process.env.DATABASE_URL!, ssl: { rejectUnauthorized: false } });
+const db = drizzle(_seqPool);
 import { sequenceNodes, sequenceEdges, emailSequences } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";

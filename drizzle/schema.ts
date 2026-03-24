@@ -100,7 +100,7 @@ export const accounts = pgTable("accounts", {
   ownerUserId: varchar("ownerUserId", { length: 36 }),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantDomainIdx: index("tenant_domain_idx").on(table.tenantId, table.domain),
   tenantNameIdx: index("tenant_account_name_idx").on(table.tenantId, table.name),
@@ -183,7 +183,7 @@ export const people = pgTable("people", {
   assignedAt: timestamp("assignedAt"),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantEmailIdx: unique("tenant_primary_email_unique").on(table.tenantId, table.primaryEmail),
   tenantNameIdx: index("tenant_name_idx").on(table.tenantId, table.fullName),
@@ -199,7 +199,7 @@ export const tags = pgTable("tags", {
   name: varchar("name", { length: 100 }).notNull(),
   color: varchar("color", { length: 7 }).default("#3b82f6"), // Hex color code
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantNameIdx: unique("tenant_tag_name_unique").on(table.tenantId, table.name),
 }));
@@ -371,7 +371,7 @@ export const emailSequences = pgTable("emailSequences", {
   description: text("description"),
   status: statusEnum().default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
 }));
@@ -528,7 +528,7 @@ export const automationRules = pgTable("automationRules", {
   nextRunAt: timestamp("nextRunAt"),
   status: statusEnum().default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantStatusIdx: index("tenant_status_idx").on(table.tenantId, table.status),
   tenantTriggerIdx: index("tenant_trigger_idx").on(table.tenantId, table.triggerType),
@@ -581,7 +581,7 @@ export const templateAnalytics = pgTable("templateAnalytics", {
   successCount: integer("successCount").default(0).notNull(),
   failureCount: integer("failureCount").default(0).notNull(),
   lastInstalledAt: timestamp("lastInstalledAt"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   templateIdx: index("template_idx").on(table.templateId),
 }));
@@ -615,7 +615,7 @@ export const userTemplates = pgTable("userTemplates", {
   version: integer("version").default(1).notNull(),
   changelog: text("changelog"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   userIdx: index("user_idx").on(table.userId),
   tenantIdx: index("tenant_idx").on(table.tenantId),
@@ -803,7 +803,7 @@ export const aiConversations = pgTable("aiConversations", {
   title: varchar("title", { length: 255 }).notNull(),
   messages: jsonb("messages").notNull(), // Array of {role, content}
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   userIdx: index("user_conversations_idx").on(table.userId),
   tenantIdx: index("tenant_conversations_idx").on(table.tenantId),
@@ -917,7 +917,7 @@ export const deals = pgTable("deals", {
   probability: integer("probability").default(50),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("deals_tenant_idx").on(table.tenantId),
   stageIdx: index("deals_stage_idx").on(table.stageId),
@@ -944,7 +944,7 @@ export const tasks = pgTable("tasks", {
   linkedEntityType: linkedEntityTypeEnum(),
   linkedEntityId: varchar("linkedEntityId", { length: 36 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
   reminderAt: timestamp("reminderAt"),
   reminderSent: boolean("reminderSent").default(false).notNull(),
@@ -979,7 +979,7 @@ export const emailTemplates = pgTable("emailTemplates", {
   isPublic: boolean("isPublic").default(false).notNull(),
   createdById: varchar("createdById", { length: 36 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("email_templates_tenant_idx").on(table.tenantId),
   categoryIdx: index("email_templates_category_idx").on(table.category),
@@ -1008,7 +1008,7 @@ export const leadScores = pgTable("leadScores", {
   // Metadata
   lastActivityAt: timestamp("lastActivityAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("lead_scores_tenant_idx").on(table.tenantId),
   personIdx: index("lead_scores_person_idx").on(table.personId),
@@ -1029,7 +1029,7 @@ export const leadScoringRules = pgTable("leadScoringRules", {
   points: integer("points").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("lead_scoring_rules_tenant_idx").on(table.tenantId),
   categoryIdx: index("lead_scoring_rules_category_idx").on(table.category),
@@ -1074,7 +1074,7 @@ export const sharedViews = pgTable("sharedViews", {
   isPublic: boolean("isPublic").default(false).notNull(), // If true, visible to all team members
   sharedWithUserIds: jsonb("sharedWithUserIds").$type<string[]>().default([]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("shared_views_tenant_idx").on(table.tenantId),
   creatorIdx: index("shared_views_creator_idx").on(table.createdById),
@@ -1096,7 +1096,7 @@ export const notes = pgTable("notes", {
   updatedBy: varchar("updatedBy", { length: 36 }),
   updatedByName: varchar("updatedByName", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => ({
   tenantIdx: index("notes_tenant_idx").on(table.tenantId),
   entityIdx: index("notes_entity_idx").on(table.entityType, table.entityId),
@@ -1120,7 +1120,7 @@ export const calendarIntegrations = pgTable("calendarIntegrations", {
   isActive: boolean("isActive").default(true).notNull(),
   lastSyncAt: timestamp("lastSyncAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("calendar_integrations_tenant_idx").on(table.tenantId),
   userIdx: index("calendar_integrations_user_idx").on(table.userId),
@@ -1147,7 +1147,7 @@ export const calendarEvents = pgTable("calendarEvents", {
   linkedAccountId: varchar("linkedAccountId", { length: 36 }),
   linkedDealId: varchar("linkedDealId", { length: 36 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("calendar_events_tenant_idx").on(table.tenantId),
   integrationIdx: index("calendar_events_integration_idx").on(table.integrationId),
@@ -1179,7 +1179,7 @@ export const documents = pgTable("documents", {
   // Metadata
   uploadedById: varchar("uploadedById", { length: 36 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("documents_tenant_idx").on(table.tenantId),
   entityIdx: index("documents_entity_idx").on(table.linkedEntityType, table.linkedEntityId),
@@ -1215,7 +1215,7 @@ export const documentFolders = pgTable("documentFolders", {
   parentFolderId: varchar("parentFolderId", { length: 36 }),
   createdById: varchar("createdById", { length: 36 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("document_folders_tenant_idx").on(table.tenantId),
   parentIdx: index("document_folders_parent_idx").on(table.parentFolderId),
@@ -1403,7 +1403,7 @@ export const leads = pgTable("leads", {
   // Metadata
   syncedAt: timestamp("syncedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("tenant_idx").on(table.tenantId),
   emailIdx: index("email_idx").on(table.email),
