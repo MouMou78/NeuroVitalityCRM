@@ -167,8 +167,8 @@ async function startServer() {
   // ── Database Migrations ───────────────────────────────────────────────────
   if (process.env.DATABASE_URL) {
     try {
-      const { drizzle } = await import('drizzle-orm/mysql2');
-      const { migrate } = await import('drizzle-orm/mysql2/migrator');
+      const { drizzle } = await import('drizzle-orm/node-postgres');
+      const { migrate } = await import('drizzle-orm/node-postgres/migrator');
       const path = await import('path');
       const { fileURLToPath } = await import('url');
       const __dirname = path.dirname(fileURLToPath(import.meta.url));
