@@ -32,9 +32,35 @@ function verifySessionToken(token: string): { userId: string; tenantId: string; 
   }
 }
 
+// BYPASS AUTH: Mock user for demo mode — matches client-side useAuth bypass
+const MOCK_USER: User = {
+  id: '1',
+  tenantId: 'neurovitality-demo',
+  email: 'ian@neurovitalityltd.com',
+  passwordHash: '',
+  name: 'Ian',
+  role: 'owner',
+  twoFactorSecret: null,
+  twoFactorEnabled: false,
+  backupCodes: null,
+  passwordResetToken: null,
+  passwordResetExpires: null,
+  disabled: false,
+  createdAt: new Date(),
+};
+
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
+  // BYPASS AUTH: Always return mock user — real auth disabled for demo mode
+  // When real auth is needed, remove this block and uncomment the session logic below
+  return {
+    req: opts.req,
+    res: opts.res,
+    user: MOCK_USER,
+  };
+
+  /* --- Real auth (disabled for demo mode) ---
   let user: User | null = null;
 
   try {
@@ -84,4 +110,5 @@ export async function createContext(
     res: opts.res,
     user,
   };
+  */
 }
