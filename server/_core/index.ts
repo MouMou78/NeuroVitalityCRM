@@ -164,6 +164,23 @@ async function startServer() {
     serveStatic(app);
   }
 
+  // ── Database Migrations ───────────────────────────────────────────────────
+  if (process.env.DATABASE_URL) {
+    try {
+      const { drizzle } = await import('drizzle-orm/mysql2');
+      const { migrate } = await import('drizzle-orm/mysql2/migrator');
+      const path = await import('path');
+      const { fileURLToPath } = await import('url');
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const migrationsFolder = path.resolve(__dirname, '../../drizzle');
+      const db = drizzle(process.env.DATABASE_URL);
+      await migrate(db, { migrationsFolder });
+      console.log('[Database] Migrations applied successfully');
+    } catch (err) {
+      console.warn('[Database] Migration warning (non-fatal):', err instanceof Error ? err.message : err);
+    }
+  }
+
   // Force Port 8080 for Railway deployment
   const port = 8080;
 
