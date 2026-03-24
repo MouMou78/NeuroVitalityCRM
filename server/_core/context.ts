@@ -34,8 +34,8 @@ function verifySessionToken(token: string): { userId: string; tenantId: string; 
 
 // BYPASS AUTH: Mock user for demo mode — matches client-side useAuth bypass
 const MOCK_USER: User = {
-  id: '1',
-  tenantId: 'neurovitality-demo',
+  id: 'guest-user-id',
+  tenantId: 'guest-tenant-id',
   email: 'ian@neurovitalityltd.com',
   passwordHash: '',
   name: 'Ian',
